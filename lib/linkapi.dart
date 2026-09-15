@@ -22,6 +22,7 @@ class AppLink{
   static const String verfiycodesignup   = "$server/auth/verfiycode.php";
   static const String resend = "$server/auth/resend.php";
   static const String login = "$server/auth/login.php";
+  static const String googleLogin = "$server/auth/google_login.php";
   //==================ForgetPassword ==========================//
   static const String checkemail = "$server/forgetpassword/checkemail.php";
   static const String verfiycodeforgetpassword = "$server/forgetpassword/verfiycode.php";
