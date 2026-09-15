@@ -6,6 +6,7 @@ import '../core/class/statusrequest.dart';
 import '../core/functions/handlingdatacontroller.dart';
 import '../core/services/services.dart';
 import '../data/datasource/remote/cart_data.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 abstract class ProductdetailsController extends GetxController {}
 
@@ -30,9 +31,11 @@ NotificationService notificationService = Get.find<NotificationService>();
 
 
   getCountItems(String itemsid)async{
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return 0; }
     statusRequest = StatusRequest.loading;
     var response = await cartData.getCountCart(
-        myServices.sharedPreferences.getString("id")!, itemsid);
+        userId, itemsid);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     // Start Backend
@@ -51,10 +54,12 @@ NotificationService notificationService = Get.find<NotificationService>();
   }
 
   addItems(String itemsid) async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     update();
     statusRequest = StatusRequest.loading;
     var response = await cartData.addCart(
-        myServices.sharedPreferences.getString("id")!, itemsid);
+        userId, itemsid);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     // Start Backend
@@ -71,10 +76,12 @@ NotificationService notificationService = Get.find<NotificationService>();
   }
 
   deleteItems(String itemsid) async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     update();
     statusRequest = StatusRequest.loading;
     var response = await cartData.deleteCart(
-        myServices.sharedPreferences.getString("id")!, itemsid);
+        userId, itemsid);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     // Start Backend

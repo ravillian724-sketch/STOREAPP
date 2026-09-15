@@ -30,22 +30,56 @@ addMarkers(LatLng latLng){
   update();
 }
 
-goToPageAddDetailsAddress(){
-  Get.toNamed(AppRoute.addressadddetails,arguments: {
-    "lat": lat.toString(),
-    "long": long.toString(),
-  });
+void goToPageAddDetailsAddress() {
+  final currentLat = lat;
+  final currentLong = long;
+
+  if (currentLat == null || currentLong == null) {
+    return;
+  }
+
+  Get.toNamed(
+    AppRoute.addressadddetails,
+    arguments: {
+      "lat": currentLat.toString(),
+      "long": currentLong.toString(),
+    },
+  );
 }
 
-  getCurrentLocation()async{
-   position = await Geolocator.getCurrentPosition();
-   kGooglePlex = CameraPosition(
-     target: LatLng(position!.latitude,position!.longitude),
-     zoom: 14.4746,
-   );
-   addMarkers(LatLng(position!.latitude, position!.longitude));
-   statusRequest = StatusRequest.none;
-   update();
+  Future<void> getCurrentLocation() async {
+    try {
+      statusRequest = StatusRequest.loading;
+      update();
+
+      final currentPosition =
+          await Geolocator.getCurrentPosition();
+
+      position = currentPosition;
+
+      kGooglePlex = CameraPosition(
+        target: LatLng(
+          currentPosition.latitude,
+          currentPosition.longitude,
+        ),
+        zoom: 14.4746,
+      );
+
+      addMarkers(
+        LatLng(
+          currentPosition.latitude,
+          currentPosition.longitude,
+        ),
+      );
+
+      statusRequest = StatusRequest.none;
+    } catch (_) {
+      position = null;
+      kGooglePlex = null;
+      statusRequest = StatusRequest.failure;
+    }
+
+    update();
   }
 
 

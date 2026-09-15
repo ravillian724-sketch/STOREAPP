@@ -11,6 +11,7 @@ import 'package:get/get.dart';
 
 import '../core/functions/handlingdatacontroller.dart';
 import '../core/services/NotificationService.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class CheckoutController extends GetxController{
 
@@ -76,10 +77,12 @@ class CheckoutController extends GetxController{
   }
 
   getShippingAddress()async{
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
 
       statusRequest = StatusRequest.loading;
 
-      var response = await addressData.getData(myServices.sharedPreferences.getString("id")!);
+      var response = await addressData.getData(userId);
 
       print("========================================Controller  $response");
 
@@ -90,8 +93,16 @@ class CheckoutController extends GetxController{
         if(response['status']=="success"){
 
           List listdata = response['data'];
-          dataaddress.addAll(listdata.map((e)=>AddressModel.fromJson(e)));
-          addressId = dataaddress[0].addressId.toString();
+          dataaddress.clear();
+          dataaddress.addAll(
+            listdata.map((e) => AddressModel.fromJson(e)),
+          );
+
+          if (dataaddress.isNotEmpty) {
+            addressId = dataaddress.first.addressId?.toString() ?? "0";
+          } else {
+            addressId = "0";
+          }
         }
         else{
           statusRequest = StatusRequest.success;
@@ -161,11 +172,13 @@ class CheckoutController extends GetxController{
   }
 
   Future<void> useMedicalProfile() async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     try {
       statusRequest = StatusRequest.loading;
       update();
 
-      var response = await medicalInfoData.getData(myServices.sharedPreferences.getString("id")!);
+      var response = await medicalInfoData.getData(userId);
       
       if (response['status'] == "success" && response['data'].isNotEmpty) {
         var medicalInfo = MedicalInfoModel.fromJson(response['data'][0]);
@@ -221,6 +234,8 @@ class CheckoutController extends GetxController{
   }
 
   checkout(String diseases, String medications, String notes) async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     if (paymentMethod == null) {
       return notificationService.showErrorNotification(
         title: "71".tr, 
@@ -249,7 +264,7 @@ class CheckoutController extends GetxController{
 
     try {
       Map data = {
-        "usersid": myServices.sharedPreferences.getString("id"),
+        "usersid": userId,
         "addressid": addressId.toString(),
         "orderstype": deliveryType.toString(),
         "pricedelivery": deliveryType.toString() =="0"? "10000":"0" ,
@@ -304,10 +319,20 @@ class CheckoutController extends GetxController{
 
   @override
   void onInit() {
-  couponid = Get.arguments['couponid'].toString();
-  priceorders = Get.arguments['priceorders'].toString();
-  coupondiscount = Get.arguments['discountcoupon'].toString();
-  getShippingAddress();
+    final arguments = Get.arguments;
+
+    if (arguments is Map) {
+      couponid = arguments["couponid"]?.toString() ?? "0";
+      priceorders = arguments["priceorders"]?.toString() ?? "0";
+      coupondiscount =
+          arguments["discountcoupon"]?.toString() ?? "0";
+    } else {
+      couponid = "0";
+      priceorders = "0";
+      coupondiscount = "0";
+    }
+
+    getShippingAddress();
     super.onInit();
   }
 

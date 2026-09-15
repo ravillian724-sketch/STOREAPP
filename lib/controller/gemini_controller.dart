@@ -4,6 +4,7 @@ import 'package:ecommerce_app/linkapi.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class ChatBotGeminiController extends GetxController {
   MyServices myServices = Get.find();
@@ -28,13 +29,23 @@ class ChatBotGeminiController extends GetxController {
   late String userId;
 
   // استدعاء هذه الدالة قبل الاستخدام لتعيين sessionId و userId
-  void setSessionAndUser() {
+  Future<bool> setSessionAndUser() async {
+    final currentUserId = await requireUserId(myServices);
+
+    if (currentUserId == null) {
+      return false;
+    }
+
     sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-    userId = myServices.sharedPreferences.getString("id")!.toString();
+    userId = currentUserId;
+    return true;
   }
 
   Future<void> sendMessage(String text) async {
-    setSessionAndUser();
+    if (!await setSessionAndUser()) {
+      return;
+    }
+
     // إضافة رسالة المستخدم
     messages.add({"role": "user", "text": text});
     isTyping = true;

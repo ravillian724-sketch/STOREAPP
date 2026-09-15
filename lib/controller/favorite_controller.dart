@@ -4,6 +4,7 @@ import '../core/class/statusrequest.dart';
 import '../core/functions/handlingdatacontroller.dart';
 import '../core/services/NotificationService.dart';
 import '../core/services/services.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class FavoriteController extends GetxController{
 
@@ -24,9 +25,11 @@ class FavoriteController extends GetxController{
   }
 
   addFavorite(String itemsid) async{
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     data.clear();
     statusRequest = StatusRequest.loading;
-    var response = await favoriteData.addFavorite(myServices.sharedPreferences.getString("id")!,itemsid);
+    var response = await favoriteData.addFavorite(userId,itemsid);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     // Start Backend
@@ -44,9 +47,11 @@ class FavoriteController extends GetxController{
 
 
   removeFavorite(String itemsid)async{
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     data.clear();
     statusRequest = StatusRequest.loading;
-    var response = await favoriteData.removeFavorite(myServices.sharedPreferences.getString("id")!,itemsid);
+    var response = await favoriteData.removeFavorite(userId,itemsid);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     //Start Backend

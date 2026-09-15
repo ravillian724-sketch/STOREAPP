@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/functions/handlingdatacontroller.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class AddAddressDetailsController extends GetxController{
 
@@ -39,11 +40,13 @@ MyServices myServices = Get.find();
   }
 
 addAddress()async{
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
 
     statusRequest = StatusRequest.loading;
     update();
     var response = await addressData.addData(
-        myServices.sharedPreferences.getString("id")!,
+        userId,
         name!.text,
         city!.text,
         street!.text,

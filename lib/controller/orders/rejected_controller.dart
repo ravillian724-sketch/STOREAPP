@@ -5,6 +5,7 @@ import '../../core/functions/handlingdatacontroller.dart';
 import '../../core/services/services.dart';
 import '../../data/datasource/remote/orders/rejected_data.dart';
 import '../../data/model/ordersmodel.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class OrdersRejectedController extends GetxController {
   OrdersRejectedData ordersRejectedData = OrdersRejectedData(Get.find());
@@ -37,10 +38,12 @@ class OrdersRejectedController extends GetxController {
   }
 
   getOrders() async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     data.clear();
     statusRequest = StatusRequest.loading;
     update();
-    var response = await ordersRejectedData.getData(myServices.sharedPreferences.getString("id")!);
+    var response = await ordersRejectedData.getData(userId);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     if(StatusRequest.success == statusRequest) {

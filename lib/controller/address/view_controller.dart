@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../core/class/statusrequest.dart';
 import '../../core/functions/handlingdatacontroller.dart';
 import '../../core/services/NotificationService.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class AddressViewController extends GetxController{
 
@@ -39,8 +40,10 @@ class AddressViewController extends GetxController{
   }
 
   getData()async{
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     statusRequest = StatusRequest.loading;
-    var response = await addressData.getData(myServices.sharedPreferences.getString("id")!);
+    var response = await addressData.getData(userId);
 
     await Future.delayed(const Duration(seconds: 2));
 

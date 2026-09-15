@@ -18,11 +18,21 @@ UsersData usersData = UsersData(Get.find());
 
 
 
-  logout(){
-    String userid = myServices.sharedPreferences.getString("id")!;
-    FirebaseMessaging.instance.unsubscribeFromTopic("users");
-    FirebaseMessaging.instance.unsubscribeFromTopic("users${userid}");
-    myServices.sharedPreferences.clear();
+  Future<void> logout() async {
+    final String? userid = myServices.userId;
+
+    try {
+      await FirebaseMessaging.instance.unsubscribeFromTopic("users");
+
+      if (userid != null) {
+        await FirebaseMessaging.instance
+            .unsubscribeFromTopic("users$userid");
+      }
+    } catch (_) {
+      // Logout must continue even if FCM unsubscribe fails.
+    }
+
+    await myServices.clearUserSession();
     Get.offAllNamed(AppRoute.login);
   }
 

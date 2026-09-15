@@ -7,6 +7,7 @@ import '../core/class/statusrequest.dart';
 import '../core/functions/handlingdatacontroller.dart';
 import '../data/datasource/remote/home_data.dart';
 import 'home_controller.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 abstract class ItemsController extends SearchMixController{
 intialData();
@@ -91,13 +92,15 @@ class ItemsControllerImp extends ItemsController {
 
   @override
   getItems(categoryid) async {
-    print("Sending categoryid: $categoryid, userid: ${myServices.sharedPreferences.getString("id")}");
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
+    print("Sending categoryid: $categoryid, userid: ${userId}");
     data.clear();
     statusRequest = StatusRequest.loading;
     update();
     
     try {
-      var response = await testData.getData(categoryid, myServices.sharedPreferences.getString("id")!);
+      var response = await testData.getData(categoryid, userId);
       print("Response from server: $response");
       
       if (response is String) {

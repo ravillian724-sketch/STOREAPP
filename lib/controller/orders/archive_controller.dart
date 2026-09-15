@@ -8,6 +8,7 @@ import '../../core/services/services.dart';
 import '../../data/datasource/remote/items_data.dart';
 import '../../data/datasource/remote/orders/pending_data.dart';
 import '../../data/model/ordersmodel.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class OrdersArchiveController extends GetxController{
 
@@ -55,10 +56,12 @@ class OrdersArchiveController extends GetxController{
 
 
   getOrders()async{
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     data.clear();
     statusRequest = StatusRequest.loading;
     update();
-    var response = await ordersArchiveData.getData(myServices.sharedPreferences.getString("id")!);
+    var response = await ordersArchiveData.getData(userId);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     if(StatusRequest.success==statusRequest){

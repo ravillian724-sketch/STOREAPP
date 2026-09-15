@@ -5,6 +5,7 @@ import '../core/functions/handlingdatacontroller.dart';
 import '../core/services/services.dart';
 import '../data/datasource/remote/myfavorite_data.dart';
 import '../data/model/myfavorite.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class MyFavoriteController extends GetxController {
   MyFavoriteData favoriteData = MyFavoriteData(Get.find());
@@ -16,12 +17,14 @@ class MyFavoriteController extends GetxController {
   MyServices myServices = Get.find();
 
   getData() async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     data.clear();
     statusRequest = StatusRequest.loading;
     update();
     
     var response = await favoriteData
-        .getData(myServices.sharedPreferences.getString("id")!);
+        .getData(userId);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     // Start Backend

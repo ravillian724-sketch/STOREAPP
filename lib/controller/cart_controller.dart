@@ -9,6 +9,7 @@ import '../core/constant/routes.dart';
 import '../core/functions/handlingdatacontroller.dart';
 import '../core/services/NotificationService.dart';
 import '../core/services/services.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class CartController extends GetxController {
 
@@ -40,10 +41,12 @@ class CartController extends GetxController {
 
 
   add(String itemsid) async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     update();
     statusRequest = StatusRequest.loading;
     var response = await cartData.addCart(
-        myServices.sharedPreferences.getString("id")!, itemsid);
+        userId, itemsid);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     // Start Backend
@@ -60,10 +63,12 @@ class CartController extends GetxController {
   }
 
   delete(String itemsid) async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     update();
     statusRequest = StatusRequest.loading;
     var response = await cartData.deleteCart(
-        myServices.sharedPreferences.getString("id")!, itemsid);
+        userId, itemsid);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     // Start Backend
@@ -92,10 +97,12 @@ class CartController extends GetxController {
   }
 
   view()async{
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     statusRequest = StatusRequest.loading;
     update();
     var response =
-    await cartData.viewCart(myServices.sharedPreferences.getString("id")!);
+    await cartData.viewCart(userId);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
     // Start Backend

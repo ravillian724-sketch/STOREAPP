@@ -7,6 +7,7 @@ import 'package:ecommerce_app/core/services/NotificationService.dart';
 
 import '../core/class/statusrequest.dart';
 import '../core/functions/handlingdatacontroller.dart';
+import 'package:ecommerce_app/core/functions/session_guard.dart';
 
 class MediaclInfoController extends GetxController {
   GlobalKey<FormState> formstate = GlobalKey<FormState>();
@@ -67,10 +68,12 @@ class MediaclInfoController extends GetxController {
   }
 
   getData() async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     statusRequest = StatusRequest.loading;
     update();
 
-    var response = await medicalInfoData.getData(myServices.sharedPreferences.getString("id")!);
+    var response = await medicalInfoData.getData(userId);
     print("========================================Controller  $response");
     statusRequest = handlingData(response);
 
@@ -118,6 +121,8 @@ class MediaclInfoController extends GetxController {
   }
 
   Future<void> saveMedicalInfo() async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) { return; }
     try {
       if (!formstate.currentState!.validate()) {
         return;
@@ -146,7 +151,7 @@ class MediaclInfoController extends GetxController {
       update();
 
       Map data = {
-        "userid": myServices.sharedPreferences.getString("id"),
+        "userid": userId,
         "age": ageController.text,
         "height": heightController.text,
         "weight": weightController.text,
@@ -164,7 +169,7 @@ class MediaclInfoController extends GetxController {
       if (existingInfo != null) {
         Map updateData = {
           "id": existingInfo!.medicalInfoId.toString(),
-          "userid": myServices.sharedPreferences.getString("id"),
+          "userid": userId,
           "age": ageController.text,
           "height": heightController.text,
           "weight": weightController.text,
