@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Staff\AuthController;
+use App\Support\Authorization\StaffLoginRateLimit;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -27,6 +28,8 @@ Route::prefix('v1')->group(function () {
             Route::post(
                 '/login',
                 [AuthController::class, 'login'],
+            )->middleware(
+                'throttle:'.StaffLoginRateLimit::NAME
             );
 
             Route::middleware('tenant.staff')

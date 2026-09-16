@@ -9,6 +9,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Routing\Middleware\ThrottleRequestsWithRedis;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,6 +23,21 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             RequestIdMiddleware::class,
         ]);
+
+        // Trusted tenant resolution must happen before
+        // the login rate limiter calculates tenant-scoped keys.
+        $middleware->prependToPriorityList(
+            before: [
+                ThrottleRequests::class,
+                ThrottleRequestsWithRedis::class,
+            ],
+            prepend: TenantBoundaryMiddleware::class,
+        );
+
+        $middleware->prependToPriorityList(
+            before: TenantBoundaryMiddleware::class,
+            prepend: ResolveAppInstanceMiddleware::class,
+        );
 
         $middleware->alias([
             'app.instance' => ResolveAppInstanceMiddleware::class,

@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use App\Support\AppInstance\AppInstanceToken;
+use App\Support\Authorization\StaffLoginRateLimit;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,6 +30,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        //
+        RateLimiter::for(
+            StaffLoginRateLimit::NAME,
+            fn (Request $request): array => StaffLoginRateLimit::limits(
+                $request,
+                app(TenantContext::class),
+            ),
+        );
     }
 }
