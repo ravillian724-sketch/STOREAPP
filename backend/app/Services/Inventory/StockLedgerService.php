@@ -2,6 +2,7 @@
 
 namespace App\Services\Inventory;
 
+use App\Exceptions\Inventory\InsufficientAvailableStockException;
 use App\Models\InventoryLocation;
 use App\Models\Sku;
 use App\Models\StockLedgerEntry;
@@ -16,6 +17,7 @@ class StockLedgerService
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly InventoryAvailabilityService $availability,
     ) {}
 
     public function post(
@@ -103,6 +105,12 @@ class StockLedgerService
                     $referenceType,
                     $referenceId,
                 ): StockLedgerEntry {
+                    $this->availability
+                        ->lockPosition(
+                            $sku,
+                            $location,
+                        );
+
                     $existing =
                         StockLedgerEntry::query()
                             ->where(
@@ -121,6 +129,28 @@ class StockLedgerService
                             $referenceType,
                             $referenceId,
                         );
+                    }
+
+                    if ($quantityDelta < 0) {
+                        $available =
+                            $this->availability
+                                ->availableToSell(
+                                    $sku,
+                                    $location,
+                                );
+
+                        $requested =
+                            abs($quantityDelta);
+
+                        if (
+                            $requested >
+                            $available
+                        ) {
+                            throw new InsufficientAvailableStockException(
+                                requestedQuantity: $requested,
+                                availableQuantity: $available,
+                            );
+                        }
                     }
 
                     $now = now();
@@ -176,31 +206,10 @@ class StockLedgerService
         Sku $sku,
         InventoryLocation $location,
     ): int {
-        $tenantId =
-            $this->tenantContext->requireId();
-
-        if (
-            (int) $sku->tenant_id !==
-                $tenantId ||
-            (int) $location->tenant_id !==
-                $tenantId
-        ) {
-            throw new LogicException(
-                'Inventory references must belong to the active tenant.'
-            );
-        }
-
-        return (int) StockLedgerEntry::query()
-            ->where(
-                'sku_id',
-                $sku->id,
-            )
-            ->where(
-                'location_id',
-                $location->id,
-            )
-            ->sum(
-                'quantity_delta'
+        return $this->availability
+            ->onHand(
+                $sku,
+                $location,
             );
     }
 

@@ -84,6 +84,8 @@ class PostgresTenantRlsTest extends TestCase
                     'products',
                     'skus',
                     'inventory_locations',
+                    'inventory_positions',
+                    'inventory_reservations',
                     'stock_ledger_entries'
                 )
                 ORDER BY c.relname
@@ -96,6 +98,8 @@ class PostgresTenantRlsTest extends TestCase
                 'audit_logs',
                 'branches',
                 'inventory_locations',
+                'inventory_positions',
+                'inventory_reservations',
                 'products',
                 'role_user',
                 'roles',
