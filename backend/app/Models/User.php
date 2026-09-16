@@ -80,6 +80,36 @@ class User extends Authenticatable
         ]);
     }
 
+    public function syncRoles(iterable $roles): void
+    {
+        $tenantId = (int) $this->tenant_id;
+
+        if ($tenantId <= 0) {
+            throw new \LogicException(
+                'Staff user does not have a valid tenant.'
+            );
+        }
+
+        $assignments = [];
+
+        foreach ($roles as $role) {
+            if (
+                ! $role instanceof Role ||
+                (int) $role->tenant_id !== $tenantId
+            ) {
+                throw new \LogicException(
+                    'Role assignment cannot cross tenant boundaries.'
+                );
+            }
+
+            $assignments[$role->id] = [
+                'tenant_id' => $tenantId,
+            ];
+        }
+
+        $this->roles()->sync($assignments);
+    }
+
     public function hasPermission(string $permission): bool
     {
         return $this
