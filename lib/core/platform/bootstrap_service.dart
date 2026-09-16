@@ -8,22 +8,30 @@ import 'app_instance_config.dart';
 import 'bootstrap_result.dart';
 import 'channel_context.dart';
 import 'environment_config.dart';
+import 'startup_performance_policy.dart';
 
 class BootstrapService {
   BootstrapService({
     http.Client? client,
-  }) : _client = client ?? http.Client();
+    this.timeout = StartupPerformancePolicy.bootstrapNetworkTimeout,
+    String? appInstanceKey,
+  })  : _client = client ?? http.Client(),
+        _appInstanceKey = appInstanceKey ?? AppInstanceConfig.instanceKey;
 
   final http.Client _client;
-
-  static const Duration _timeout =
-      Duration(seconds: 20);
+  final Duration timeout;
+  final String _appInstanceKey;
 
   Future<BootstrapResult> load() async {
-    AppInstanceConfig.validate();
+    final normalizedInstanceKey = _appInstanceKey.trim();
 
-    final normalizedBaseUrl =
-        EnvironmentConfig.apiBaseUrl.replaceFirst(
+    if (normalizedInstanceKey.isEmpty) {
+      throw StateError(
+        'APP_INSTANCE_KEY is not configured.',
+      );
+    }
+
+    final normalizedBaseUrl = EnvironmentConfig.apiBaseUrl.replaceFirst(
       RegExp(r'/+$'),
       '',
     );
@@ -41,12 +49,11 @@ class BootstrapService {
               'Content-Type': 'application/json',
             },
             body: jsonEncode({
-              'app_instance_key':
-                  AppInstanceConfig.instanceKey,
+              'app_instance_key': normalizedInstanceKey,
               'channel': ChannelContext.code,
             }),
           )
-          .timeout(_timeout);
+          .timeout(timeout);
 
       dynamic decoded;
 
@@ -59,8 +66,7 @@ class BootstrapService {
         );
       }
 
-      if (response.statusCode < 200 ||
-          response.statusCode >= 300) {
+      if (response.statusCode < 200 || response.statusCode >= 300) {
         throw ApiException(
           'Bootstrap request failed.',
           statusCode: response.statusCode,
