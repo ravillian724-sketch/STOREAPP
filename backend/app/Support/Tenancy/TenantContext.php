@@ -8,11 +8,21 @@ final class TenantContext
 {
     private ?int $tenantId = null;
 
+    public function __construct(
+        private readonly TenantDatabaseContext $databaseContext,
+    ) {}
+
     public function set(int $tenantId): void
     {
         if ($tenantId <= 0) {
-            throw new RuntimeException('Invalid tenant identifier.');
+            throw new RuntimeException(
+                'Invalid tenant identifier.'
+            );
         }
+
+        $this->databaseContext->set(
+            $tenantId
+        );
 
         $this->tenantId = $tenantId;
     }
@@ -25,7 +35,9 @@ final class TenantContext
     public function requireId(): int
     {
         if ($this->tenantId === null) {
-            throw new RuntimeException('Tenant context is not active.');
+            throw new RuntimeException(
+                'Tenant context is not active.'
+            );
         }
 
         return $this->tenantId;
@@ -33,6 +45,11 @@ final class TenantContext
 
     public function clear(): void
     {
+        // Clear the in-memory identity first so a failed
+        // database cleanup cannot leave the application
+        // believing a tenant is still active.
         $this->tenantId = null;
+
+        $this->databaseContext->clear();
     }
 }

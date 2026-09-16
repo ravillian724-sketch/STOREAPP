@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Support\AppInstance\AppInstanceToken;
 use App\Support\Authorization\StaffLoginRateLimit;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Tenancy\TenantDatabaseContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -14,8 +15,17 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(
+            TenantDatabaseContext::class,
+            fn () => new TenantDatabaseContext,
+        );
+
+        $this->app->singleton(
             TenantContext::class,
-            fn () => new TenantContext,
+            fn ($app) => new TenantContext(
+                $app->make(
+                    TenantDatabaseContext::class
+                ),
+            ),
         );
 
         $this->app->singleton(
