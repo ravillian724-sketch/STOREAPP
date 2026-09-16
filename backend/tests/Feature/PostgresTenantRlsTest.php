@@ -81,7 +81,9 @@ class PostgresTenantRlsTest extends TestCase
                     'roles',
                     'role_user',
                     'products',
-                    'skus'
+                    'skus',
+                    'inventory_locations',
+                    'stock_ledger_entries'
                 )
                 ORDER BY c.relname
                 SQL
@@ -91,10 +93,12 @@ class PostgresTenantRlsTest extends TestCase
         $this->assertSame(
             [
                 'branches',
+                'inventory_locations',
                 'products',
                 'role_user',
                 'roles',
                 'skus',
+                'stock_ledger_entries',
                 'users',
             ],
             $rows->keys()->all(),
