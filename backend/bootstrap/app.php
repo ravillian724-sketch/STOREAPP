@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuthenticateTenantStaff;
 use App\Http\Middleware\RequestIdMiddleware;
 use App\Http\Middleware\ResolveAppInstanceMiddleware;
 use App\Http\Middleware\TenantBoundaryMiddleware;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'app.instance' => ResolveAppInstanceMiddleware::class,
             'tenant.boundary' => TenantBoundaryMiddleware::class,
+            'tenant.staff' => AuthenticateTenantStaff::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

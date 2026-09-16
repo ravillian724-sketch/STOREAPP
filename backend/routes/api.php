@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\Staff\AuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -12,7 +13,34 @@ Route::prefix('v1')->group(function () {
         'app.instance',
         'tenant.boundary',
     ])->group(function () {
-        Route::post('/bootstrap', BootstrapController::class);
-        Route::get('/branches', [BranchController::class, 'index']);
+        Route::post(
+            '/bootstrap',
+            BootstrapController::class,
+        );
+
+        Route::get(
+            '/branches',
+            [BranchController::class, 'index'],
+        );
+
+        Route::prefix('staff/auth')->group(function () {
+            Route::post(
+                '/login',
+                [AuthController::class, 'login'],
+            );
+
+            Route::middleware('tenant.staff')
+                ->group(function () {
+                    Route::get(
+                        '/me',
+                        [AuthController::class, 'me'],
+                    );
+
+                    Route::post(
+                        '/logout',
+                        [AuthController::class, 'logout'],
+                    );
+                });
+        });
     });
 });
