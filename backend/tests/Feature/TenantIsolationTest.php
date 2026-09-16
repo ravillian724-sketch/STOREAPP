@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AppInstance;
 use App\Models\Branch;
 use App\Models\Tenant;
+use App\Services\AppInstanceCredentialService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,14 @@ use Tests\TestCase;
 class TenantIsolationTest extends TestCase
 {
     use RefreshDatabase;
+
+    /** @var array<string, string> */
+    private array $tokens = [];
+
+    private function token(string $alias): string
+    {
+        return $this->tokens[$alias];
+    }
 
     private function createTenant(
         string $name,
@@ -30,12 +39,17 @@ class TenantIsolationTest extends TestCase
             'is_active' => true,
         ]);
 
-        AppInstance::query()->create([
+        $instance = AppInstance::query()->create([
             'tenant_id' => $tenant->id,
-            'key_hash' => hash('sha256', $key),
             'channel' => 'mobile',
             'is_active' => true,
         ]);
+
+        $issued = app(
+            AppInstanceCredentialService::class
+        )->issue($instance);
+
+        $this->tokens[$key] = $issued->token;
 
         return $tenant;
     }
@@ -99,7 +113,7 @@ class TenantIsolationTest extends TestCase
         $responseA = $this
             ->withHeader(
                 'X-App-Instance-Key',
-                'tenant-a-key',
+                $this->token('tenant-a-key'),
             )
             ->getJson('/api/v1/branches');
 
@@ -117,7 +131,7 @@ class TenantIsolationTest extends TestCase
         $responseB = $this
             ->withHeader(
                 'X-App-Instance-Key',
-                'tenant-b-key',
+                $this->token('tenant-b-key'),
             )
             ->getJson('/api/v1/branches');
 
@@ -147,7 +161,7 @@ class TenantIsolationTest extends TestCase
 
         $this
             ->withHeaders([
-                'X-App-Instance-Key' => 'tenant-a-key',
+                'X-App-Instance-Key' => $this->token('tenant-a-key'),
                 'X-Tenant-Id' => (string) $tenantB->id,
             ])
             ->getJson('/api/v1/branches')
@@ -183,7 +197,7 @@ class TenantIsolationTest extends TestCase
         $this
             ->withHeader(
                 'X-App-Instance-Key',
-                'tenant-a-key',
+                $this->token('tenant-a-key'),
             )
             ->getJson('/api/v1/branches')
             ->assertOk();

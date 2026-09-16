@@ -62,8 +62,12 @@ void main() {
           jsonDecode(capturedRequest.body) as Map<String, dynamic>;
 
       expect(
-        requestBody['app_instance_key'],
+        capturedRequest.headers['X-App-Instance-Key'],
         'test-instance',
+      );
+      expect(
+        requestBody.containsKey('app_instance_key'),
+        isFalse,
       );
       expect(
         requestBody['channel'],

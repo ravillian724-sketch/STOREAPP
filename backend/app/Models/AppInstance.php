@@ -4,18 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AppInstance extends Model
 {
     protected $fillable = [
         'tenant_id',
-        'key_hash',
         'channel',
         'is_active',
-    ];
-
-    protected $hidden = [
-        'key_hash',
     ];
 
     protected function casts(): array
@@ -28,5 +24,12 @@ class AppInstance extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function credentials(): HasMany
+    {
+        return $this->hasMany(
+            AppInstanceCredential::class
+        );
     }
 }

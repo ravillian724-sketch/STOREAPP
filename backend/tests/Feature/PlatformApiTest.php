@@ -4,12 +4,21 @@ namespace Tests\Feature;
 
 use App\Models\AppInstance;
 use App\Models\Tenant;
+use App\Services\AppInstanceCredentialService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PlatformApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    /** @var array<string, string> */
+    private array $tokens = [];
+
+    private function token(string $alias): string
+    {
+        return $this->tokens[$alias];
+    }
 
     private function createTenant(string $key = 'test-instance-key'): Tenant
     {
@@ -24,12 +33,17 @@ class PlatformApiTest extends TestCase
             'is_active' => true,
         ]);
 
-        AppInstance::query()->create([
+        $instance = AppInstance::query()->create([
             'tenant_id' => $tenant->id,
-            'key_hash' => hash('sha256', $key),
             'channel' => 'mobile',
             'is_active' => true,
         ]);
+
+        $issued = app(
+            AppInstanceCredentialService::class
+        )->issue($instance);
+
+        $this->tokens[$key] = $issued->token;
 
         return $tenant;
     }
@@ -49,10 +63,14 @@ class PlatformApiTest extends TestCase
     {
         $tenant = $this->createTenant();
 
-        $response = $this->postJson('/api/v1/bootstrap', [
-            'app_instance_key' => 'test-instance-key',
-            'channel' => 'mobile',
-        ]);
+        $response = $this
+            ->withHeader(
+                'X-App-Instance-Key',
+                $this->token('test-instance-key'),
+            )
+            ->postJson('/api/v1/bootstrap', [
+                'channel' => 'mobile',
+            ]);
 
         $response
             ->assertOk()
@@ -63,9 +81,12 @@ class PlatformApiTest extends TestCase
 
     public function test_invalid_app_instance_is_rejected(): void
     {
-        $response = $this->postJson('/api/v1/bootstrap', [
-            'app_instance_key' => 'invalid-key',
-        ]);
+        $response = $this
+            ->withHeader(
+                'X-App-Instance-Key',
+                'invalid-key',
+            )
+            ->postJson('/api/v1/bootstrap');
 
         $response
             ->assertNotFound()
@@ -75,15 +96,31 @@ class PlatformApiTest extends TestCase
             );
     }
 
+    public function test_app_instance_key_in_request_body_is_rejected(): void
+    {
+        $this->createTenant();
+
+        $this
+            ->postJson('/api/v1/bootstrap', [
+                'app_instance_key' => $this->token('test-instance-key'),
+            ])
+            ->assertBadRequest()
+            ->assertJsonPath(
+                'error.code',
+                'APP_INSTANCE_KEY_REQUIRED',
+            );
+    }
+
     public function test_tenant_header_cannot_override_resolved_tenant(): void
     {
         $this->createTenant();
 
         $response = $this
-            ->withHeader('X-Tenant-Id', '999999')
-            ->postJson('/api/v1/bootstrap', [
-                'app_instance_key' => 'test-instance-key',
-            ]);
+            ->withHeaders([
+                'X-Tenant-Id' => '999999',
+                'X-App-Instance-Key' => $this->token('test-instance-key'),
+            ])
+            ->postJson('/api/v1/bootstrap');
 
         $response
             ->assertForbidden()

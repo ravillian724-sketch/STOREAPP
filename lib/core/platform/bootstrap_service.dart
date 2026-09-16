@@ -44,12 +44,12 @@ class BootstrapService {
       final response = await _client
           .post(
             uri,
-            headers: const {
+            headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json',
+              'X-App-Instance-Key': normalizedInstanceKey,
             },
             body: jsonEncode({
-              'app_instance_key': normalizedInstanceKey,
               'channel': ChannelContext.code,
             }),
           )

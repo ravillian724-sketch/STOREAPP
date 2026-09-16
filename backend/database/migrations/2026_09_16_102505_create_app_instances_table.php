@@ -14,7 +14,6 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->char('key_hash', 64)->unique();
             $table->string('channel', 30)->default('mobile');
             $table->boolean('is_active')->default(true)->index();
             $table->timestamps();
