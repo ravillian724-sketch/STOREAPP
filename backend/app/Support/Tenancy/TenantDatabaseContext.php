@@ -2,7 +2,9 @@
 
 namespace App\Support\Tenancy;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final class TenantDatabaseContext
 {
@@ -12,12 +14,20 @@ final class TenantDatabaseContext
             return;
         }
 
+        if (
+            DB::connection()->transactionLevel() < 1
+        ) {
+            throw new RuntimeException(
+                'PostgreSQL tenant context requires an active transaction.'
+            );
+        }
+
         DB::connection()->selectOne(
             <<<'SQL'
             SELECT set_config(
-                'app.tenant_id',
+                'storeapp.tenant_id',
                 ?,
-                false
+                true
             )
             SQL,
             [(string) $tenantId],
@@ -26,19 +36,44 @@ final class TenantDatabaseContext
 
     public function clear(): void
     {
-        if ($this->driver() !== 'pgsql') {
+        if (
+            $this->driver() !== 'pgsql' ||
+            DB::connection()->transactionLevel() < 1
+        ) {
             return;
         }
 
-        DB::connection()->selectOne(
-            <<<'SQL'
-            SELECT set_config(
-                'app.tenant_id',
-                '',
-                false
-            )
-            SQL,
-        );
+        try {
+            DB::connection()->selectOne(
+                <<<'SQL'
+                SELECT set_config(
+                    'storeapp.tenant_id',
+                    '',
+                    true
+                )
+                SQL,
+            );
+        } catch (QueryException $exception) {
+            /*
+             * PostgreSQL rejects every command with 25P02
+             * after a statement has already aborted the
+             * current transaction.
+             *
+             * Do not mask the original database exception.
+             * The transaction rollback will automatically
+             * discard the transaction-local tenant setting.
+             */
+            $sqlState = (string) (
+                $exception->errorInfo[0]
+                ?? $exception->getCode()
+            );
+
+            if ($sqlState === '25P02') {
+                return;
+            }
+
+            throw $exception;
+        }
     }
 
     private function driver(): string

@@ -218,4 +218,245 @@ class PostgresTenantRlsTest extends TestCase
             $context->clear();
         }
     }
+
+    public function test_runtime_role_cannot_bypass_rls(): void
+    {
+        $this->requirePostgres();
+
+        $row = DB::selectOne(
+            <<<'SQL'
+            SELECT
+                current_user AS username,
+                CASE
+                    WHEN rolsuper THEN 1
+                    ELSE 0
+                END AS is_superuser,
+                CASE
+                    WHEN rolbypassrls THEN 1
+                    ELSE 0
+                END AS can_bypass_rls
+            FROM pg_roles
+            WHERE rolname = current_user
+            SQL
+        );
+
+        $this->assertNotNull($row);
+
+        $this->assertSame(
+            (string) config(
+                'database.connections.pgsql.username'
+            ),
+            (string) $row->username,
+        );
+
+        $this->assertSame(
+            0,
+            (int) $row->is_superuser,
+        );
+
+        $this->assertSame(
+            0,
+            (int) $row->can_bypass_rls,
+        );
+    }
+
+    public function test_without_global_scopes_cannot_bypass_database_rls(): void
+    {
+        $this->requirePostgres();
+
+        $tenantA = $this->tenant(
+            'Tenant A'
+        );
+
+        $tenantB = $this->tenant(
+            'Tenant B'
+        );
+
+        $this->branch(
+            $tenantA,
+            'A01',
+        );
+
+        $this->branch(
+            $tenantB,
+            'B01',
+        );
+
+        $context = app(
+            TenantContext::class
+        );
+
+        $context->set(
+            $tenantA->id
+        );
+
+        try {
+            $this->assertSame(
+                ['A01'],
+                Branch::withoutGlobalScopes()
+                    ->orderBy('code')
+                    ->pluck('code')
+                    ->all(),
+            );
+        } finally {
+            $context->clear();
+        }
+    }
+
+    public function test_database_blocks_cross_tenant_update(): void
+    {
+        $this->requirePostgres();
+
+        $tenantA = $this->tenant(
+            'Tenant A'
+        );
+
+        $tenantB = $this->tenant(
+            'Tenant B'
+        );
+
+        $branch = $this->branch(
+            $tenantA,
+            'A01',
+        );
+
+        $context = app(
+            TenantContext::class
+        );
+
+        $context->set(
+            $tenantA->id
+        );
+
+        $blocked = false;
+
+        try {
+            try {
+                DB::transaction(
+                    function () use (
+                        $branch,
+                        $tenantB,
+                    ): void {
+                        DB::table(
+                            'branches'
+                        )
+                            ->where(
+                                'id',
+                                $branch->id,
+                            )
+                            ->update([
+                                'tenant_id' => $tenantB->id,
+                            ]);
+                    }
+                );
+            } catch (QueryException) {
+                $blocked = true;
+            }
+        } finally {
+            $context->clear();
+        }
+
+        $this->assertTrue(
+            $blocked,
+            'PostgreSQL RLS allowed a cross-tenant update.',
+        );
+    }
+
+    public function test_aborted_transaction_does_not_leak_or_mask_tenant_context(): void
+    {
+        $this->requirePostgres();
+
+        $tenantA = $this->tenant(
+            'Tenant A'
+        );
+
+        $tenantB = $this->tenant(
+            'Tenant B'
+        );
+
+        $context = app(
+            TenantContext::class
+        );
+
+        $caught = null;
+
+        try {
+            DB::transaction(
+                function () use (
+                    $context,
+                    $tenantA,
+                    $tenantB,
+                ): void {
+                    $context->set(
+                        $tenantA->id
+                    );
+
+                    try {
+                        DB::table(
+                            'branches'
+                        )->insert([
+                            'tenant_id' => $tenantB->id,
+
+                            'code' => 'ROLLBACK-TEST',
+
+                            'name_ar' => 'ROLLBACK-TEST',
+
+                            'name_en' => 'ROLLBACK-TEST',
+
+                            'is_active' => true,
+
+                            'created_at' => now(),
+
+                            'updated_at' => now(),
+                        ]);
+                    } finally {
+                        $context->clear();
+                    }
+                }
+            );
+        } catch (QueryException $exception) {
+            $caught = $exception;
+        }
+
+        $this->assertNotNull(
+            $caught
+        );
+
+        $sqlState = (string) (
+            $caught->errorInfo[0]
+            ?? $caught->getCode()
+        );
+
+        $this->assertNotSame(
+            '25P02',
+            $sqlState,
+            'Tenant cleanup masked the original PostgreSQL error.',
+        );
+
+        $this->assertNull(
+            $context->id()
+        );
+
+        $row = DB::selectOne(
+            <<<'SQL'
+            SELECT current_setting(
+                'storeapp.tenant_id',
+                true
+            ) AS tenant_id
+            SQL
+        );
+
+        $this->assertTrue(
+            $row->tenant_id === null ||
+            $row->tenant_id === '',
+            'Tenant database context leaked after rollback.',
+        );
+
+        $this->assertSame(
+            0,
+            DB::table(
+                'branches'
+            )->count(),
+        );
+    }
 }

@@ -129,6 +129,7 @@ jobs:
           NOCREATEDB
           NOCREATEROLE
           NOINHERIT
+          NOBYPASSRLS
           SQL);
 
           $pdo->exec(
@@ -154,7 +155,14 @@ jobs:
           $row = $pdo->query(<<<'SQL'
           SELECT
               current_user AS username,
-              rolsuper
+              CASE
+                  WHEN rolsuper THEN 'yes'
+                  ELSE 'no'
+              END AS superuser,
+              CASE
+                  WHEN rolbypassrls THEN 'yes'
+                  ELSE 'no'
+              END AS bypassrls
           FROM pg_roles
           WHERE rolname = current_user
           SQL)->fetch(PDO::FETCH_ASSOC);
@@ -164,12 +172,17 @@ jobs:
               PHP_EOL;
 
           echo 'SUPERUSER='.
-              ($row['rolsuper'] ? 'yes' : 'no').
+              $row['superuser'].
+              PHP_EOL;
+
+          echo 'BYPASSRLS='.
+              $row['bypassrls'].
               PHP_EOL;
 
           exit(
               $row['username'] === 'storeapp_app' &&
-              ! $row['rolsuper']
+              $row['superuser'] === 'no' &&
+              $row['bypassrls'] === 'no'
                   ? 0
                   : 1
           );

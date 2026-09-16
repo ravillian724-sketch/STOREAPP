@@ -8,6 +8,7 @@ use App\Support\AppInstance\AppInstanceToken;
 use App\Support\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResolveAppInstanceMiddleware
@@ -102,15 +103,25 @@ class ResolveAppInstanceMiddleware
             (string) $instance->tenant_id,
         );
 
-        $this->tenantContext->set(
-            (int) $instance->tenant_id,
-        );
+        $tenantId = (int) $instance->tenant_id;
 
-        try {
-            return $next($request);
-        } finally {
-            $this->tenantContext->clear();
-        }
+        return DB::transaction(
+            function () use (
+                $request,
+                $next,
+                $tenantId,
+            ): Response {
+                $this->tenantContext->set(
+                    $tenantId
+                );
+
+                try {
+                    return $next($request);
+                } finally {
+                    $this->tenantContext->clear();
+                }
+            }
+        );
     }
 
     private function notFound(

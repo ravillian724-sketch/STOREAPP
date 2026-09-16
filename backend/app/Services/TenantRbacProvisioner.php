@@ -27,24 +27,32 @@ final class TenantRbacProvisioner
             );
         }
 
-        $previousTenantId = $this->tenantContext->id();
+        $previousTenantId =
+            $this->tenantContext->id();
 
-        $this->tenantContext->set($tenantId);
-
-        try {
-            DB::transaction(function (): void {
-                $this->syncPermissions();
-                $this->syncSystemRoles();
-            });
-        } finally {
-            if ($previousTenantId === null) {
-                $this->tenantContext->clear();
-            } else {
+        DB::transaction(
+            function () use (
+                $tenantId,
+                $previousTenantId,
+            ): void {
                 $this->tenantContext->set(
-                    $previousTenantId
+                    $tenantId
                 );
+
+                try {
+                    $this->syncPermissions();
+                    $this->syncSystemRoles();
+                } finally {
+                    if ($previousTenantId === null) {
+                        $this->tenantContext->clear();
+                    } else {
+                        $this->tenantContext->set(
+                            $previousTenantId
+                        );
+                    }
+                }
             }
-        }
+        );
     }
 
     private function syncPermissions(): void
@@ -95,7 +103,10 @@ final class TenantRbacProvisioner
             );
 
             $permissionIds = Permission::query()
-                ->whereIn('code', $permissionCodes)
+                ->whereIn(
+                    'code',
+                    $permissionCodes
+                )
                 ->pluck('id')
                 ->all();
 
