@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuthenticateTenantStaff;
 use App\Http\Middleware\RequestIdMiddleware;
+use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\ResolveAppInstanceMiddleware;
 use App\Http\Middleware\TenantBoundaryMiddleware;
 use Illuminate\Foundation\Application;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'app.instance' => ResolveAppInstanceMiddleware::class,
             'tenant.boundary' => TenantBoundaryMiddleware::class,
             'tenant.staff' => AuthenticateTenantStaff::class,
+            'permission' => RequirePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
