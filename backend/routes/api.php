@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Admin\AuthorizationAdminController;
+use App\Http\Controllers\Api\V1\Admin\CatalogAdminController;
 use App\Http\Controllers\Api\V1\Admin\StaffAdminController;
 use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\BranchController;
@@ -139,6 +140,61 @@ Route::prefix('v1')->group(function () {
                 )->middleware(
                     'permission:'.
                     PermissionCatalog::ROLES_MANAGE
+                );
+
+                Route::get(
+                    '/catalog/products',
+                    [
+                        CatalogAdminController::class,
+                        'index',
+                    ],
+                )->middleware(
+                    'permission:'.
+                    PermissionCatalog::CATALOG_VIEW
+                );
+
+                Route::post(
+                    '/catalog/products',
+                    [
+                        CatalogAdminController::class,
+                        'storeProduct',
+                    ],
+                )->middleware(
+                    'permission:'.
+                    PermissionCatalog::CATALOG_MANAGE
+                );
+
+                Route::patch(
+                    '/catalog/products/{productId}',
+                    [
+                        CatalogAdminController::class,
+                        'updateProduct',
+                    ],
+                )->middleware(
+                    'permission:'.
+                    PermissionCatalog::CATALOG_MANAGE
+                );
+
+                Route::post(
+                    '/catalog/products/{productId}/skus',
+                    [
+                        CatalogAdminController::class,
+                        'storeSku',
+                    ],
+                )->middleware(
+                    'permission:'.
+                    PermissionCatalog::CATALOG_MANAGE
+                );
+
+                Route::patch(
+                    '/catalog/skus/{skuId}',
+                    [
+                        CatalogAdminController::class,
+                        'updateSku',
+                    ],
+                )->middleware(
+                    'permission:'.
+                    PermissionCatalog::CATALOG_MANAGE
                 );
             });
     });
