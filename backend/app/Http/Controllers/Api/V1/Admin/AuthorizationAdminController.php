@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Services\AuthorizationGrantGuard;
 use App\Support\ApiResponse;
 use App\Support\Authorization\PermissionCatalog;
 use Illuminate\Database\Eloquent\Collection;
@@ -15,6 +16,10 @@ use Illuminate\Validation\ValidationException;
 
 class AuthorizationAdminController extends Controller
 {
+    public function __construct(
+        private readonly AuthorizationGrantGuard $grantGuard,
+    ) {}
+
     public function roles(
         Request $request,
     ): JsonResponse {
@@ -129,6 +134,22 @@ class AuthorizationAdminController extends Controller
                 $data['permission_codes']
                     ?? [],
             );
+
+        $actor = $request->user('sanctum');
+
+        if (
+            ! $this->grantGuard->canGrantPermissions(
+                $actor,
+                $permissions->pluck('code')->all(),
+            )
+        ) {
+            return ApiResponse::error(
+                $request,
+                'PRIVILEGE_ESCALATION_FORBIDDEN',
+                'You cannot grant permissions you do not possess.',
+                403,
+            );
+        }
 
         $role = DB::transaction(
             function () use (
@@ -281,6 +302,21 @@ class AuthorizationAdminController extends Controller
                         'permission_codes'
                     ],
                 );
+        }
+
+        if (
+            $permissions !== null &&
+            ! $this->grantGuard->canGrantPermissions(
+                $actor,
+                $permissions->pluck('code')->all(),
+            )
+        ) {
+            return ApiResponse::error(
+                $request,
+                'PRIVILEGE_ESCALATION_FORBIDDEN',
+                'You cannot grant permissions you do not possess.',
+                403,
+            );
         }
 
         DB::transaction(

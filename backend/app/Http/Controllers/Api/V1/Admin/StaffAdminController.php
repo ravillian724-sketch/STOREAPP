@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuthorizationGrantGuard;
 use App\Support\ApiResponse;
+use App\Support\Authorization\SystemRoleCatalog;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +17,10 @@ use Illuminate\Validation\ValidationException;
 
 class StaffAdminController extends Controller
 {
+    public function __construct(
+        private readonly AuthorizationGrantGuard $grantGuard,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $perPage = max(
@@ -103,6 +109,22 @@ class StaffAdminController extends Controller
         $roles = $this->resolveRoles(
             $data['role_ids'] ?? []
         );
+
+        $actor = $request->user('sanctum');
+
+        if (
+            ! $this->grantGuard->canAssignRoles(
+                $actor,
+                $roles,
+            )
+        ) {
+            return ApiResponse::error(
+                $request,
+                'PRIVILEGE_ESCALATION_FORBIDDEN',
+                'You cannot assign roles above your own privileges.',
+                403,
+            );
+        }
 
         $staff = DB::transaction(
             function () use (
@@ -257,15 +279,39 @@ class StaffAdminController extends Controller
             $roles = $this->resolveRoles(
                 $data['role_ids']
             );
+
+            if (
+                ! $this->grantGuard->canAssignRoles(
+                    $actor,
+                    $roles,
+                )
+            ) {
+                return ApiResponse::error(
+                    $request,
+                    'PRIVILEGE_ESCALATION_FORBIDDEN',
+                    'You cannot assign roles above your own privileges.',
+                    403,
+                );
+            }
         }
 
-        DB::transaction(
+        $updated = DB::transaction(
             function () use (
                 $staff,
                 $data,
                 $email,
                 $roles,
-            ): void {
+            ): bool {
+                if (
+                    ! $this->preservesActiveOwner(
+                        $staff,
+                        $data,
+                        $roles,
+                    )
+                ) {
+                    return false;
+                }
+
                 if (
                     array_key_exists(
                         'name',
@@ -305,8 +351,19 @@ class StaffAdminController extends Controller
                 ) {
                     $staff->tokens()->delete();
                 }
+
+                return true;
             }
         );
+
+        if (! $updated) {
+            return ApiResponse::error(
+                $request,
+                'LAST_ACTIVE_OWNER_REQUIRED',
+                'The tenant must retain at least one active owner.',
+                409,
+            );
+        }
 
         $staff->unsetRelation('roles');
         $staff->load('roles');
@@ -314,6 +371,76 @@ class StaffAdminController extends Controller
         return ApiResponse::success($request, [
             'staff' => $this->serializeStaff($staff),
         ]);
+    }
+
+    private function preservesActiveOwner(
+        User $staff,
+        array $data,
+        ?Collection $roles,
+    ): bool {
+        $ownerRole = Role::query()
+            ->where(
+                'code',
+                SystemRoleCatalog::OWNER,
+            )
+            ->where('is_system', true)
+            ->lockForUpdate()
+            ->first();
+
+        if ($ownerRole === null) {
+            return true;
+        }
+
+        $currentlyActiveOwner =
+            $staff->is_active &&
+            $staff
+                ->roles()
+                ->where(
+                    'roles.id',
+                    $ownerRole->id,
+                )
+                ->exists();
+
+        if (! $currentlyActiveOwner) {
+            return true;
+        }
+
+        $futureActive =
+            array_key_exists(
+                'is_active',
+                $data,
+            )
+                ? (bool) $data['is_active']
+                : (bool) $staff->is_active;
+
+        $futureOwner =
+            $roles === null
+                ? true
+                : $roles->contains(
+                    fn (Role $role): bool => (int) $role->id ===
+                        (int) $ownerRole->id
+                );
+
+        if ($futureActive && $futureOwner) {
+            return true;
+        }
+
+        return User::query()
+            ->where('is_active', true)
+            ->whereKeyNot($staff->id)
+            ->whereHas(
+                'roles',
+                fn ($query) => $query
+                    ->where(
+                        'roles.id',
+                        $ownerRole->id,
+                    )
+                    ->where(
+                        'roles.is_active',
+                        true,
+                    )
+            )
+            ->exists();
     }
 
     private function resolveRoles(

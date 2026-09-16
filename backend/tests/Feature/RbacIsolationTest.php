@@ -66,6 +66,13 @@ class RbacIsolationTest extends TestCase
 
     public function test_roles_fail_closed_without_tenant_context(): void
     {
+        $tenant = $this->tenant('Tenant A');
+
+        $this->role(
+            $tenant,
+            'manager',
+        );
+
         $this->assertSame(
             0,
             Role::query()->count(),

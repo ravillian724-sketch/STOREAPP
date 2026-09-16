@@ -35,6 +35,19 @@ class PermissionEnforcementTest extends TestCase
                 ['authorized' => true],
             ),
         );
+
+        Route::middleware([
+            'app.instance',
+            'tenant.boundary',
+            'tenant.staff',
+            'permission',
+        ])->get(
+            '/api/v1/test-permission-missing',
+            fn (Request $request) => ApiResponse::success(
+                $request,
+                ['authorized' => true],
+            ),
+        );
     }
 
     private function store(string $name): array
@@ -218,6 +231,40 @@ class PermissionEnforcementTest extends TestCase
             ->assertJsonPath(
                 'data.authorized',
                 true,
+            );
+    }
+
+    public function test_missing_permission_argument_fails_closed(): void
+    {
+        $store = $this->store('Tenant A');
+
+        $user = $this->staff(
+            $store['tenant']
+        );
+
+        $this->grant(
+            $store['tenant'],
+            $user,
+        );
+
+        $token = $this->login(
+            $store['instance_token']
+        );
+
+        $this
+            ->withHeaders(
+                $this->headers(
+                    $store['instance_token'],
+                    $token,
+                )
+            )
+            ->getJson(
+                '/api/v1/test-permission-missing'
+            )
+            ->assertForbidden()
+            ->assertJsonPath(
+                'error.code',
+                'FORBIDDEN',
             );
     }
 

@@ -12,7 +12,7 @@ class RequirePermission
     public function handle(
         Request $request,
         Closure $next,
-        string $permission,
+        string $permission = '',
     ): Response {
         $permission = trim($permission);
 
