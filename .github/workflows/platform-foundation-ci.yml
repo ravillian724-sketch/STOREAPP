@@ -1,0 +1,41 @@
+name: Platform Foundation CI
+
+on:
+  push:
+    branches:
+      - platform-foundation
+  pull_request:
+    branches:
+      - platform-foundation
+  workflow_dispatch:
+
+jobs:
+  platform-foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.32.8"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze platform foundation
+        run: |
+          flutter analyze \
+            lib/core/platform \
+            lib/core/network \
+            test/core/platform
+
+      - name: Run platform foundation tests
+        run: |
+          flutter test \
+            test/core/platform/platform_startup_coordinator_test.dart
