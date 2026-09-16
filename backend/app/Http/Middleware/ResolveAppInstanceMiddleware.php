@@ -4,15 +4,29 @@ namespace App\Http\Middleware;
 
 use App\Models\AppInstance;
 use App\Support\ApiResponse;
+use App\Support\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResolveAppInstanceMiddleware
 {
+    public function __construct(
+        private readonly TenantContext $tenantContext,
+    ) {}
+
     public function handle(Request $request, Closure $next): Response
     {
-        $key = trim((string) $request->input('app_instance_key'));
+        // Defensive reset for long-running workers such as Octane.
+        // No request may inherit tenant state from a previous request.
+        $this->tenantContext->clear();
+
+        $headerKey = $request->header('X-App-Instance-Key');
+
+        $key = trim((string) (
+            $headerKey ??
+            $request->input('app_instance_key', '')
+        ));
 
         if ($key === '') {
             return ApiResponse::error(
@@ -44,8 +58,20 @@ class ResolveAppInstanceMiddleware
 
         $request->attributes->set('app_instance', $instance);
         $request->attributes->set('tenant', $instance->tenant);
-        $request->attributes->set('tenant_id', (string) $instance->tenant_id);
+        $request->attributes->set(
+            'tenant_id',
+            (string) $instance->tenant_id,
+        );
 
-        return $next($request);
+        $this->tenantContext->set(
+            (int) $instance->tenant_id,
+        );
+
+        try {
+            return $next($request);
+        } finally {
+            // Required for Octane, long-running workers and tests.
+            $this->tenantContext->clear();
+        }
     }
 }
