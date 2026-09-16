@@ -63,13 +63,13 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_DB: storeapp_test
-          POSTGRES_USER: storeapp
-          POSTGRES_PASSWORD: storeapp_test_password
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_test_password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U storeapp -d storeapp_test"
+          --health-cmd "pg_isready -U postgres -d postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -79,8 +79,8 @@ jobs:
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
       DB_DATABASE: storeapp_test
-      DB_USERNAME: storeapp
-      DB_PASSWORD: storeapp_test_password
+      DB_USERNAME: storeapp_app
+      DB_PASSWORD: storeapp_app_test_password
       DB_SSLMODE: disable
       CACHE_STORE: array
       SESSION_DRIVER: array
@@ -103,6 +103,77 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Create non-superuser application database
+        env:
+          PGADMIN_PASSWORD: postgres_test_password
+        run: |
+          php <<'PHP'
+          <?php
+
+          $pdo = new PDO(
+              'pgsql:host=127.0.0.1;port=5432;dbname=postgres',
+              'postgres',
+              getenv('PGADMIN_PASSWORD'),
+              [
+                  PDO::ATTR_ERRMODE =>
+                      PDO::ERRMODE_EXCEPTION,
+              ],
+          );
+
+          $pdo->exec(<<<'SQL'
+          CREATE ROLE storeapp_app
+          LOGIN
+          PASSWORD 'storeapp_app_test_password'
+          NOSUPERUSER
+          NOCREATEDB
+          NOCREATEROLE
+          NOINHERIT
+          SQL);
+
+          $pdo->exec(
+              'CREATE DATABASE storeapp_test OWNER storeapp_app'
+          );
+          PHP
+
+      - name: Verify application database role
+        run: |
+          php <<'PHP'
+          <?php
+
+          $pdo = new PDO(
+              'pgsql:host=127.0.0.1;port=5432;dbname=storeapp_test',
+              'storeapp_app',
+              'storeapp_app_test_password',
+              [
+                  PDO::ATTR_ERRMODE =>
+                      PDO::ERRMODE_EXCEPTION,
+              ],
+          );
+
+          $row = $pdo->query(<<<'SQL'
+          SELECT
+              current_user AS username,
+              rolsuper
+          FROM pg_roles
+          WHERE rolname = current_user
+          SQL)->fetch(PDO::FETCH_ASSOC);
+
+          echo 'DB_USER='.
+              $row['username'].
+              PHP_EOL;
+
+          echo 'SUPERUSER='.
+              ($row['rolsuper'] ? 'yes' : 'no').
+              PHP_EOL;
+
+          exit(
+              $row['username'] === 'storeapp_app' &&
+              ! $row['rolsuper']
+                  ? 0
+                  : 1
+          );
+          PHP
 
       - name: Prepare environment
         run: |
