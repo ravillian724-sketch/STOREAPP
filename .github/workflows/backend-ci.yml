@@ -9,8 +9,12 @@ on:
       - platform-foundation
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  backend:
+  sqlite:
+    name: Backend / SQLite
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -48,4 +52,86 @@ jobs:
         run: php artisan migrate:fresh --force
 
       - name: Run tests
+        run: php artisan test
+
+  postgres:
+    name: Backend / PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: storeapp_test
+          POSTGRES_USER: storeapp
+          POSTGRES_PASSWORD: storeapp_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U storeapp -d storeapp_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: storeapp_test
+      DB_USERNAME: storeapp
+      DB_PASSWORD: storeapp_test_password
+      DB_SSLMODE: disable
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pgsql, pdo_pgsql
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Verify PostgreSQL driver
+        run: |
+          php -r '
+          require "vendor/autoload.php";
+          $app = require "bootstrap/app.php";
+          $app->make(
+              Illuminate\Contracts\Console\Kernel::class
+          )->bootstrap();
+
+          $driver = $app["db"]
+              ->connection()
+              ->getDriverName();
+
+          fwrite(
+              STDOUT,
+              "DB_DRIVER=".$driver.PHP_EOL
+          );
+
+          exit($driver === "pgsql" ? 0 : 1);
+          '
+
+      - name: Run migrations on PostgreSQL
+        run: php artisan migrate:fresh --force
+
+      - name: Run tests on PostgreSQL
         run: php artisan test
