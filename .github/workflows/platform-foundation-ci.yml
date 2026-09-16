@@ -28,9 +28,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze platform foundation
+      - name: Analyze startup and platform foundation
         run: |
           flutter analyze \
+            lib/main.dart \
             lib/core/platform \
             lib/core/network \
             test/core/platform
