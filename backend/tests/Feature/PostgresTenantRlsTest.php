@@ -76,6 +76,7 @@ class PostgresTenantRlsTest extends TestCase
                     c.relforcerowsecurity
                 FROM pg_class c
                 WHERE c.relname IN (
+                    'audit_logs',
                     'branches',
                     'users',
                     'roles',
@@ -92,6 +93,7 @@ class PostgresTenantRlsTest extends TestCase
 
         $this->assertSame(
             [
+                'audit_logs',
                 'branches',
                 'inventory_locations',
                 'products',
