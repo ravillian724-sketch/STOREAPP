@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -49,5 +50,48 @@ class User extends Authenticatable
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(Role::class)
+            ->withPivot('tenant_id')
+            ->withTimestamps();
+    }
+
+    public function assignRole(Role $role): void
+    {
+        $tenantId = (int) $this->tenant_id;
+
+        if (
+            $tenantId <= 0 ||
+            (int) $role->tenant_id !== $tenantId
+        ) {
+            throw new \LogicException(
+                'Role assignment cannot cross tenant boundaries.'
+            );
+        }
+
+        $this->roles()->syncWithoutDetaching([
+            $role->id => [
+                'tenant_id' => $tenantId,
+            ],
+        ]);
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        return $this
+            ->roles()
+            ->where('roles.is_active', true)
+            ->whereHas(
+                'permissions',
+                fn ($query) => $query->where(
+                    'code',
+                    $permission,
+                ),
+            )
+            ->exists();
     }
 }
