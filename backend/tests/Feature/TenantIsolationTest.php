@@ -8,7 +8,6 @@ use App\Models\Tenant;
 use App\Services\AppInstanceCredentialService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 use Tests\TestCase;
 
@@ -54,6 +53,28 @@ class TenantIsolationTest extends TestCase
         return $tenant;
     }
 
+    private function createBranch(
+        Tenant $tenant,
+        string $code,
+        string $nameAr,
+        string $nameEn,
+    ): Branch {
+        $context = app(TenantContext::class);
+
+        $context->set($tenant->id);
+
+        try {
+            return Branch::query()->create([
+                'code' => $code,
+                'name_ar' => $nameAr,
+                'name_en' => $nameEn,
+                'is_active' => true,
+            ]);
+        } finally {
+            $context->clear();
+        }
+    }
+
     public function test_tenant_owned_models_fail_closed_without_context(): void
     {
         $tenant = $this->createTenant(
@@ -61,15 +82,12 @@ class TenantIsolationTest extends TestCase
             'tenant-a-key',
         );
 
-        DB::table('branches')->insert([
-            'tenant_id' => $tenant->id,
-            'code' => 'A01',
-            'name_ar' => 'فرع أ',
-            'name_en' => 'Branch A',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $this->createBranch(
+            $tenant,
+            'A01',
+            'فرع أ',
+            'Branch A',
+        );
 
         $this->assertSame(
             0,
@@ -89,26 +107,19 @@ class TenantIsolationTest extends TestCase
             'tenant-b-key',
         );
 
-        DB::table('branches')->insert([
-            [
-                'tenant_id' => $tenantA->id,
-                'code' => 'A01',
-                'name_ar' => 'فرع أ',
-                'name_en' => 'Branch A',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'tenant_id' => $tenantB->id,
-                'code' => 'B01',
-                'name_ar' => 'فرع ب',
-                'name_en' => 'Branch B',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
+        $this->createBranch(
+            $tenantA,
+            'A01',
+            'فرع أ',
+            'Branch A',
+        );
+
+        $this->createBranch(
+            $tenantB,
+            'B01',
+            'فرع ب',
+            'Branch B',
+        );
 
         $responseA = $this
             ->withHeader(
@@ -184,15 +195,12 @@ class TenantIsolationTest extends TestCase
             'tenant-a-key',
         );
 
-        DB::table('branches')->insert([
-            'tenant_id' => $tenant->id,
-            'code' => 'A01',
-            'name_ar' => 'فرع أ',
-            'name_en' => 'Branch A',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $this->createBranch(
+            $tenant,
+            'A01',
+            'فرع أ',
+            'Branch A',
+        );
 
         $this
             ->withHeader(
