@@ -8,18 +8,24 @@ import 'package:ecommerce_app/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-Future<void> main() async {
+Future<void> _prepareLegacyServices() async {
+  if (!Get.isRegistered<NotificationService>()) {
+    Get.put(NotificationService());
+  }
+
+  if (!Get.isRegistered<MyServices>()) {
+    await initialServices();
+  }
+}
+
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Critical legacy services still required before the existing application
-  // starts. These will be migrated behind explicit platform contracts later.
-  Get.put(NotificationService());
-  await initialServices();
-
-  // PlatformStartupGate is the migration boundary between the existing
-  // application and STOREAPP's multi-tenant platform bootstrap.
+  // First Flutter frame is no longer blocked by Firebase,
+  // SharedPreferences, or the remote platform bootstrap.
   runApp(
     const PlatformStartupGate(
+      prepareApp: _prepareLegacyServices,
       child: MyApp(),
     ),
   );

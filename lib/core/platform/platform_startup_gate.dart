@@ -1,17 +1,24 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'platform_startup_bridge.dart';
 import 'platform_startup_state.dart';
+import 'startup_performance_policy.dart';
+
+typedef AppPreparationAction = Future<void> Function();
 
 class PlatformStartupGate extends StatefulWidget {
   const PlatformStartupGate({
     super.key,
     required this.child,
     this.bridge,
+    this.prepareApp,
   });
 
   final Widget child;
   final PlatformStartupBridge? bridge;
+  final AppPreparationAction? prepareApp;
 
   @override
   State<PlatformStartupGate> createState() => _PlatformStartupGateState();
@@ -21,13 +28,54 @@ class _PlatformStartupGateState extends State<PlatformStartupGate> {
   late final PlatformStartupBridge _bridge;
 
   PlatformStartupState? _state;
+  Future<void>? _preparationFuture;
   bool _isStarting = false;
 
   @override
   void initState() {
     super.initState();
+
     _bridge = widget.bridge ?? PlatformStartupBridge();
+
+    if (!_bridge.isEnabled && widget.prepareApp == null) {
+      return;
+    }
+
     _start();
+  }
+
+  Future<void> _prepareApp() async {
+    final action = widget.prepareApp;
+
+    if (action == null) {
+      return;
+    }
+
+    _preparationFuture ??= Future<void>.sync(action);
+
+    final currentPreparation = _preparationFuture!;
+
+    try {
+      await currentPreparation.timeout(
+        StartupPerformancePolicy.criticalPreparationTimeout,
+      );
+    } on TimeoutException {
+      // Do not create a second initialization attempt while the
+      // original operation is still running.
+      rethrow;
+    } catch (error, stackTrace) {
+      if (identical(
+        _preparationFuture,
+        currentPreparation,
+      )) {
+        _preparationFuture = null;
+      }
+
+      Error.throwWithStackTrace(
+        error,
+        stackTrace,
+      );
+    }
   }
 
   Future<void> _start() async {
@@ -43,12 +91,19 @@ class _PlatformStartupGateState extends State<PlatformStartupGate> {
       });
     }
 
-    PlatformStartupState? state;
+    PlatformStartupState? nextState;
 
     try {
-      state = await _bridge.startIfEnabled();
+      final results = await Future.wait<Object?>(
+        [
+          _bridge.startIfEnabled(),
+          _prepareApp(),
+        ],
+      );
+
+      nextState = results.first as PlatformStartupState?;
     } catch (_) {
-      state = const PlatformStartupState.failed(
+      nextState = const PlatformStartupState.failed(
         message: 'Unexpected startup failure.',
       );
     }
@@ -58,7 +113,7 @@ class _PlatformStartupGateState extends State<PlatformStartupGate> {
     }
 
     setState(() {
-      _state = state;
+      _state = nextState;
       _isStarting = false;
     });
   }
@@ -67,9 +122,7 @@ class _PlatformStartupGateState extends State<PlatformStartupGate> {
   Widget build(BuildContext context) {
     final state = _state;
 
-    // Transitional migration path:
-    // If the platform bootstrap is not enabled yet, preserve the legacy app.
-    if (!_bridge.isEnabled || state == null || state.isReady) {
+    if (state == null || state.isReady) {
       return widget.child;
     }
 
@@ -114,7 +167,9 @@ class _PlatformStartupLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      key: ValueKey('platform-startup-loading'),
+      key: ValueKey(
+        'platform-startup-loading',
+      ),
       child: CircularProgressIndicator(),
     );
   }
@@ -148,13 +203,17 @@ class _PlatformStartupFailureView extends StatelessWidget {
           children: [
             Text(
               message,
-              key: const ValueKey('platform-startup-message'),
+              key: const ValueKey(
+                'platform-startup-message',
+              ),
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
               ElevatedButton(
-                key: const ValueKey('platform-startup-retry'),
+                key: const ValueKey(
+                  'platform-startup-retry',
+                ),
                 onPressed: onRetry,
                 child: const Text('Retry'),
               ),

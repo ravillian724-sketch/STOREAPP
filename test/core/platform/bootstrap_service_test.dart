@@ -14,6 +14,10 @@ void main() {
         StartupPerformancePolicy.bootstrapNetworkTimeout,
         const Duration(seconds: 5),
       );
+      expect(
+        StartupPerformancePolicy.criticalPreparationTimeout,
+        const Duration(seconds: 3),
+      );
     });
 
     test('sends app instance key and parses a valid bootstrap response',
