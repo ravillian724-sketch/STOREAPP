@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -25,9 +26,18 @@ class Role extends Model
         ];
     }
 
+    protected function code(): Attribute
+    {
+        return Attribute::make(
+            set: fn (string $value): string => strtolower(trim($value)),
+        );
+    }
+
     public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(Permission::class);
+        return $this->belongsToMany(
+            Permission::class
+        );
     }
 
     public function users(): BelongsToMany

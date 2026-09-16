@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use LogicException;
 
 class User extends Authenticatable
 {
@@ -49,7 +51,9 @@ class User extends Authenticatable
 
     public function tenant(): BelongsTo
     {
-        return $this->belongsTo(Tenant::class);
+        return $this->belongsTo(
+            Tenant::class
+        );
     }
 
     public function roles(): BelongsToMany
@@ -62,13 +66,14 @@ class User extends Authenticatable
 
     public function assignRole(Role $role): void
     {
-        $tenantId = (int) $this->tenant_id;
+        $tenantId =
+            $this->requireActiveTenantOwnership();
 
         if (
-            $tenantId <= 0 ||
-            (int) $role->tenant_id !== $tenantId
+            (int) $role->tenant_id !==
+            $tenantId
         ) {
-            throw new \LogicException(
+            throw new LogicException(
                 'Role assignment cannot cross tenant boundaries.'
             );
         }
@@ -80,24 +85,21 @@ class User extends Authenticatable
         ]);
     }
 
-    public function syncRoles(iterable $roles): void
-    {
-        $tenantId = (int) $this->tenant_id;
-
-        if ($tenantId <= 0) {
-            throw new \LogicException(
-                'Staff user does not have a valid tenant.'
-            );
-        }
+    public function syncRoles(
+        iterable $roles,
+    ): void {
+        $tenantId =
+            $this->requireActiveTenantOwnership();
 
         $assignments = [];
 
         foreach ($roles as $role) {
             if (
                 ! $role instanceof Role ||
-                (int) $role->tenant_id !== $tenantId
+                (int) $role->tenant_id !==
+                    $tenantId
             ) {
-                throw new \LogicException(
+                throw new LogicException(
                     'Role assignment cannot cross tenant boundaries.'
                 );
             }
@@ -107,14 +109,20 @@ class User extends Authenticatable
             ];
         }
 
-        $this->roles()->sync($assignments);
+        $this->roles()->sync(
+            $assignments
+        );
     }
 
-    public function hasPermission(string $permission): bool
-    {
+    public function hasPermission(
+        string $permission,
+    ): bool {
         return $this
             ->roles()
-            ->where('roles.is_active', true)
+            ->where(
+                'roles.is_active',
+                true,
+            )
             ->whereHas(
                 'permissions',
                 fn ($query) => $query->where(
@@ -123,5 +131,26 @@ class User extends Authenticatable
                 ),
             )
             ->exists();
+    }
+
+    private function requireActiveTenantOwnership(): int
+    {
+        $tenantId =
+            (int) $this->tenant_id;
+
+        $activeTenantId = (int) app(
+            TenantContext::class
+        )->requireId();
+
+        if (
+            $tenantId <= 0 ||
+            $activeTenantId !== $tenantId
+        ) {
+            throw new LogicException(
+                'Staff role assignment requires the owning tenant context.'
+            );
+        }
+
+        return $tenantId;
     }
 }

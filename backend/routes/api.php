@@ -118,6 +118,28 @@ Route::prefix('v1')->group(function () {
                     'permission:'.
                     PermissionCatalog::ROLES_VIEW
                 );
+
+                Route::post(
+                    '/roles',
+                    [
+                        AuthorizationAdminController::class,
+                        'storeRole',
+                    ],
+                )->middleware(
+                    'permission:'.
+                    PermissionCatalog::ROLES_MANAGE
+                );
+
+                Route::patch(
+                    '/roles/{roleId}',
+                    [
+                        AuthorizationAdminController::class,
+                        'updateRole',
+                    ],
+                )->middleware(
+                    'permission:'.
+                    PermissionCatalog::ROLES_MANAGE
+                );
             });
     });
 });
