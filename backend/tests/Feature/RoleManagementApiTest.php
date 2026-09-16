@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\AppInstance;
+use App\Models\AuditLog;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\AppInstanceCredentialService;
 use App\Services\TenantRbacProvisioner;
+use App\Support\Audit\AdminAuditAction;
 use App\Support\Authorization\SystemRoleCatalog;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -712,6 +714,346 @@ class RoleManagementApiTest extends TestCase
             );
         } finally {
             $context->clear();
+        }
+    }
+
+    public function test_role_creation_writes_audit_log(): void
+    {
+        $store = $this->store(
+            'Tenant A'
+        );
+
+        $owner = $this->user(
+            $store['tenant'],
+            'owner@example.com',
+            SystemRoleCatalog::OWNER,
+        );
+
+        $token = $this->login(
+            $store,
+            'owner@example.com',
+        );
+
+        $response = $this
+            ->withHeaders(
+                $this->headers(
+                    $store,
+                    $token,
+                )
+            )
+            ->postJson(
+                '/api/v1/admin/roles',
+                [
+                    'code' => 'audit_role',
+                    'name' => 'Audit Role',
+                    'permission_codes' => [
+                        'staff.view',
+                    ],
+                ],
+            );
+
+        $response->assertCreated();
+
+        $roleId = (string) $response->json(
+            'data.role.id'
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use (
+                $owner,
+                $roleId,
+            ): void {
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::ROLE_CREATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        $roleId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    (int) $owner->id,
+                    (int) $log->actor_user_id,
+                );
+
+                $this->assertSame(
+                    'audit_role',
+                    $log->after_values['code'],
+                );
+
+                $this->assertSame(
+                    'Audit Role',
+                    $log->after_values['name'],
+                );
+
+                $this->assertContains(
+                    'staff.view',
+                    $log->after_values[
+                        'permission_codes'
+                    ],
+                );
+
+                $this->assertNotNull(
+                    $log->request_id
+                );
+            },
+        );
+    }
+
+    public function test_role_update_writes_before_and_after_audit_values(): void
+    {
+        $store = $this->store(
+            'Tenant A'
+        );
+
+        $owner = $this->user(
+            $store['tenant'],
+            'owner@example.com',
+            SystemRoleCatalog::OWNER,
+        );
+
+        $role = $this->customRole(
+            $store['tenant'],
+            'audited_role',
+            [
+                'staff.view',
+            ],
+        );
+
+        $token = $this->login(
+            $store,
+            'owner@example.com',
+        );
+
+        $this
+            ->withHeaders(
+                $this->headers(
+                    $store,
+                    $token,
+                )
+            )
+            ->patchJson(
+                '/api/v1/admin/roles/'.
+                $role->id,
+                [
+                    'name' => 'Updated Audit Role',
+                    'permission_codes' => [
+                        'reports.view',
+                    ],
+                ],
+            )
+            ->assertOk();
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use (
+                $owner,
+                $role,
+            ): void {
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::ROLE_UPDATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        (string) $role->id,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    (int) $owner->id,
+                    (int) $log->actor_user_id,
+                );
+
+                $this->assertSame(
+                    'audited_role',
+                    $log->before_values['name'],
+                );
+
+                $this->assertSame(
+                    'Updated Audit Role',
+                    $log->after_values['name'],
+                );
+
+                $this->assertContains(
+                    'staff.view',
+                    $log->before_values[
+                        'permission_codes'
+                    ],
+                );
+
+                $this->assertContains(
+                    'reports.view',
+                    $log->after_values[
+                        'permission_codes'
+                    ],
+                );
+
+                $this->assertNotNull(
+                    $log->request_id
+                );
+            },
+        );
+    }
+
+    public function test_role_create_rolls_back_when_audit_write_fails(): void
+    {
+        $store = $this->store('Tenant A');
+
+        $this->user(
+            $store['tenant'],
+            'owner@example.com',
+            SystemRoleCatalog::OWNER,
+        );
+
+        $token = $this->login(
+            $store,
+            'owner@example.com',
+        );
+
+        $this->expectAuditFailure(
+            fn () => $this
+                ->withHeaders(
+                    $this->headers(
+                        $store,
+                        $token,
+                    )
+                )
+                ->postJson(
+                    '/api/v1/admin/roles',
+                    [
+                        'code' => 'rollback_role',
+                        'name' => 'Rollback Role',
+                        'permission_codes' => [
+                            'staff.view',
+                        ],
+                    ],
+                )
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function (): void {
+                $this->assertFalse(
+                    Role::query()
+                        ->where(
+                            'code',
+                            'rollback_role',
+                        )
+                        ->exists()
+                );
+            },
+        );
+    }
+
+    public function test_role_update_rolls_back_when_audit_write_fails(): void
+    {
+        $store = $this->store('Tenant A');
+
+        $this->user(
+            $store['tenant'],
+            'owner@example.com',
+            SystemRoleCatalog::OWNER,
+        );
+
+        $role = $this->customRole(
+            $store['tenant'],
+            'rollback_role',
+            ['staff.view'],
+        );
+
+        $token = $this->login(
+            $store,
+            'owner@example.com',
+        );
+
+        $this->expectAuditFailure(
+            fn () => $this
+                ->withHeaders(
+                    $this->headers(
+                        $store,
+                        $token,
+                    )
+                )
+                ->patchJson(
+                    '/api/v1/admin/roles/'.
+                    $role->id,
+                    [
+                        'name' => 'Changed',
+                        'permission_codes' => [
+                            'reports.view',
+                        ],
+                    ],
+                )
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use ($role): void {
+                $fresh = Role::query()
+                    ->with('permissions')
+                    ->findOrFail(
+                        $role->id
+                    );
+
+                $this->assertSame(
+                    'rollback_role',
+                    $fresh->name,
+                );
+
+                $codes = $fresh->permissions
+                    ->pluck('code')
+                    ->all();
+
+                $this->assertContains(
+                    'staff.view',
+                    $codes,
+                );
+
+                $this->assertNotContains(
+                    'reports.view',
+                    $codes,
+                );
+            },
+        );
+    }
+
+    private function expectAuditFailure(
+        callable $operation,
+    ): void {
+        $armed = true;
+
+        AuditLog::creating(
+            function () use (&$armed): void {
+                if ($armed) {
+                    throw new \RuntimeException(
+                        'Forced audit failure.'
+                    );
+                }
+            }
+        );
+
+        $this->withoutExceptionHandling();
+
+        try {
+            $operation();
+
+            $this->fail(
+                'Expected audit write failure.'
+            );
+        } catch (\RuntimeException $exception) {
+            $this->assertSame(
+                'Forced audit failure.',
+                $exception->getMessage(),
+            );
+        } finally {
+            $armed = false;
+            $this->withExceptionHandling();
         }
     }
 }

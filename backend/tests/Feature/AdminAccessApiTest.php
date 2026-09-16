@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\AppInstance;
+use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\AppInstanceCredentialService;
 use App\Services\TenantRbacProvisioner;
+use App\Support\Audit\AdminAuditAction;
 use App\Support\Authorization\SystemRoleCatalog;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -274,7 +276,7 @@ class AdminAccessApiTest extends TestCase
     {
         $store = $this->store('Tenant A');
 
-        $this->staff(
+        $admin = $this->staff(
             $store['tenant'],
             'admin@example.com',
             SystemRoleCatalog::OWNER,
@@ -321,7 +323,7 @@ class AdminAccessApiTest extends TestCase
 
         $this->inTenant(
             $store['tenant'],
-            function (): void {
+            function () use ($admin): void {
                 $staff = User::query()
                     ->where(
                         'email',
@@ -336,6 +338,36 @@ class AdminAccessApiTest extends TestCase
                             'manager',
                         )
                         ->exists()
+                );
+
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::STAFF_CREATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        (string) $staff->id,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    (int) $admin->id,
+                    (int) $log->actor_user_id,
+                );
+
+                $this->assertSame(
+                    'new.staff@example.com',
+                    $log->after_values['email'],
+                );
+
+                $this->assertContains(
+                    'manager',
+                    $log->after_values['role_codes'],
+                );
+
+                $this->assertNotNull(
+                    $log->request_id
                 );
             },
         );
@@ -390,7 +422,7 @@ class AdminAccessApiTest extends TestCase
     {
         $store = $this->store('Tenant A');
 
-        $this->staff(
+        $admin = $this->staff(
             $store['tenant'],
             'admin@example.com',
             SystemRoleCatalog::OWNER,
@@ -457,6 +489,42 @@ class AdminAccessApiTest extends TestCase
         );
 
         $this->assertFalse($isActive);
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use (
+                $admin,
+                $target,
+            ): void {
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::STAFF_UPDATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        (string) $target->id,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    (int) $admin->id,
+                    (int) $log->actor_user_id,
+                );
+
+                $this->assertTrue(
+                    $log->before_values['is_active']
+                );
+
+                $this->assertFalse(
+                    $log->after_values['is_active']
+                );
+
+                $this->assertNotNull(
+                    $log->request_id
+                );
+            },
+        );
     }
 
     public function test_admin_cannot_deactivate_self_or_change_own_roles(): void
@@ -545,5 +613,158 @@ class AdminAccessApiTest extends TestCase
                 'error.code',
                 'FORBIDDEN',
             );
+    }
+
+    public function test_staff_create_rolls_back_when_audit_write_fails(): void
+    {
+        $store = $this->store('Tenant A');
+
+        $this->staff(
+            $store['tenant'],
+            'owner@example.com',
+            SystemRoleCatalog::OWNER,
+        );
+
+        $managerRoleId = $this->roleId(
+            $store['tenant'],
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $token = $this->login(
+            $store,
+            'owner@example.com',
+        );
+
+        $this->expectAuditFailure(
+            fn () => $this
+                ->withHeaders(
+                    $this->headers(
+                        $store,
+                        $token,
+                    )
+                )
+                ->postJson(
+                    '/api/v1/admin/staff',
+                    [
+                        'name' => 'Rollback Staff',
+                        'email' => 'rollback@example.com',
+                        'password' => 'Temporary#123Aa',
+                        'role_ids' => [
+                            $managerRoleId,
+                        ],
+                    ],
+                )
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function (): void {
+                $this->assertFalse(
+                    User::query()
+                        ->where(
+                            'email',
+                            'rollback@example.com',
+                        )
+                        ->exists()
+                );
+            },
+        );
+    }
+
+    public function test_staff_update_rolls_back_when_audit_write_fails(): void
+    {
+        $store = $this->store('Tenant A');
+
+        $this->staff(
+            $store['tenant'],
+            'owner@example.com',
+            SystemRoleCatalog::OWNER,
+        );
+
+        $target = $this->staff(
+            $store['tenant'],
+            'target@example.com',
+            SystemRoleCatalog::CASHIER,
+        );
+
+        $target->createToken(
+            'rollback-device',
+            ['staff'],
+        );
+
+        $token = $this->login(
+            $store,
+            'owner@example.com',
+        );
+
+        $this->expectAuditFailure(
+            fn () => $this
+                ->withHeaders(
+                    $this->headers(
+                        $store,
+                        $token,
+                    )
+                )
+                ->patchJson(
+                    '/api/v1/admin/staff/'.
+                    $target->id,
+                    [
+                        'is_active' => false,
+                    ],
+                )
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use ($target): void {
+                $fresh = User::query()
+                    ->findOrFail(
+                        $target->id
+                    );
+
+                $this->assertTrue(
+                    (bool) $fresh->is_active
+                );
+
+                $this->assertSame(
+                    1,
+                    $fresh->tokens()->count(),
+                );
+            },
+        );
+    }
+
+    private function expectAuditFailure(
+        callable $operation,
+    ): void {
+        $armed = true;
+
+        AuditLog::creating(
+            function () use (&$armed): void {
+                if ($armed) {
+                    throw new \RuntimeException(
+                        'Forced audit failure.'
+                    );
+                }
+            }
+        );
+
+        $this->withoutExceptionHandling();
+
+        try {
+            $operation();
+
+            $this->fail(
+                'Expected audit write failure.'
+            );
+        } catch (\RuntimeException $exception) {
+            $this->assertSame(
+                'Forced audit failure.',
+                $exception->getMessage(),
+            );
+        } finally {
+            $armed = false;
+            $this->withExceptionHandling();
+        }
     }
 }

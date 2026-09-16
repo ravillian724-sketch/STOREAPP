@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Services\Audit\AuditLogger;
 use App\Services\AuthorizationGrantGuard;
 use App\Support\ApiResponse;
+use App\Support\Audit\AdminAuditAction;
 use App\Support\Authorization\PermissionCatalog;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +20,7 @@ class AuthorizationAdminController extends Controller
 {
     public function __construct(
         private readonly AuthorizationGrantGuard $grantGuard,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     public function roles(
@@ -155,6 +158,8 @@ class AuthorizationAdminController extends Controller
             function () use (
                 $data,
                 $permissions,
+                $actor,
+                $request,
             ): Role {
                 $role = Role::query()
                     ->create([
@@ -172,6 +177,21 @@ class AuthorizationAdminController extends Controller
                 $role->permissions()->sync(
                     $permissions
                         ->modelKeys()
+                );
+
+                $role->load(
+                    'permissions'
+                );
+
+                $this->auditLogger->record(
+                    action: AdminAuditAction::ROLE_CREATED,
+                    subjectType: 'role',
+                    subjectId: $role->id,
+                    actor: $actor,
+                    after: $this->auditSnapshot(
+                        $role
+                    ),
+                    request: $request,
                 );
 
                 return $role;
@@ -324,7 +344,18 @@ class AuthorizationAdminController extends Controller
                 $role,
                 $data,
                 $permissions,
+                $actor,
+                $request,
             ): void {
+                $role->load(
+                    'permissions'
+                );
+
+                $before =
+                    $this->auditSnapshot(
+                        $role
+                    );
+
                 if (
                     array_key_exists(
                         'name',
@@ -360,6 +391,26 @@ class AuthorizationAdminController extends Controller
                                 ->modelKeys()
                         );
                 }
+
+                $role->unsetRelation(
+                    'permissions'
+                );
+
+                $role->load(
+                    'permissions'
+                );
+
+                $this->auditLogger->record(
+                    action: AdminAuditAction::ROLE_UPDATED,
+                    subjectType: 'role',
+                    subjectId: $role->id,
+                    actor: $actor,
+                    before: $before,
+                    after: $this->auditSnapshot(
+                        $role
+                    ),
+                    request: $request,
+                );
             }
         );
 
@@ -379,6 +430,30 @@ class AuthorizationAdminController extends Controller
                 ),
             ],
         );
+    }
+
+    private function auditSnapshot(
+        Role $role,
+    ): array {
+        $role->loadMissing(
+            'permissions'
+        );
+
+        return [
+            'code' => $role->code,
+
+            'name' => $role->name,
+
+            'is_system' => (bool) $role->is_system,
+
+            'is_active' => (bool) $role->is_active,
+
+            'permission_codes' => $role->permissions
+                ->pluck('code')
+                ->sort()
+                ->values()
+                ->all(),
+        ];
     }
 
     private function normalizePermissionCodes(

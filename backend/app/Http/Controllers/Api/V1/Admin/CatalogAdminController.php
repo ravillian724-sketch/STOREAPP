@@ -5,14 +5,21 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Sku;
+use App\Services\Audit\AuditLogger;
 use App\Support\ApiResponse;
+use App\Support\Audit\AdminAuditAction;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class CatalogAdminController extends Controller
 {
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $perPage = max(
@@ -80,21 +87,53 @@ class CatalogAdminController extends Controller
             ],
         ]);
 
-        $product = Product::query()->create([
-            'name_ar' => trim($data['name_ar']),
+        $actor = $request->user(
+            'sanctum'
+        );
 
-            'name_en' => trim($data['name_en']),
+        $product = DB::transaction(
+            function () use (
+                $data,
+                $actor,
+                $request,
+            ): Product {
+                $product = Product::query()->create([
+                    'name_ar' => trim(
+                        $data['name_ar']
+                    ),
 
-            'description_ar' => $data['description_ar'] ?? null,
+                    'name_en' => trim(
+                        $data['name_en']
+                    ),
 
-            'description_en' => $data['description_en'] ?? null,
+                    'description_ar' => $data['description_ar']
+                            ?? null,
 
-            'is_active' => $data['is_active'] ?? true,
-        ]);
+                    'description_en' => $data['description_en']
+                            ?? null,
 
-        $product->setRelation(
-            'skus',
-            collect(),
+                    'is_active' => $data['is_active']
+                            ?? true,
+                ]);
+
+                $product->setRelation(
+                    'skus',
+                    collect(),
+                );
+
+                $this->auditLogger->record(
+                    action: AdminAuditAction::PRODUCT_CREATED,
+                    subjectType: 'product',
+                    subjectId: $product->id,
+                    actor: $actor,
+                    after: $this->productAuditSnapshot(
+                        $product
+                    ),
+                    request: $request,
+                );
+
+                return $product;
+            }
         );
 
         return ApiResponse::success(
@@ -153,47 +192,90 @@ class CatalogAdminController extends Controller
             ],
         ]);
 
-        foreach (
-            [
-                'name_ar',
-                'name_en',
-                'description_ar',
-                'description_en',
-                'is_active',
-            ] as $field
-        ) {
-            if (
-                array_key_exists(
-                    $field,
-                    $data,
-                )
-            ) {
-                $product->{$field} =
-                    $data[$field];
+        $actor = $request->user(
+            'sanctum'
+        );
+
+        DB::transaction(
+            function () use (
+                $product,
+                $data,
+                $actor,
+                $request,
+            ): void {
+                $before =
+                    $this->productAuditSnapshot(
+                        $product
+                    );
+
+                foreach (
+                    [
+                        'name_ar',
+                        'name_en',
+                        'description_ar',
+                        'description_en',
+                        'is_active',
+                    ] as $field
+                ) {
+                    if (
+                        array_key_exists(
+                            $field,
+                            $data,
+                        )
+                    ) {
+                        $product->{$field} =
+                            $data[$field];
+                    }
+                }
+
+                if (
+                    array_key_exists(
+                        'name_ar',
+                        $data,
+                    )
+                ) {
+                    $product->name_ar =
+                        trim(
+                            $data['name_ar']
+                        );
+                }
+
+                if (
+                    array_key_exists(
+                        'name_en',
+                        $data,
+                    )
+                ) {
+                    $product->name_en =
+                        trim(
+                            $data['name_en']
+                        );
+                }
+
+                $product->save();
+
+                $changedFields =
+                    array_keys($data);
+
+                sort($changedFields);
+
+                $this->auditLogger->record(
+                    action: AdminAuditAction::PRODUCT_UPDATED,
+                    subjectType: 'product',
+                    subjectId: $product->id,
+                    actor: $actor,
+                    before: $before,
+                    after: $this->productAuditSnapshot(
+                        $product
+                    ),
+                    metadata: [
+                        'changed_fields' => $changedFields,
+                    ],
+                    request: $request,
+                );
             }
-        }
+        );
 
-        if (
-            array_key_exists(
-                'name_ar',
-                $data,
-            )
-        ) {
-            $product->name_ar =
-                trim($data['name_ar']);
-        }
-
-        if (
-            array_key_exists(
-                'name_en',
-                $data,
-            )
-        ) {
-            $product->name_en =
-                trim($data['name_en']);
-        }
-
-        $product->save();
         $product->load('skus');
 
         return ApiResponse::success($request, [
@@ -231,21 +313,53 @@ class CatalogAdminController extends Controller
             )
         );
 
-        $sku = $product->skus()->create([
-            'code' => $data['code'],
+        $actor = $request->user(
+            'sanctum'
+        );
 
-            'barcode' => $data['barcode'] ?? null,
+        $sku = DB::transaction(
+            function () use (
+                $product,
+                $data,
+                $actor,
+                $request,
+            ): Sku {
+                $sku = $product
+                    ->skus()
+                    ->create([
+                        'code' => $data['code'],
 
-            'name_ar' => $data['name_ar'] ?? null,
+                        'barcode' => $data['barcode']
+                                ?? null,
 
-            'name_en' => $data['name_en'] ?? null,
+                        'name_ar' => $data['name_ar']
+                                ?? null,
 
-            'track_inventory' => $data['track_inventory']
-                    ?? true,
+                        'name_en' => $data['name_en']
+                                ?? null,
 
-            'is_active' => $data['is_active']
-                    ?? true,
-        ]);
+                        'track_inventory' => $data[
+                                'track_inventory'
+                            ] ?? true,
+
+                        'is_active' => $data['is_active']
+                                ?? true,
+                    ]);
+
+                $this->auditLogger->record(
+                    action: AdminAuditAction::SKU_CREATED,
+                    subjectType: 'sku',
+                    subjectId: $sku->id,
+                    actor: $actor,
+                    after: $this->skuAuditSnapshot(
+                        $sku
+                    ),
+                    request: $request,
+                );
+
+                return $sku;
+            }
+        );
 
         return ApiResponse::success(
             $request,
@@ -288,32 +402,93 @@ class CatalogAdminController extends Controller
             )
         );
 
-        foreach (
-            [
-                'code',
-                'barcode',
-                'name_ar',
-                'name_en',
-                'track_inventory',
-                'is_active',
-            ] as $field
-        ) {
-            if (
-                array_key_exists(
-                    $field,
-                    $data,
-                )
-            ) {
-                $sku->{$field} =
-                    $data[$field];
-            }
-        }
+        $actor = $request->user(
+            'sanctum'
+        );
 
-        $sku->save();
+        DB::transaction(
+            function () use (
+                $sku,
+                $data,
+                $actor,
+                $request,
+            ): void {
+                $before =
+                    $this->skuAuditSnapshot(
+                        $sku
+                    );
+
+                foreach (
+                    [
+                        'code',
+                        'barcode',
+                        'name_ar',
+                        'name_en',
+                        'track_inventory',
+                        'is_active',
+                    ] as $field
+                ) {
+                    if (
+                        array_key_exists(
+                            $field,
+                            $data,
+                        )
+                    ) {
+                        $sku->{$field} =
+                            $data[$field];
+                    }
+                }
+
+                $sku->save();
+
+                $this->auditLogger->record(
+                    action: AdminAuditAction::SKU_UPDATED,
+                    subjectType: 'sku',
+                    subjectId: $sku->id,
+                    actor: $actor,
+                    before: $before,
+                    after: $this->skuAuditSnapshot(
+                        $sku
+                    ),
+                    request: $request,
+                );
+            }
+        );
 
         return ApiResponse::success($request, [
             'sku' => $this->serializeSku($sku),
         ]);
+    }
+
+    private function productAuditSnapshot(
+        Product $product,
+    ): array {
+        return [
+            'name_ar' => $product->name_ar,
+            'name_en' => $product->name_en,
+            'is_active' => (bool) $product->is_active,
+        ];
+    }
+
+    private function skuAuditSnapshot(
+
+        Sku $sku,
+    ): array {
+        return [
+            'product_id' => (string) $sku->product_id,
+
+            'code' => $sku->code,
+
+            'barcode' => $sku->barcode,
+
+            'name_ar' => $sku->name_ar,
+
+            'name_en' => $sku->name_en,
+
+            'track_inventory' => (bool) $sku->track_inventory,
+
+            'is_active' => (bool) $sku->is_active,
+        ];
     }
 
     private function normalizeSkuInput(

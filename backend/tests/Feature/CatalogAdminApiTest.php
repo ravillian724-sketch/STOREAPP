@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AppInstance;
+use App\Models\AuditLog;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\Sku;
@@ -10,6 +11,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\AppInstanceCredentialService;
 use App\Services\TenantRbacProvisioner;
+use App\Support\Audit\AdminAuditAction;
 use App\Support\Authorization\SystemRoleCatalog;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -477,6 +479,771 @@ class CatalogAdminApiTest extends TestCase
                 $this->assertSame(
                     (int) $productA->id,
                     (int) $fresh->product_id,
+                );
+            },
+        );
+    }
+
+    public function test_product_creation_writes_audit_log(): void
+    {
+        $store = $this->store(
+            'Tenant A'
+        );
+
+        $manager = $this->staff(
+            $store['tenant'],
+            'manager@example.com',
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $token = $this->login(
+            $store,
+            'manager@example.com',
+        );
+
+        $response = $this
+            ->withHeaders(
+                $this->headers(
+                    $store,
+                    $token,
+                )
+            )
+            ->postJson(
+                '/api/v1/admin/catalog/products',
+                [
+                    'name_ar' => 'منتج مدقق',
+                    'name_en' => 'Audited Product',
+                    'is_active' => true,
+                ],
+            );
+
+        $response->assertCreated();
+
+        $productId = (string) $response->json(
+            'data.product.id'
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use (
+                $manager,
+                $productId,
+            ): void {
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::PRODUCT_CREATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        $productId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    (int) $manager->id,
+                    (int) $log->actor_user_id,
+                );
+
+                $this->assertNull(
+                    $log->before_values
+                );
+
+                $this->assertSame(
+                    'Audited Product',
+                    $log->after_values['name_en'],
+                );
+
+                $this->assertTrue(
+                    $log->after_values['is_active']
+                );
+
+                $this->assertNotNull(
+                    $log->request_id
+                );
+            },
+        );
+    }
+
+    public function test_product_update_writes_before_and_after_audit_values(): void
+    {
+        $store = $this->store(
+            'Tenant A'
+        );
+
+        $manager = $this->staff(
+            $store['tenant'],
+            'manager@example.com',
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $product = $this->product(
+            $store['tenant'],
+            'Original Product',
+        );
+
+        $token = $this->login(
+            $store,
+            'manager@example.com',
+        );
+
+        $this
+            ->withHeaders(
+                $this->headers(
+                    $store,
+                    $token,
+                )
+            )
+            ->patchJson(
+                '/api/v1/admin/catalog/products/'.
+                $product->id,
+                [
+                    'name_en' => 'Updated Product',
+
+                    'is_active' => false,
+                ],
+            )
+            ->assertOk();
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use (
+                $manager,
+                $product,
+            ): void {
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::PRODUCT_UPDATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        (string) $product->id,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    (int) $manager->id,
+                    (int) $log->actor_user_id,
+                );
+
+                $this->assertSame(
+                    'Original Product',
+                    $log->before_values['name_en'],
+                );
+
+                $this->assertSame(
+                    'Updated Product',
+                    $log->after_values['name_en'],
+                );
+
+                $this->assertTrue(
+                    $log->before_values['is_active']
+                );
+
+                $this->assertFalse(
+                    $log->after_values['is_active']
+                );
+
+                $this->assertNotNull(
+                    $log->request_id
+                );
+            },
+        );
+    }
+
+    public function test_sku_creation_writes_audit_log(): void
+    {
+        $store = $this->store(
+            'Tenant A'
+        );
+
+        $manager = $this->staff(
+            $store['tenant'],
+            'manager@example.com',
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $product = $this->product(
+            $store['tenant'],
+            'Product A',
+        );
+
+        $token = $this->login(
+            $store,
+            'manager@example.com',
+        );
+
+        $response = $this
+            ->withHeaders(
+                $this->headers(
+                    $store,
+                    $token,
+                )
+            )
+            ->postJson(
+                '/api/v1/admin/catalog/products/'.
+                $product->id.
+                '/skus',
+                [
+                    'code' => 'audit-001',
+
+                    'barcode' => '628000099999',
+                ],
+            );
+
+        $response->assertCreated();
+
+        $skuId = (string) $response->json(
+            'data.sku.id'
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use (
+                $manager,
+                $product,
+                $skuId,
+            ): void {
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::SKU_CREATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        $skuId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    (int) $manager->id,
+                    (int) $log->actor_user_id,
+                );
+
+                $this->assertNull(
+                    $log->before_values
+                );
+
+                $this->assertSame(
+                    'AUDIT-001',
+                    $log->after_values['code'],
+                );
+
+                $this->assertSame(
+                    (string) $product->id,
+                    $log->after_values['product_id'],
+                );
+
+                $this->assertNotNull(
+                    $log->request_id
+                );
+            },
+        );
+    }
+
+    public function test_sku_update_writes_before_and_after_audit_values(): void
+    {
+        $store = $this->store(
+            'Tenant A'
+        );
+
+        $manager = $this->staff(
+            $store['tenant'],
+            'manager@example.com',
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $product = $this->product(
+            $store['tenant'],
+            'Product A',
+        );
+
+        $sku = $this->inTenant(
+            $store['tenant'],
+            fn (): Sku => Sku::query()->create([
+                'product_id' => $product->id,
+
+                'code' => 'AUDIT-002',
+
+                'track_inventory' => true,
+
+                'is_active' => true,
+            ]),
+        );
+
+        $token = $this->login(
+            $store,
+            'manager@example.com',
+        );
+
+        $this
+            ->withHeaders(
+                $this->headers(
+                    $store,
+                    $token,
+                )
+            )
+            ->patchJson(
+                '/api/v1/admin/catalog/skus/'.
+                $sku->id,
+                [
+                    'name_en' => 'Updated SKU',
+
+                    'is_active' => false,
+                ],
+            )
+            ->assertOk();
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use (
+                $manager,
+                $product,
+                $sku,
+            ): void {
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::SKU_UPDATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        (string) $sku->id,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    (int) $manager->id,
+                    (int) $log->actor_user_id,
+                );
+
+                $this->assertNull(
+                    $log->before_values['name_en']
+                );
+
+                $this->assertSame(
+                    'Updated SKU',
+                    $log->after_values['name_en'],
+                );
+
+                $this->assertTrue(
+                    $log->before_values[
+                        'is_active'
+                    ]
+                );
+
+                $this->assertFalse(
+                    $log->after_values[
+                        'is_active'
+                    ]
+                );
+
+                $this->assertSame(
+                    (string) $product->id,
+                    $log->after_values[
+                        'product_id'
+                    ],
+                );
+
+                $this->assertNotNull(
+                    $log->request_id
+                );
+            },
+        );
+    }
+
+    public function test_product_create_rolls_back_when_audit_write_fails(): void
+    {
+        $store = $this->store('Tenant A');
+
+        $this->staff(
+            $store['tenant'],
+            'manager@example.com',
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $token = $this->login(
+            $store,
+            'manager@example.com',
+        );
+
+        $this->expectAuditFailure(
+            fn () => $this
+                ->withHeaders(
+                    $this->headers(
+                        $store,
+                        $token,
+                    )
+                )
+                ->postJson(
+                    '/api/v1/admin/catalog/products',
+                    [
+                        'name_ar' => 'Rollback Product',
+                        'name_en' => 'Rollback Product',
+                    ],
+                )
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function (): void {
+                $this->assertFalse(
+                    Product::query()
+                        ->where(
+                            'name_en',
+                            'Rollback Product',
+                        )
+                        ->exists()
+                );
+            },
+        );
+    }
+
+    public function test_product_update_rolls_back_when_audit_write_fails(): void
+    {
+        $store = $this->store('Tenant A');
+
+        $this->staff(
+            $store['tenant'],
+            'manager@example.com',
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $product = $this->product(
+            $store['tenant'],
+            'Original Product',
+        );
+
+        $token = $this->login(
+            $store,
+            'manager@example.com',
+        );
+
+        $this->expectAuditFailure(
+            fn () => $this
+                ->withHeaders(
+                    $this->headers(
+                        $store,
+                        $token,
+                    )
+                )
+                ->patchJson(
+                    '/api/v1/admin/catalog/products/'.
+                    $product->id,
+                    [
+                        'name_en' => 'Changed Product',
+                        'is_active' => false,
+                    ],
+                )
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use ($product): void {
+                $fresh = Product::query()
+                    ->findOrFail(
+                        $product->id
+                    );
+
+                $this->assertSame(
+                    'Original Product',
+                    $fresh->name_en,
+                );
+
+                $this->assertTrue(
+                    (bool) $fresh->is_active
+                );
+            },
+        );
+    }
+
+    public function test_sku_create_rolls_back_when_audit_write_fails(): void
+    {
+        $store = $this->store('Tenant A');
+
+        $this->staff(
+            $store['tenant'],
+            'manager@example.com',
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $product = $this->product(
+            $store['tenant'],
+            'Product A',
+        );
+
+        $token = $this->login(
+            $store,
+            'manager@example.com',
+        );
+
+        $this->expectAuditFailure(
+            fn () => $this
+                ->withHeaders(
+                    $this->headers(
+                        $store,
+                        $token,
+                    )
+                )
+                ->postJson(
+                    '/api/v1/admin/catalog/products/'.
+                    $product->id.
+                    '/skus',
+                    [
+                        'code' => 'rollback-sku',
+                    ],
+                )
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function (): void {
+                $this->assertFalse(
+                    Sku::query()
+                        ->where(
+                            'code',
+                            'ROLLBACK-SKU',
+                        )
+                        ->exists()
+                );
+            },
+        );
+    }
+
+    public function test_sku_update_rolls_back_when_audit_write_fails(): void
+    {
+        $store = $this->store('Tenant A');
+
+        $this->staff(
+            $store['tenant'],
+            'manager@example.com',
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $product = $this->product(
+            $store['tenant'],
+            'Product A',
+        );
+
+        $sku = $this->inTenant(
+            $store['tenant'],
+            fn (): Sku => Sku::query()->create([
+                'product_id' => $product->id,
+                'code' => 'ROLLBACK-SKU',
+                'track_inventory' => true,
+                'is_active' => true,
+            ]),
+        );
+
+        $token = $this->login(
+            $store,
+            'manager@example.com',
+        );
+
+        $this->expectAuditFailure(
+            fn () => $this
+                ->withHeaders(
+                    $this->headers(
+                        $store,
+                        $token,
+                    )
+                )
+                ->patchJson(
+                    '/api/v1/admin/catalog/skus/'.
+                    $sku->id,
+                    [
+                        'name_en' => 'Changed SKU',
+                        'is_active' => false,
+                    ],
+                )
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use ($sku): void {
+                $fresh = Sku::query()
+                    ->findOrFail(
+                        $sku->id
+                    );
+
+                $this->assertNull(
+                    $fresh->name_en
+                );
+
+                $this->assertTrue(
+                    (bool) $fresh->is_active
+                );
+            },
+        );
+    }
+
+    private function expectAuditFailure(
+        callable $operation,
+    ): void {
+        $armed = true;
+
+        AuditLog::creating(
+            function () use (&$armed): void {
+                if ($armed) {
+                    throw new \RuntimeException(
+                        'Forced audit failure.'
+                    );
+                }
+            }
+        );
+
+        $this->withoutExceptionHandling();
+
+        try {
+            $operation();
+
+            $this->fail(
+                'Expected audit write failure.'
+            );
+        } catch (\RuntimeException $exception) {
+            $this->assertSame(
+                'Forced audit failure.',
+                $exception->getMessage(),
+            );
+        } finally {
+            $armed = false;
+            $this->withExceptionHandling();
+        }
+    }
+
+    public function test_product_audit_minimizes_descriptions_and_tracks_changed_fields(): void
+    {
+        $store = $this->store(
+            'Tenant A'
+        );
+
+        $this->staff(
+            $store['tenant'],
+            'manager@example.com',
+            SystemRoleCatalog::MANAGER,
+        );
+
+        $token = $this->login(
+            $store,
+            'manager@example.com',
+        );
+
+        $response = $this
+            ->withHeaders(
+                $this->headers(
+                    $store,
+                    $token,
+                )
+            )
+            ->postJson(
+                '/api/v1/admin/catalog/products',
+                [
+                    'name_ar' => 'منتج تدقيق',
+
+                    'name_en' => 'Audit Minimized Product',
+
+                    'description_ar' => 'وصف عربي طويل لا يجب تخزينه في سجل التدقيق',
+
+                    'description_en' => 'Full description must not be copied into the audit log.',
+
+                    'is_active' => true,
+                ],
+            );
+
+        $response->assertCreated();
+
+        $productId = (string) $response->json(
+            'data.product.id'
+        );
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use (
+                $productId,
+            ): void {
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::PRODUCT_CREATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        $productId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertArrayNotHasKey(
+                    'description_ar',
+                    $log->after_values,
+                );
+
+                $this->assertArrayNotHasKey(
+                    'description_en',
+                    $log->after_values,
+                );
+            },
+        );
+
+        $this
+            ->withHeaders(
+                $this->headers(
+                    $store,
+                    $token,
+                )
+            )
+            ->patchJson(
+                '/api/v1/admin/catalog/products/'.
+                $productId,
+                [
+                    'description_en' => 'Changed description that must not enter the audit payload.',
+                ],
+            )
+            ->assertOk();
+
+        $this->inTenant(
+            $store['tenant'],
+            function () use (
+                $productId,
+            ): void {
+                $log = AuditLog::query()
+                    ->where(
+                        'action',
+                        AdminAuditAction::PRODUCT_UPDATED,
+                    )
+                    ->where(
+                        'subject_id',
+                        $productId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertArrayNotHasKey(
+                    'description_ar',
+                    $log->before_values,
+                );
+
+                $this->assertArrayNotHasKey(
+                    'description_en',
+                    $log->before_values,
+                );
+
+                $this->assertArrayNotHasKey(
+                    'description_ar',
+                    $log->after_values,
+                );
+
+                $this->assertArrayNotHasKey(
+                    'description_en',
+                    $log->after_values,
+                );
+
+                $this->assertSame(
+                    [
+                        'description_en',
+                    ],
+                    $log->metadata[
+                        'changed_fields'
+                    ],
                 );
             },
         );

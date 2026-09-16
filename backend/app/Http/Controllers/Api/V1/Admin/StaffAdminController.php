@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Audit\AuditLogger;
 use App\Services\AuthorizationGrantGuard;
 use App\Support\ApiResponse;
+use App\Support\Audit\AdminAuditAction;
 use App\Support\Authorization\SystemRoleCatalog;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +21,7 @@ class StaffAdminController extends Controller
 {
     public function __construct(
         private readonly AuthorizationGrantGuard $grantGuard,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -131,6 +134,8 @@ class StaffAdminController extends Controller
                 $data,
                 $email,
                 $roles,
+                $actor,
+                $request,
             ): User {
                 $staff = User::query()->create([
                     'name' => $data['name'],
@@ -140,6 +145,19 @@ class StaffAdminController extends Controller
                 ]);
 
                 $staff->syncRoles($roles);
+
+                $staff->load('roles');
+
+                $this->auditLogger->record(
+                    action: AdminAuditAction::STAFF_CREATED,
+                    subjectType: 'user',
+                    subjectId: $staff->id,
+                    actor: $actor,
+                    after: $this->auditSnapshot(
+                        $staff
+                    ),
+                    request: $request,
+                );
 
                 return $staff;
             }
@@ -301,7 +319,16 @@ class StaffAdminController extends Controller
                 $data,
                 $email,
                 $roles,
+                $actor,
+                $request,
             ): bool {
+                $staff->load('roles');
+
+                $before =
+                    $this->auditSnapshot(
+                        $staff
+                    );
+
                 if (
                     ! $this->preservesActiveOwner(
                         $staff,
@@ -352,6 +379,26 @@ class StaffAdminController extends Controller
                     $staff->tokens()->delete();
                 }
 
+                $staff->unsetRelation(
+                    'roles'
+                );
+
+                $staff->load(
+                    'roles'
+                );
+
+                $this->auditLogger->record(
+                    action: AdminAuditAction::STAFF_UPDATED,
+                    subjectType: 'user',
+                    subjectId: $staff->id,
+                    actor: $actor,
+                    before: $before,
+                    after: $this->auditSnapshot(
+                        $staff
+                    ),
+                    request: $request,
+                );
+
                 return true;
             }
         );
@@ -371,6 +418,28 @@ class StaffAdminController extends Controller
         return ApiResponse::success($request, [
             'staff' => $this->serializeStaff($staff),
         ]);
+    }
+
+    private function auditSnapshot(
+        User $staff,
+    ): array {
+        $staff->loadMissing(
+            'roles'
+        );
+
+        return [
+            'name' => $staff->name,
+
+            'email' => $staff->email,
+
+            'is_active' => (bool) $staff->is_active,
+
+            'role_codes' => $staff->roles
+                ->pluck('code')
+                ->sort()
+                ->values()
+                ->all(),
+        ];
     }
 
     private function preservesActiveOwner(

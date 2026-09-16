@@ -11,22 +11,9 @@ use LogicException;
 
 final class AuditLogger
 {
-    private const SENSITIVE_KEYS = [
-        'password',
-        'password_confirmation',
-        'current_password',
-        'token',
-        'access_token',
-        'refresh_token',
-        'secret',
-        'client_secret',
-        'api_key',
-        'authorization',
-        'app_instance_key',
-    ];
-
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly AuditPayloadSanitizer $sanitizer,
     ) {}
 
     public function record(
@@ -154,79 +141,17 @@ final class AuditLogger
 
                 'ip_address' => $ipAddress,
 
-                'before_values' => $this->sanitize($before),
+                'before_values' => $this->sanitizer->sanitize($before),
 
-                'after_values' => $this->sanitize($after),
+                'after_values' => $this->sanitizer->sanitize($after),
 
                 'metadata' => $metadata === []
                         ? null
-                        : $this->sanitize($metadata),
+                        : $this->sanitizer->sanitize($metadata),
 
                 'occurred_at' => $now,
 
                 'created_at' => $now,
             ]);
-    }
-
-    private function sanitize(?array $values): ?array
-    {
-        if ($values === null) {
-            return null;
-        }
-
-        $sanitized = [];
-
-        foreach ($values as $key => $value) {
-            if (
-                is_string($key) &&
-                $this->isSensitiveKey($key)
-            ) {
-                $sanitized[$key] = '[REDACTED]';
-
-                continue;
-            }
-
-            $sanitized[$key] = is_array($value)
-                ? $this->sanitize($value)
-                : $value;
-        }
-
-        return $sanitized;
-    }
-
-    private function isSensitiveKey(string $key): bool
-    {
-        $normalized = strtolower(
-            str_replace(
-                ['-', '.', ' '],
-                '_',
-                trim($key),
-            )
-        );
-
-        if (
-            in_array(
-                $normalized,
-                self::SENSITIVE_KEYS,
-                true,
-            )
-        ) {
-            return true;
-        }
-
-        foreach (
-            [
-                '_password',
-                '_token',
-                '_secret',
-                '_api_key',
-            ] as $suffix
-        ) {
-            if (str_ends_with($normalized, $suffix)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
