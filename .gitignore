@@ -1,0 +1,58 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+**/build/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.swp
+*.log
+
+# Android generated/local files
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
+# iOS generated files
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+
+# macOS generated files
+macos/Pods/
+macos/.symlinks/
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Linux generated files
+linux/flutter/ephemeral/
+
+# Windows generated files
+windows/flutter/ephemeral/
+
+# Secrets / signing
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+.env
+.env.*
+
+# Safe environment templates may be committed
+!.env.example
+!.env.template
