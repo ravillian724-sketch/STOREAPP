@@ -1,5 +1,7 @@
 import 'package:ecommerce_app/core/network/api_client.dart';
 
+import 'bootstrap_result.dart';
+import 'bootstrap_service.dart';
 import 'environment_config.dart';
 import 'store_config.dart';
 import 'tenant_context.dart';
@@ -25,6 +27,29 @@ class PlatformService {
       _storeConfig != null &&
       _tenantContext != null &&
       _apiClient != null;
+
+  Future<BootstrapResult> bootstrap({
+    BootstrapService? bootstrapService,
+  }) async {
+    final ownsService = bootstrapService == null;
+    final service =
+        bootstrapService ?? BootstrapService();
+
+    try {
+      final result = await service.load();
+
+      initialize(
+        storeConfig: result.storeConfig,
+        branchId: result.defaultBranchId,
+      );
+
+      return result;
+    } finally {
+      if (ownsService) {
+        service.close();
+      }
+    }
+  }
 
   void initialize({
     required StoreConfig storeConfig,
