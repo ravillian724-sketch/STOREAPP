@@ -2,11 +2,13 @@
 
 namespace App\Services\Cart;
 
+use App\Exceptions\Cart\CartIdempotencyConflictException;
 use App\Exceptions\Cart\CartNotAccessibleException;
 use App\Exceptions\Cart\CartNotMutableException;
 use App\Models\AppInstance;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\CartMutationReceipt;
 use App\Models\InventoryLocation;
 use App\Models\Sku;
 use App\Services\Inventory\InventoryReservationService;
@@ -181,6 +183,7 @@ final class CartService
         Sku $sku,
         InventoryLocation $location,
         int $quantity,
+        ?string $idempotencyKey = null,
     ): CartItem {
         if ($quantity <= 0) {
             throw new InvalidArgumentException(
@@ -188,17 +191,52 @@ final class CartService
             );
         }
 
+        $idempotencyKey =
+            $this->normalizeIdempotencyKey(
+                $idempotencyKey
+            );
+
         return DB::transaction(
             function () use (
                 $cart,
                 $sku,
                 $location,
                 $quantity,
+                $idempotencyKey,
             ): CartItem {
+                /*
+                 * The aggregate lock is deliberately first.
+                 *
+                 * Concurrent requests for the same cart
+                 * therefore serialize before either checks
+                 * or creates an idempotency receipt.
+                 */
                 $lockedCart =
                     $this->lockMutableCart(
                         $cart
                     );
+
+                $requestHash = null;
+
+                if ($idempotencyKey !== null) {
+                    $requestHash =
+                        $this->addItemRequestHash(
+                            $sku,
+                            $location,
+                            $quantity,
+                        );
+
+                    $replayed =
+                        $this->replayAddItemIfPresent(
+                            $lockedCart,
+                            $idempotencyKey,
+                            $requestHash,
+                        );
+
+                    if ($replayed !== null) {
+                        return $replayed;
+                    }
+                }
 
                 [
                     $freshSku,
@@ -208,7 +246,7 @@ final class CartService
                     $location,
                 );
 
-                $existing =
+                $item =
                     CartItem::query()
                         ->where(
                             'cart_id',
@@ -225,9 +263,9 @@ final class CartService
                         ->lockForUpdate()
                         ->first();
 
-                if ($existing !== null) {
+                if ($item !== null) {
                     if (
-                        $existing->quantity >
+                        $item->quantity >
                         PHP_INT_MAX - $quantity
                     ) {
                         throw new InvalidArgumentException(
@@ -235,34 +273,34 @@ final class CartService
                         );
                     }
 
-                    $existing->quantity =
-                        $existing->quantity +
+                    $item->quantity =
+                        $item->quantity +
                         $quantity;
 
-                    $existing->save();
+                    $item->save();
+                } else {
+                    $item =
+                        CartItem::query()->create([
+                            'cart_id' => $lockedCart->id,
 
-                    $this->synchronizeReservationIfActive(
-                        $lockedCart,
-                        $existing,
-                        $freshSku,
-                        $freshLocation,
-                    );
+                            'sku_id' => $freshSku->id,
 
-                    return $existing->refresh();
+                            'location_id' => $freshLocation->id,
+
+                            'public_id' => (string) Str::uuid(),
+
+                            'quantity' => $quantity,
+                        ]);
                 }
 
-                $item = CartItem::query()->create([
-                    'cart_id' => $lockedCart->id,
-
-                    'sku_id' => $freshSku->id,
-
-                    'location_id' => $freshLocation->id,
-
-                    'public_id' => (string) Str::uuid(),
-
-                    'quantity' => $quantity,
-                ]);
-
+                /*
+                 * Reservation synchronization and receipt
+                 * creation occur in this SAME transaction.
+                 *
+                 * If either fails, the cart mutation is
+                 * rolled back and the idempotency key is
+                 * not consumed.
+                 */
                 $this->synchronizeReservationIfActive(
                     $lockedCart,
                     $item,
@@ -270,7 +308,28 @@ final class CartService
                     $freshLocation,
                 );
 
-                return $item;
+                if ($idempotencyKey !== null) {
+                    if ($requestHash === null) {
+                        throw new LogicException(
+                            'Idempotency request hash was not generated.'
+                        );
+                    }
+
+                    CartMutationReceipt::query()
+                        ->create([
+                            'cart_id' => $lockedCart->id,
+
+                            'idempotency_key' => $idempotencyKey,
+
+                            'operation' => 'add_item',
+
+                            'request_hash' => $requestHash,
+
+                            'result_item_public_id' => $item->public_id,
+                        ]);
+                }
+
+                return $item->refresh();
             }
         );
     }
@@ -555,6 +614,118 @@ final class CartService
                 'cart_item',
                 $item->public_id,
             );
+    }
+
+    private function normalizeIdempotencyKey(
+        ?string $key,
+    ): ?string {
+        if ($key === null) {
+            return null;
+        }
+
+        $key = trim(
+            $key
+        );
+
+        if (
+            $key === '' ||
+            mb_strlen($key) > 120
+        ) {
+            throw new InvalidArgumentException(
+                'Invalid cart idempotency key.'
+            );
+        }
+
+        return $key;
+    }
+
+    private function addItemRequestHash(
+        Sku $sku,
+        InventoryLocation $location,
+        int $quantity,
+    ): string {
+        /*
+         * Explicit versioning lets a future payload format
+         * evolve without silently changing the meaning of
+         * already persisted receipts.
+         */
+        return hash(
+            'sha256',
+            sprintf(
+                'v1|add_item|sku=%d|location=%d|quantity=%d',
+                (int) $sku->id,
+                (int) $location->id,
+                $quantity,
+            ),
+        );
+    }
+
+    private function replayAddItemIfPresent(
+        Cart $cart,
+        string $idempotencyKey,
+        string $requestHash,
+    ): ?CartItem {
+        $receipt =
+            CartMutationReceipt::query()
+                ->where(
+                    'cart_id',
+                    $cart->id,
+                )
+                ->where(
+                    'idempotency_key',
+                    $idempotencyKey,
+                )
+                ->lockForUpdate()
+                ->first();
+
+        if ($receipt === null) {
+            return null;
+        }
+
+        if (
+            $receipt->operation !==
+                'add_item' ||
+            ! hash_equals(
+                $receipt->request_hash,
+                $requestHash,
+            )
+        ) {
+            throw new CartIdempotencyConflictException;
+        }
+
+        if (
+            $receipt->result_item_public_id
+            === null
+        ) {
+            throw new LogicException(
+                'Idempotent cart mutation result is unavailable.'
+            );
+        }
+
+        $item =
+            CartItem::query()
+                ->where(
+                    'cart_id',
+                    $cart->id,
+                )
+                ->where(
+                    'public_id',
+                    $receipt
+                        ->result_item_public_id,
+                )
+                ->first();
+
+        if ($item === null) {
+            /*
+             * Never re-apply the mutation just because its
+             * historical result line was later removed.
+             */
+            throw new LogicException(
+                'Idempotent cart mutation result no longer exists.'
+            );
+        }
+
+        return $item;
     }
 
     private function hashToken(
