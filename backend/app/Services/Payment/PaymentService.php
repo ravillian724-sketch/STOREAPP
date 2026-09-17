@@ -6,6 +6,7 @@ use App\Exceptions\Payment\PaymentIdempotencyConflictException;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
+use App\Support\Order\OrderStatus;
 use App\Support\Payment\PaymentAttemptStatus;
 use App\Support\Payment\PaymentStatus;
 use App\Support\Tenancy\TenantContext;
@@ -94,6 +95,15 @@ final class PaymentService
                     );
 
                     return $existing;
+                }
+
+                if (
+                    $lockedOrder->status !==
+                    OrderStatus::PENDING
+                ) {
+                    throw new LogicException(
+                        'A new payment obligation can only be created for a pending order.'
+                    );
                 }
 
                 return Payment::query()
@@ -215,6 +225,23 @@ final class PaymentService
                     );
 
                     return $existing;
+                }
+
+                /*
+                 * Replay remains valid after settlement,
+                 * but a NEW provider attempt does not.
+                 *
+                 * AUTHORIZED must continue through the
+                 * existing provider attempt rather than
+                 * opening another charge path.
+                 */
+                if (
+                    $lockedPayment->status !==
+                    PaymentStatus::PENDING
+                ) {
+                    throw new LogicException(
+                        'A new payment attempt can only be created while payment is pending.'
+                    );
                 }
 
                 return PaymentAttempt::query()

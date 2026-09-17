@@ -18,12 +18,18 @@ final readonly class VerifiedPaymentWebhook
 
     public CarbonImmutable $occurredAt;
 
+    public ?int $amountMinor;
+
+    public ?string $currencyCode;
+
     public function __construct(
         string $providerCode,
         string $providerEventId,
         string $providerReference,
         string $eventType,
         DateTimeInterface $occurredAt,
+        ?int $amountMinor = null,
+        ?string $currencyCode = null,
     ) {
         $this->providerCode =
             self::normalizeCode(
@@ -57,6 +63,47 @@ final readonly class VerifiedPaymentWebhook
             CarbonImmutable::instance(
                 $occurredAt
             )->setMicrosecond(0);
+
+        if (
+            ($amountMinor === null) !==
+            ($currencyCode === null)
+        ) {
+            throw new InvalidArgumentException(
+                'Webhook money evidence must contain both amount and currency or neither.'
+            );
+        }
+
+        if ($amountMinor !== null) {
+            if ($amountMinor <= 0) {
+                throw new InvalidArgumentException(
+                    'Webhook payment amount must be positive.'
+                );
+            }
+
+            $currencyCode =
+                strtoupper(
+                    trim(
+                        $currencyCode
+                    )
+                );
+
+            if (
+                preg_match(
+                    '/\A[A-Z]{3}\z/',
+                    $currencyCode,
+                ) !== 1
+            ) {
+                throw new InvalidArgumentException(
+                    'Invalid webhook currency code.'
+                );
+            }
+        }
+
+        $this->amountMinor =
+            $amountMinor;
+
+        $this->currencyCode =
+            $currencyCode;
     }
 
     private static function normalizeCode(

@@ -21,6 +21,7 @@ use App\Support\Payment\PaymentStatus;
 use App\Support\Payment\VerifiedPaymentWebhook;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -167,6 +168,8 @@ class PaymentWebhookBoundaryTest extends TestCase
             'event-001',
         string $eventType =
             'payment.succeeded',
+        ?int $amountMinor = null,
+        ?string $currencyCode = null,
     ): VerifiedPaymentWebhook {
         return new VerifiedPaymentWebhook(
             providerCode: 'gateway_card',
@@ -180,6 +183,10 @@ class PaymentWebhookBoundaryTest extends TestCase
             occurredAt: CarbonImmutable::parse(
                 '2026-09-17T16:00:00+00:00'
             ),
+
+            amountMinor: $amountMinor,
+
+            currencyCode: $currencyCode,
         );
     }
 
@@ -615,6 +622,117 @@ class PaymentWebhookBoundaryTest extends TestCase
                 $attemptB,
                 'foreign-ref',
             ),
+        );
+    }
+
+    public function test_verified_webhook_persists_authenticated_money_evidence(): void
+    {
+        $tenant =
+            $this->tenant();
+
+        [, $attempt] =
+            $this->paymentAttempt(
+                $tenant
+            );
+
+        $this->inTenant(
+            $tenant,
+            fn () => app(
+                PaymentProviderReferenceService::class
+            )->bind(
+                $attempt,
+                'provider-money-001',
+            ),
+        );
+
+        $receipt =
+            $this->inTenant(
+                $tenant,
+                fn (): PaymentWebhookReceipt => app(
+                    PaymentWebhookIngressService::class
+                )->ingest(
+                    new FakePaymentWebhookVerifier(
+                        'gateway_card',
+                        $this->event(
+                            providerReference: 'provider-money-001',
+
+                            providerEventId: 'event-money-001',
+
+                            amountMinor: 1150,
+
+                            currencyCode: 'SAR',
+                        ),
+                    ),
+                    '{"id":"event-money-001","amount":1150,"currency":"SAR"}',
+                    [],
+                    CarbonImmutable::parse(
+                        '2026-09-17T16:00:05+00:00'
+                    ),
+                ),
+            );
+
+        $this->assertSame(
+            1150,
+            $receipt->amount_minor,
+        );
+
+        $this->assertSame(
+            'SAR',
+            $receipt->currency_code,
+        );
+    }
+
+    public function test_postgres_rejects_incomplete_webhook_money_pair(): void
+    {
+        if (
+            DB::connection()->getDriverName()
+            !== 'pgsql'
+        ) {
+            $this->markTestSkipped(
+                'PostgreSQL-specific webhook money constraint proof.'
+            );
+        }
+
+        $tenant =
+            $this->tenant();
+
+        $this->expectException(
+            QueryException::class
+        );
+
+        $this->inTenant(
+            $tenant,
+            fn () => PaymentWebhookReceipt::query()
+                ->create([
+                    'payment_attempt_id' => null,
+
+                    'public_id' => (string) Str::uuid(),
+
+                    'provider_code' => 'gateway_card',
+
+                    'provider_event_id' => 'invalid-money-pair',
+
+                    'provider_reference' => 'invalid-money-ref',
+
+                    'event_type' => 'payment.succeeded',
+
+                    'amount_minor' => 1150,
+
+                    'currency_code' => null,
+
+                    'payload_sha256' => hash(
+                        'sha256',
+                        'invalid-money-pair'
+                    ),
+
+                    'occurred_at' => CarbonImmutable::parse(
+                        '2026-09-17T16:00:00+00:00'
+                    ),
+
+                    'received_at' => CarbonImmutable::parse(
+                        '2026-09-17T16:00:01+00:00'
+                    ),
+                ]),
         );
     }
 

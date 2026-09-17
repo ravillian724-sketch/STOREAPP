@@ -663,4 +663,191 @@ class PaymentIdempotencyServiceTest extends TestCase
             ),
         );
     }
+
+    public function test_terminal_payment_replays_existing_attempt_but_rejects_new_attempt(): void
+    {
+        $tenant =
+            $this->tenant();
+
+        $order =
+            $this->order(
+                $tenant
+            );
+
+        $service =
+            app(
+                PaymentService::class
+            );
+
+        $payment =
+            $this->inTenant(
+                $tenant,
+                fn (): Payment => $service->forOrder(
+                    $order
+                ),
+            );
+
+        $attempt =
+            $this->inTenant(
+                $tenant,
+                fn (): PaymentAttempt => $service->createAttempt(
+                    $payment,
+                    'terminal-replay-key',
+                    'gateway_card',
+                    'mada',
+                ),
+            );
+
+        $this->inTenant(
+            $tenant,
+            function () use ($payment): void {
+                $payment->status =
+                    PaymentStatus::PAID;
+
+                $payment->paid_at =
+                    now();
+
+                $payment->save();
+            },
+        );
+
+        $replay =
+            $this->inTenant(
+                $tenant,
+                fn (): PaymentAttempt => $service->createAttempt(
+                    $payment,
+                    'terminal-replay-key',
+                    'gateway_card',
+                    'mada',
+                ),
+            );
+
+        $this->assertSame(
+            $attempt->id,
+            $replay->id,
+        );
+
+        try {
+            $this->inTenant(
+                $tenant,
+                fn () => $service->createAttempt(
+                    $payment,
+                    'terminal-new-key',
+                    'gateway_card',
+                    'visa',
+                ),
+            );
+
+            $this->fail(
+                'Expected terminal payment to reject a new attempt.'
+            );
+        } catch (LogicException) {
+            $this->addToAssertionCount(
+                1
+            );
+        }
+
+        $this->inTenant(
+            $tenant,
+            fn () => $this->assertSame(
+                1,
+                PaymentAttempt::query()
+                    ->count(),
+            ),
+        );
+    }
+
+    public function test_terminal_order_replays_existing_payment_but_cannot_materialize_new_payment(): void
+    {
+        $tenant =
+            $this->tenant();
+
+        $service =
+            app(
+                PaymentService::class
+            );
+
+        $existingOrder =
+            $this->order(
+                $tenant
+            );
+
+        $existingPayment =
+            $this->inTenant(
+                $tenant,
+                fn (): Payment => $service->forOrder(
+                    $existingOrder
+                ),
+            );
+
+        $this->inTenant(
+            $tenant,
+            function () use ($existingOrder): void {
+                $existingOrder->status =
+                    OrderStatus::CONFIRMED;
+
+                $existingOrder->confirmed_at =
+                    now();
+
+                $existingOrder->save();
+            },
+        );
+
+        $replay =
+            $this->inTenant(
+                $tenant,
+                fn (): Payment => $service->forOrder(
+                    $existingOrder
+                ),
+            );
+
+        $this->assertSame(
+            $existingPayment->id,
+            $replay->id,
+        );
+
+        $cancelledOrder =
+            $this->order(
+                $tenant
+            );
+
+        $this->inTenant(
+            $tenant,
+            function () use ($cancelledOrder): void {
+                $cancelledOrder->status =
+                    OrderStatus::CANCELLED;
+
+                $cancelledOrder->cancelled_at =
+                    now();
+
+                $cancelledOrder->save();
+            },
+        );
+
+        try {
+            $this->inTenant(
+                $tenant,
+                fn () => $service->forOrder(
+                    $cancelledOrder
+                ),
+            );
+
+            $this->fail(
+                'Expected terminal order to reject new payment materialization.'
+            );
+        } catch (LogicException) {
+            $this->addToAssertionCount(
+                1
+            );
+        }
+
+        $this->inTenant(
+            $tenant,
+            fn () => $this->assertSame(
+                1,
+                Payment::query()
+                    ->count(),
+            ),
+        );
+    }
 }

@@ -163,6 +163,10 @@ final class PaymentWebhookIngressService
 
                         'event_type' => $event->eventType,
 
+                        'amount_minor' => $event->amountMinor,
+
+                        'currency_code' => $event->currencyCode,
+
                         'payload_sha256' => $payloadSha256,
 
                         'occurred_at' => $event->occurredAt,
@@ -190,6 +194,14 @@ final class PaymentWebhookIngressService
                 $event->providerReference ||
             $receipt->event_type !==
                 $event->eventType ||
+            (
+                $receipt->amount_minor === null
+                    ? $event->amountMinor !== null
+                    : (int) $receipt->amount_minor !==
+                        $event->amountMinor
+            ) ||
+            $receipt->currency_code !==
+                $event->currencyCode ||
             $receipt->payload_sha256 !==
                 $payloadSha256 ||
             $receipt->occurred_at === null ||

@@ -17,6 +17,8 @@ class PaymentWebhookReceipt extends Model
         'provider_event_id',
         'provider_reference',
         'event_type',
+        'amount_minor',
+        'currency_code',
         'payload_sha256',
         'occurred_at',
         'received_at',
@@ -26,10 +28,10 @@ class PaymentWebhookReceipt extends Model
     protected function casts(): array
     {
         return [
+            'amount_minor' => 'integer',
+
             'occurred_at' => 'immutable_datetime',
-
             'received_at' => 'immutable_datetime',
-
             'processed_at' => 'immutable_datetime',
         ];
     }
