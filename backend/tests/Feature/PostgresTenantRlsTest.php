@@ -91,6 +91,7 @@ class PostgresTenantRlsTest extends TestCase
                     'inventory_reservations',
                     'order_items',
                     'orders',
+                    'sku_prices',
                     'stock_ledger_entries'
                 )
                 ORDER BY c.relname
@@ -113,6 +114,7 @@ class PostgresTenantRlsTest extends TestCase
                 'products',
                 'role_user',
                 'roles',
+                'sku_prices',
                 'skus',
                 'stock_ledger_entries',
                 'users',
