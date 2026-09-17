@@ -304,20 +304,28 @@ final class PaymentSuccessService
                  * still unsettled.
                  */
                 if (
-                    $receipt->processed_at !== null &&
-                    ! $alreadySettled
-                ) {
-                    throw new LogicException(
-                        'Webhook receipt is marked processed but the payment aggregate is not settled.'
-                    );
-                }
-
-                if (
                     $receipt->processing_outcome !== null &&
                     $receipt->processed_at === null
                 ) {
                     throw new LogicException(
                         'Webhook processing outcome exists without processed timestamp.'
+                    );
+                }
+
+                if (
+                    $receipt->processed_at !== null &&
+                    $receipt->processing_outcome ===
+                        PaymentWebhookProcessingOutcome::REQUIRES_RECONCILIATION
+                ) {
+                    return $payment->refresh();
+                }
+
+                if (
+                    $receipt->processed_at !== null &&
+                    ! $alreadySettled
+                ) {
+                    throw new LogicException(
+                        'Webhook receipt is marked processed but the payment aggregate is not settled.'
                     );
                 }
 
@@ -335,9 +343,12 @@ final class PaymentSuccessService
                     $partiallySettled &&
                     ! $alreadySettled
                 ) {
-                    throw new LogicException(
-                        'Payment success aggregate is partially settled and requires reconciliation.'
+                    $this->markRequiresReconciliation(
+                        $receipt,
+                        $instant,
                     );
+
+                    return $payment->refresh();
                 }
 
                 if (
@@ -350,27 +361,26 @@ final class PaymentSuccessService
                         true,
                     )
                 ) {
-                    throw new LogicException(
-                        'A terminal failed or cancelled attempt cannot become successful.'
+                    $this->markRequiresReconciliation(
+                        $receipt,
+                        $instant,
                     );
+
+                    return $payment->refresh();
                 }
 
                 if (
                     $payment->status ===
-                    PaymentStatus::CANCELLED
-                ) {
-                    throw new LogicException(
-                        'Cancelled payment cannot become paid.'
-                    );
-                }
-
-                if (
+                        PaymentStatus::CANCELLED ||
                     $order->status ===
-                    OrderStatus::CANCELLED
+                        OrderStatus::CANCELLED
                 ) {
-                    throw new LogicException(
-                        'Cancelled order cannot be confirmed by payment success.'
+                    $this->markRequiresReconciliation(
+                        $receipt,
+                        $instant,
                     );
+
+                    return $payment->refresh();
                 }
 
                 /*
@@ -488,6 +498,19 @@ final class PaymentSuccessService
                 return $payment->refresh();
             }
         );
+    }
+
+    private function markRequiresReconciliation(
+        PaymentWebhookReceipt $receipt,
+        CarbonImmutable $instant,
+    ): void {
+        $receipt->processed_at =
+            $instant;
+
+        $receipt->processing_outcome =
+            PaymentWebhookProcessingOutcome::REQUIRES_RECONCILIATION;
+
+        $receipt->save();
     }
 
     private function assertProviderIdentity(

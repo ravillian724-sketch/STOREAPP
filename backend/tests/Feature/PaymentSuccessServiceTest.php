@@ -836,4 +836,89 @@ class PaymentSuccessServiceTest extends TestCase
             },
         );
     }
+
+    public function test_success_after_terminal_failure_requires_reconciliation_without_downgrade(): void
+    {
+        $fixture =
+            $this->fixture();
+
+        $this->inTenant(
+            $fixture['tenant'],
+            function () use (
+                $fixture
+            ): void {
+                $attempt =
+                    $fixture['attempt'];
+
+                $attempt->status =
+                    PaymentAttemptStatus::FAILED;
+
+                $attempt->failed_at =
+                    $fixture['processed_at']
+                        ->subSeconds(2);
+
+                $attempt->save();
+
+                $reservation =
+                    $fixture['reservation']
+                        ->refresh();
+
+                $expiresAtBefore =
+                    $reservation->expires_at;
+
+                $payment =
+                    app(
+                        PaymentSuccessService::class
+                    )->confirm(
+                        $fixture['receipt'],
+                        $fixture['processed_at'],
+                    );
+
+                $this->assertSame(
+                    PaymentStatus::PENDING,
+                    $payment->status,
+                );
+
+                $this->assertSame(
+                    PaymentAttemptStatus::FAILED,
+                    $attempt->refresh()
+                        ->status,
+                );
+
+                $this->assertSame(
+                    OrderStatus::PENDING,
+                    $fixture['order']
+                        ->refresh()
+                        ->status,
+                );
+
+                $reservation->refresh();
+
+                $this->assertSame(
+                    InventoryReservationStatus::ACTIVE,
+                    $reservation->status,
+                );
+
+                $this->assertTrue(
+                    $reservation->expires_at
+                        ->equalTo(
+                            $expiresAtBefore
+                        )
+                );
+
+                $receipt =
+                    $fixture['receipt']
+                        ->refresh();
+
+                $this->assertNotNull(
+                    $receipt->processed_at
+                );
+
+                $this->assertSame(
+                    PaymentWebhookProcessingOutcome::REQUIRES_RECONCILIATION,
+                    $receipt->processing_outcome,
+                );
+            },
+        );
+    }
 }
