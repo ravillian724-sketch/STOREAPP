@@ -1,6 +1,7 @@
 import 'package:ecommerce_app/core/class/statusrequest.dart';
 import 'package:ecommerce_app/core/constant/routes.dart';
 import 'package:ecommerce_app/core/services/services.dart';
+import 'package:ecommerce_app/core/platform/platform_service.dart';
 import 'package:ecommerce_app/data/datasource/remote/home_data.dart';
 import 'package:ecommerce_app/data/model/itemsmodel.dart';
 import 'package:flutter/cupertino.dart';
@@ -44,26 +45,56 @@ class HomeControllerImp extends HomeController {
   @override
   getData() async {
     statusRequest = StatusRequest.loading;
-    var response = await homeData.getData();
-    // await Future.delayed(const Duration(seconds: 3));
-    appDebugLog(
-        "========================================Controller  $response");
-    statusRequest = handlingData(response);
-    if (StatusRequest.success == statusRequest) {
-      listdata.clear();
-      if (response['status'] == "success") {
-        categories.addAll(response['categories']['data']);
-        items.addAll(response['items']['data'] as Iterable);
-        settingsdata.addAll(response['settings']['data']);
+    update();
 
-        titelhomeCard = settingsdata[0]['settings_titel'];
-        bodyhomeCard = settingsdata[0]['settings_body'];
-        myServices.sharedPreferences.setString("deliverytime",
-            settingsdata[0]['settings_deliverytime'].toString());
+    final response = await homeData.getData();
+    appDebugLog(
+      "========================================Controller  $response",
+    );
+
+    statusRequest = handlingData(response);
+
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success") {
+        categories
+          ..clear()
+          ..addAll(response['categories']['data']);
+        items
+          ..clear()
+          ..addAll(response['items']['data'] as Iterable);
+        settingsdata
+          ..clear()
+          ..addAll(response['settings']['data']);
+
+        final store = PlatformService.instance.storeConfig;
+        final isArabic = lang == "ar";
+
+        if (settingsdata.isNotEmpty) {
+          titelhomeCard =
+              settingsdata.first['settings_titel']?.toString() ?? '';
+          bodyhomeCard = settingsdata.first['settings_body']?.toString() ?? '';
+
+          final configuredDelivery =
+              settingsdata.first['settings_deliverytime']?.toString();
+
+          if (configuredDelivery != null &&
+              configuredDelivery.trim().isNotEmpty) {
+            myServices.sharedPreferences.setString(
+              "deliverytime",
+              configuredDelivery,
+            );
+          }
+        } else if (store != null) {
+          titelhomeCard = isArabic ? store.nameAr : store.nameEn;
+          bodyhomeCard = isArabic
+              ? "أسعار وتوفر محدثان من الفرع"
+              : "Current pricing and branch availability";
+        }
       } else {
         statusRequest = StatusRequest.failure;
       }
     }
+
     update();
   }
 
@@ -100,8 +131,8 @@ class HomeControllerImp extends HomeController {
   @override
   void onInit() {
     search = TextEditingController();
-    getData();
     initialData();
+    getData();
     super.onInit();
   }
 }
@@ -110,8 +141,8 @@ class HomeControllerImp extends HomeController {
 
 class SearchMixController extends GetxController {
   List<ItemsModel> listdata = [];
-  HomeData homeData = HomeData(Get.find());
-  late StatusRequest statusRequest;
+  HomeData homeData = HomeData();
+  StatusRequest statusRequest = StatusRequest.none;
   bool isSearch = false;
   TextEditingController? search;
   checkSearch(val) {

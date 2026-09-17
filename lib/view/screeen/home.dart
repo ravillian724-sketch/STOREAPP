@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerce_app/controller/home_controller.dart';
 import 'package:ecommerce_app/core/class/handlingdataview.dart';
 import 'package:ecommerce_app/core/constant/routes.dart';
-import 'package:ecommerce_app/linkapi.dart';
+import 'package:ecommerce_app/core/functions/storefront_display.dart';
 import 'package:ecommerce_app/view/widget/home/customcardhome.dart';
 import 'package:ecommerce_app/view/widget/home/customtitlehome.dart';
 import 'package:ecommerce_app/view/widget/home/listcategorieshome.dart';
@@ -67,12 +67,16 @@ class HomePage extends GetView<HomeControllerImp> {
                                   CustomCardHome(
                                       title: controller.titelhomeCard,
                                       body: controller.bodyhomeCard),
-                                  const SizedBox(height: 20),
-                                  CustomTitleHome(title: "54".tr),
-                                  const ListCategoriesHome(),
-                                  const SizedBox(height: 10),
-                                  CustomTitleHome(title: "Top Selling".tr),
-                                  const ListItemsHome(),
+                                  if (controller.categories.isNotEmpty) ...[
+                                    const SizedBox(height: 20),
+                                    CustomTitleHome(title: "54".tr),
+                                    const ListCategoriesHome(),
+                                    const SizedBox(height: 10),
+                                  ],
+                                  if (controller.items.isNotEmpty) ...[
+                                    CustomTitleHome(title: "Top Selling".tr),
+                                    const ListItemsHome(),
+                                  ],
                                 ],
                               )
                             : ListItemsSearch(
@@ -102,6 +106,10 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
       itemBuilder: (context, index) {
+        final item = listdatamodel[index];
+        final imageUrl = resolveProductImageUrl(item.itemsImage);
+        final isArabic = Get.locale?.languageCode == 'ar';
+
         return TweenAnimationBuilder(
           duration: Duration(milliseconds: 200 + (index * 100)),
           tween: Tween<double>(begin: 0, end: 1),
@@ -120,7 +128,7 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: () {
-                      controller.goToPageProductDetails(listdatamodel[index]);
+                      controller.goToPageProductDetails(item);
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -134,22 +142,36 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(15),
-                              child: CachedNetworkImage(
-                                imageUrl:
-                                    "${AppLink.imageItems}/${listdatamodel[index].itemsImage}",
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: Colors.grey[100],
-                                  child: const Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: Colors.grey[100],
-                                  child: const Icon(Icons.error,
-                                      color: Colors.red),
-                                ),
-                              ),
+                              child: imageUrl == null
+                                  ? Container(
+                                      color: Colors.grey[100],
+                                      alignment: Alignment.center,
+                                      child: Icon(
+                                        Icons.medication_outlined,
+                                        color: Colors.blueGrey[300],
+                                        size: 44,
+                                      ),
+                                    )
+                                  : CachedNetworkImage(
+                                      imageUrl: imageUrl,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color: Colors.grey[100],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          Container(
+                                        color: Colors.grey[100],
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          Icons.medication_outlined,
+                                          color: Colors.blueGrey[300],
+                                          size: 44,
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ),
                           const SizedBox(width: 15),
@@ -159,43 +181,69 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
                               children: [
                                 Text(
                                   translateDatabase(
-                                      listdatamodel[index].itemsNameAr,
-                                      listdatamodel[index].itemsName),
+                                    item.itemsNameAr,
+                                    item.itemsName,
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
                                     letterSpacing: 0.5,
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    "${listdatamodel[index].subcategoryName}",
-                                    style: TextStyle(
-                                      color: Colors.blue[700],
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  "${listdatamodel[index].itemsScientificformula}",
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black54,
-                                    height: 1.3,
-                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  formatStoreMoney(
+                                    item.itemsPrice,
+                                    item.currencyCode,
+                                    isArabic: isArabic,
+                                  ),
+                                  style: TextStyle(
+                                    color: Colors.blue[800],
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (item.availableToSell != null) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    isArabic
+                                        ? "متوفر: ${item.availableToSell}"
+                                        : "Available: ${item.availableToSell}",
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                                if (item.subcategoryName?.trim().isNotEmpty ==
+                                    true) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    item.subcategoryName!,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                                if (item.itemsScientificformula
+                                        ?.trim()
+                                        .isNotEmpty ==
+                                    true) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    item.itemsScientificformula!,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.black54,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ],
                             ),
                           ),

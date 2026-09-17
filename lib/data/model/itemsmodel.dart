@@ -22,6 +22,13 @@ class ItemsModel {
   int? categoryId;
   String? favorite;
   double? itemspricediscount;
+  bool platformManaged;
+  String? platformProductId;
+  String? platformSkuId;
+  String? platformSkuCode;
+  String? platformBarcode;
+  String? currencyCode;
+  int? availableToSell;
 
   ItemsModel(
       {this.itemsId,
@@ -46,9 +53,18 @@ class ItemsModel {
       this.subcategoryDatetime,
       this.categoryId,
       this.favorite,
-      this.itemspricediscount});
+      this.itemspricediscount,
+      this.platformManaged = false,
+      this.platformProductId,
+      this.platformSkuId,
+      this.platformSkuCode,
+      this.platformBarcode,
+      this.currencyCode,
+      this.availableToSell});
 
-  ItemsModel.fromJson(Map<String, dynamic> json) {
+  ItemsModel.fromJson(Map<String, dynamic> json)
+      : platformManaged = json['platform_managed'] == true ||
+            json['platform_managed']?.toString() == '1' {
     itemsId = json['items_id'];
     itemsName = json['items_name'];
     itemsNameAr = json['items_name_ar'];
@@ -76,6 +92,14 @@ class ItemsModel {
     itemspricediscount = json['itemspricediscount'] is int
         ? (json['itemspricediscount'] as int).toDouble()
         : json['itemspricediscount']?.toDouble();
+    platformProductId = json['platform_product_id']?.toString();
+    platformSkuId = json['platform_sku_id']?.toString();
+    platformSkuCode = json['platform_sku_code']?.toString();
+    platformBarcode = json['platform_barcode']?.toString();
+    currencyCode = json['currency_code']?.toString();
+    availableToSell = int.tryParse(
+      json['available_to_sell']?.toString() ?? '',
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -103,6 +127,13 @@ class ItemsModel {
     data['category_id'] = categoryId;
     data['favorite'] = favorite;
     data['itemspricediscount'] = itemspricediscount;
+    data['platform_managed'] = platformManaged;
+    data['platform_product_id'] = platformProductId;
+    data['platform_sku_id'] = platformSkuId;
+    data['platform_sku_code'] = platformSkuCode;
+    data['platform_barcode'] = platformBarcode;
+    data['currency_code'] = currencyCode;
+    data['available_to_sell'] = availableToSell;
     return data;
   }
 }

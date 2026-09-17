@@ -1,12 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerce_app/controller/home_controller.dart';
+import 'package:ecommerce_app/core/functions/storefront_display.dart';
 import 'package:ecommerce_app/core/functions/translatedatabase.dart';
 import 'package:ecommerce_app/data/model/itemsmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/functions/responsivehelper.dart';
-import '../../../linkapi.dart';
 
 class ListItemsHome extends GetView<HomeControllerImp> {
   const ListItemsHome({super.key});
@@ -37,6 +37,9 @@ class ItemsHome extends GetView<HomeControllerImp> {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = resolveProductImageUrl(itemsModel.itemsImage);
+    final isArabic = Get.locale?.languageCode == 'ar';
+
     return GestureDetector(
       onTap: () {
         controller.goToPageProductDetails(itemsModel);
@@ -60,22 +63,39 @@ class ItemsHome extends GetView<HomeControllerImp> {
             // صورة المنتج مع تأثير الانتقال
             ClipRRect(
               borderRadius: BorderRadius.circular(Responsive.radius(30)),
-              child: CachedNetworkImage(
-                imageUrl: "${AppLink.imageItems}/${itemsModel.itemsImage}",
-                height: 160,
-                width: 220,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[100],
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[100],
-                  child: const Icon(Icons.error, color: Colors.red),
-                ),
-              ),
+              child: imageUrl == null
+                  ? Container(
+                      height: 160,
+                      width: 220,
+                      color: Colors.grey[100],
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.medication_outlined,
+                        color: Colors.blueGrey[300],
+                        size: 56,
+                      ),
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      height: 160,
+                      width: 220,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[100],
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[100],
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.medication_outlined,
+                          color: Colors.blueGrey[300],
+                          size: 56,
+                        ),
+                      ),
+                    ),
             ),
 
             // طبقة التظليل المتدرجة
@@ -129,7 +149,11 @@ class ItemsHome extends GetView<HomeControllerImp> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "${itemsModel.itemsPrice} \$",
+                          formatStoreMoney(
+                            itemsModel.itemsPrice,
+                            itemsModel.currencyCode,
+                            isArabic: isArabic,
+                          ),
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
