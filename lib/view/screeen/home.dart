@@ -64,8 +64,9 @@ class HomePage extends GetView<HomeControllerImp> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 15),
-                                  CustomCardHome(title: "${controller.titelhomeCard!}",
-                                        body: "${controller.bodyhomeCard!}"),
+                                  CustomCardHome(
+                                      title: controller.titelhomeCard,
+                                      body: controller.bodyhomeCard),
                                   const SizedBox(height: 20),
                                   CustomTitleHome(title: "54".tr),
                                   const ListCategoriesHome(),
@@ -74,16 +75,16 @@ class HomePage extends GetView<HomeControllerImp> {
                                   const ListItemsHome(),
                                 ],
                               )
-                            : ListItemsSearch(listdatamodel: controller.listdata),
+                            : ListItemsSearch(
+                                listdatamodel: controller.listdata),
                       ),
                     ],
                   ),
                 ),
-
               ],
             ),
           ),
-          Positioned(child: ChatBotBubble())
+          const Positioned(child: ChatBotBubble())
         ],
       ),
     );
@@ -97,26 +98,21 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-
       itemCount: listdatamodel.length,
-
       shrinkWrap: true,
-
       physics: const BouncingScrollPhysics(),
       itemBuilder: (context, index) {
         return TweenAnimationBuilder(
-
           duration: Duration(milliseconds: 200 + (index * 100)),
           tween: Tween<double>(begin: 0, end: 1),
           builder: (context, double value, child) {
             return Transform.scale(
               scale: value,
-
               child: Container(
                 margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
                 child: Card(
                   elevation: 5,
-                  shadowColor: Colors.blue.withOpacity(0.2),
+                  shadowColor: Colors.blue.withValues(alpha: 0.2),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                     side: BorderSide(color: Colors.grey.shade200),
@@ -125,7 +121,6 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
                     borderRadius: BorderRadius.circular(20),
                     onTap: () {
                       controller.goToPageProductDetails(listdatamodel[index]);
-
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -139,21 +134,22 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(15),
-                                child: CachedNetworkImage(
-                                  imageUrl: "${AppLink.imageItems}/${listdatamodel[index].itemsImage}",
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
-                                    color: Colors.grey[100],
-                                    child: const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  ),
-                                  errorWidget: (context, url, error) => Container(
-                                    color: Colors.grey[100],
-                                    child: const Icon(Icons.error, color: Colors.red),
+                              child: CachedNetworkImage(
+                                imageUrl:
+                                    "${AppLink.imageItems}/${listdatamodel[index].itemsImage}",
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: Colors.grey[100],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
                                   ),
                                 ),
-
+                                errorWidget: (context, url, error) => Container(
+                                  color: Colors.grey[100],
+                                  child: const Icon(Icons.error,
+                                      color: Colors.red),
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 15),
@@ -162,7 +158,9 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  translateDatabase(listdatamodel[index].itemsNameAr,listdatamodel[index].itemsName),
+                                  translateDatabase(
+                                      listdatamodel[index].itemsNameAr,
+                                      listdatamodel[index].itemsName),
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -172,9 +170,10 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
                                 ),
                                 const SizedBox(height: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.withOpacity(0.1),
+                                    color: Colors.blue.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -213,4 +212,3 @@ class ListItemsSearch extends GetView<HomeControllerImp> {
     );
   }
 }
-

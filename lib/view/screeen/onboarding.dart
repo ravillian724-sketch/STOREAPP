@@ -5,29 +5,33 @@ import '../../core/constant/color.dart';
 import '../widget/onboarding/customboutton.dart';
 import '../widget/onboarding/customslider.dart';
 import '../widget/onboarding/dotscontroller.dart';
+
 class OnBoarding extends StatelessWidget {
   const OnBoarding({super.key});
 
   @override
   Widget build(BuildContext context) {
-    Get.put(onBoardingControllerImp());
+    Get.put(OnBoardingControllerImp());
     return const Scaffold(
       backgroundColor: AppColor.backgroundCoor,
       body: SafeArea(
-        child: Column(children: [
+        child: Column(
+          children: [
             Expanded(
               flex: 4,
               child: CustomsliderOnBoading(),
             ),
             Expanded(
-              flex: 1,
-                child:Column(
+                flex: 1,
+                child: Column(
                   children: [
                     CoustomDotControllerOnBoarding(),
-                    Spacer(flex: 2,),
+                    Spacer(
+                      flex: 2,
+                    ),
                     CustomBouttonOnBoarding(),
                   ],
-                ) )
+                ))
           ],
         ),
       ),

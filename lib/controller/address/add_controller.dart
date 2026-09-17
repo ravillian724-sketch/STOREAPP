@@ -7,53 +7,70 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/constant/routes.dart';
 
-class AdDAddressController extends GetxController{
-
-  List<Marker> markers= [];
+class AdDAddressController extends GetxController {
+  List<Marker> markers = [];
 
   double? lat;
   double? long;
   StatusRequest statusRequest = StatusRequest.loading;
 
-  Completer<GoogleMapController>? Completercontroller ;
+  final Completer<GoogleMapController> completerController =
+      Completer<GoogleMapController>();
 
   Position? position;
 
-   CameraPosition? kGooglePlex ;
+  CameraPosition? kGooglePlex;
 
-
-addMarkers(LatLng latLng){
-  markers.clear();
-  markers.add(Marker(markerId: const MarkerId("1"),position: latLng));
-  lat = latLng.latitude;
-  long = latLng.longitude;
-  update();
-}
-
-void goToPageAddDetailsAddress() {
-  final currentLat = lat;
-  final currentLong = long;
-
-  if (currentLat == null || currentLong == null) {
-    return;
+  addMarkers(LatLng latLng) {
+    markers.clear();
+    markers.add(Marker(markerId: const MarkerId("1"), position: latLng));
+    lat = latLng.latitude;
+    long = latLng.longitude;
+    update();
   }
 
-  Get.toNamed(
-    AppRoute.addressadddetails,
-    arguments: {
-      "lat": currentLat.toString(),
-      "long": currentLong.toString(),
-    },
-  );
-}
+  void goToPageAddDetailsAddress() {
+    final currentLat = lat;
+    final currentLong = long;
+
+    if (currentLat == null || currentLong == null) {
+      return;
+    }
+
+    Get.toNamed(
+      AppRoute.addressadddetails,
+      arguments: {
+        "lat": currentLat.toString(),
+        "long": currentLong.toString(),
+      },
+    );
+  }
 
   Future<void> getCurrentLocation() async {
     try {
       statusRequest = StatusRequest.loading;
       update();
 
-      final currentPosition =
-          await Geolocator.getCurrentPosition();
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        statusRequest = StatusRequest.failure;
+        update();
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        statusRequest = StatusRequest.failure;
+        update();
+        return;
+      }
+
+      final currentPosition = await Geolocator.getCurrentPosition();
 
       position = currentPosition;
 
@@ -82,12 +99,9 @@ void goToPageAddDetailsAddress() {
     update();
   }
 
-
   @override
   void onInit() {
     getCurrentLocation();
-    Completercontroller = Completer<GoogleMapController>();
     super.onInit();
   }
-
 }

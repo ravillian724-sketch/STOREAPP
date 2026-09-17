@@ -6,45 +6,49 @@ import 'package:get/get.dart';
 
 import '../../core/functions/handlingdatacontroller.dart';
 
-abstract class ResetPasswordController extends GetxController{
+import 'package:ecommerce_app/core/logging/app_logger.dart';
+
+abstract class ResetPasswordController extends GetxController {
   goToSuccessResetPassword();
 }
-class ResetPasswordControllerImp extends ResetPasswordController{
-  GlobalKey<FormState> formstate= GlobalKey<FormState>();
+
+class ResetPasswordControllerImp extends ResetPasswordController {
+  GlobalKey<FormState> formstate = GlobalKey<FormState>();
   late TextEditingController password;
   late TextEditingController repassword;
 
   ResetPasswordData resetPasswordData = ResetPasswordData(Get.find());
-  StatusRequest statusRequest =StatusRequest.none;
+  StatusRequest statusRequest = StatusRequest.none;
   String? email;
 
-
   @override
-  goToSuccessResetPassword() async{
-    if(password.text!=repassword.text){
-      Get.defaultDialog(title: "44".tr , middleText: "49".tr);  //not match
+  goToSuccessResetPassword() async {
+    if (password.text != repassword.text) {
+      Get.defaultDialog(title: "44".tr, middleText: "49".tr); //not match
     }
     var formdata = formstate.currentState;
-    if(formdata!.validate()){
+    if (formdata!.validate()) {
       statusRequest = StatusRequest.loading;
       update();
-      var response = await resetPasswordData.postData(email! , password.text);
+      var response = await resetPasswordData.postData(email!, password.text);
       await Future.delayed(const Duration(seconds: 3));
-      print("========================================Controller $response=======================================");
+      appDebugLog(
+          "========================================Controller $response=======================================");
       statusRequest = handlingData(response);
-      if(StatusRequest.success==statusRequest){
-        if(response['status']=="success"){
-          Get.offNamed(AppRoute.successResetPassword,arguments: {"email":email});
-        }else{
-          Get.defaultDialog(title: "44".tr ,middleText: "50".tr); // "Warning Try Again
+      if (StatusRequest.success == statusRequest) {
+        if (response['status'] == "success") {
+          Get.offNamed(AppRoute.successResetPassword,
+              arguments: {"email": email});
+        } else {
+          Get.defaultDialog(
+              title: "44".tr, middleText: "50".tr); // "Warning Try Again
           statusRequest = StatusRequest.failure;
         }
       }
       update();
-      print("valid");
-    }else
-    {
-      print("not valid");
+      appDebugLog("valid");
+    } else {
+      appDebugLog("not valid");
     }
   }
 
@@ -55,12 +59,11 @@ class ResetPasswordControllerImp extends ResetPasswordController{
     repassword = TextEditingController();
     super.onInit();
   }
+
   @override
   void dispose() {
     password.dispose();
     repassword.dispose();
     super.dispose();
   }
-
-
 }

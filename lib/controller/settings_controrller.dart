@@ -3,20 +3,18 @@ import 'package:ecommerce_app/core/services/services.dart';
 import 'package:ecommerce_app/data/datasource/remote/users_data.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart';
 
 import '../core/class/statusrequest.dart';
 import '../core/functions/handlingdatacontroller.dart';
 import '../data/model/usersmodel.dart';
 
-class SettingsController extends GetxController{
+import 'package:ecommerce_app/core/logging/app_logger.dart';
 
-MyServices myServices = Get.find();
-List<UsersModel>data = [];
-late StatusRequest statusRequest;
-UsersData usersData = UsersData(Get.find());
-
-
+class SettingsController extends GetxController {
+  MyServices myServices = Get.find();
+  List<UsersModel> data = [];
+  StatusRequest statusRequest = StatusRequest.none;
+  UsersData usersData = UsersData(Get.find());
 
   Future<void> logout() async {
     final String? userid = myServices.userId;
@@ -25,8 +23,7 @@ UsersData usersData = UsersData(Get.find());
       await FirebaseMessaging.instance.unsubscribeFromTopic("users");
 
       if (userid != null) {
-        await FirebaseMessaging.instance
-            .unsubscribeFromTopic("users$userid");
+        await FirebaseMessaging.instance.unsubscribeFromTopic("users$userid");
       }
     } catch (_) {
       // Logout must continue even if FCM unsubscribe fails.
@@ -36,30 +33,29 @@ UsersData usersData = UsersData(Get.find());
     Get.offAllNamed(AppRoute.login);
   }
 
-getData()async{
-  statusRequest = StatusRequest.loading;
+  getData() async {
+    statusRequest = StatusRequest.loading;
 
-  var response = await usersData.getData();
-  print("========================================Controller  $response");
-  statusRequest = handlingData(response);
-  if(StatusRequest.success==statusRequest){
-    if(response['status']=="success"){
-
-      List datalist = response['data'];
-      data.addAll(datalist.map((e) => UsersModel.fromJson(e)).toList());
+    var response = await usersData.getData();
+    appDebugLog(
+        "========================================Controller  $response");
+    statusRequest = handlingData(response);
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success") {
+        List datalist = response['data'];
+        data.addAll(datalist.map((e) => UsersModel.fromJson(e)).toList());
+      } else {
+        statusRequest = StatusRequest.failure;
+      }
     }
-
-    else{
-      statusRequest = StatusRequest.failure;
-    }
+    update();
   }
-  update();
-}
 
-@override
+  @override
   void onInit() {
-    getData();
+    if (myServices.hasValidSession) {
+      getData();
+    }
     super.onInit();
   }
-
 }

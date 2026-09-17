@@ -10,11 +10,11 @@ class OrdersTracking extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    TrackingController controller2 = Get.put(TrackingController());
+    Get.put(TrackingController());
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Orders Tracking"),
+        title: const Text("Orders Tracking"),
         elevation: 0,
       ),
       body: Container(
@@ -28,7 +28,7 @@ class OrdersTracking extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     child: GoogleMap(
                       polylines: controller.polylineSet2,
                       mapType: MapType.normal,
@@ -48,7 +48,7 @@ class OrdersTracking extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildInfoBox(controller.distanceText),
-                      Spacer(),
+                      const Spacer(),
                       _buildInfoBox(controller.durationText),
                     ],
                   ),

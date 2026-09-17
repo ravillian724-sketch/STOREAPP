@@ -6,19 +6,18 @@ import 'package:ecommerce_app/view/widget/productdetails/priceandcount.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/functions/translatedatabase.dart';
-import '../widget/ExbandableTextWidget.dart';
+import '../widget/expandable_text_widget.dart';
 import '../widget/dialogwarning.dart';
 import '../widget/productdetails/topproductpagedetails.dart';
 
 class ProductDetails extends StatelessWidget {
-
   const ProductDetails({
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    ProductDetailsControllerImp controller = Get.put(ProductDetailsControllerImp());
+    Get.put(ProductDetailsControllerImp());
     return Scaffold(
       bottomNavigationBar: Container(
         margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
@@ -83,18 +82,20 @@ class ProductDetails extends StatelessWidget {
                           controller.itemsModel.itemsNameAr,
                           controller.itemsModel.itemsName,
                         ),
-                        style: Theme.of(context).textTheme.headlineLarge!.copyWith(
-                          color: AppColor.fourthColor,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.headlineLarge!.copyWith(
+                                  color: AppColor.fourthColor,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       const SizedBox(height: 20),
                       PriceAndCountItems(
                         count: "${controller.countitems}",
-                        price: controller.itemsModel.itemsDiscount! > 0 ?
-                             controller.itemsModel.itemspricediscount != null ? "${controller.itemsModel.itemsPrice!.toStringAsFixed(2)} ${controller.itemsModel.itemspricediscount!.toStringAsFixed(2)}\$"
-                            : "${controller.itemsModel.itemsPrice!.toStringAsFixed(2)}\$ ${controller.itemsModel.itemspricediscount}"
+                        price: controller.itemsModel.itemsDiscount! > 0
+                            ? controller.itemsModel.itemspricediscount != null
+                                ? "${controller.itemsModel.itemsPrice!.toStringAsFixed(2)} ${controller.itemsModel.itemspricediscount!.toStringAsFixed(2)}\$"
+                                : "${controller.itemsModel.itemsPrice!.toStringAsFixed(2)}\$ ${controller.itemsModel.itemspricediscount}"
                             : "${controller.itemsModel.itemsPrice}\$",
                         onAdd: () {
                           if (controller.itemsModel.itemsPrescription == 1) {
@@ -134,7 +135,7 @@ class ProductDetails extends StatelessWidget {
                           border: Border.all(color: Colors.grey.shade200),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
+                              color: Colors.grey.withValues(alpha: 0.1),
                               blurRadius: 5,
                               spreadRadius: 1,
                             ),
@@ -145,7 +146,8 @@ class ProductDetails extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.description_outlined, color: AppColor.primaryColor),
+                                const Icon(Icons.description_outlined,
+                                    color: AppColor.primaryColor),
                                 const SizedBox(width: 8),
                                 Text(
                                   "Description",
@@ -170,10 +172,11 @@ class ProductDetails extends StatelessWidget {
                       const SizedBox(height: 20),
                       Text(
                         "64".tr,
-                        style: Theme.of(context).textTheme.headlineLarge!.copyWith(
-                          color: AppColor.fourthColor,
-                          fontSize: 20,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.headlineLarge!.copyWith(
+                                  color: AppColor.fourthColor,
+                                  fontSize: 20,
+                                ),
                       ),
                     ],
                   ),

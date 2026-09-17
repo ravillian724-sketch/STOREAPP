@@ -15,11 +15,9 @@ class ApiException implements Exception {
 }
 
 class ApiTimeoutException extends ApiException {
-  const ApiTimeoutException()
-      : super('Request timed out');
+  const ApiTimeoutException() : super('Request timed out');
 }
 
 class ApiNetworkException extends ApiException {
-  const ApiNetworkException()
-      : super('Network request failed');
+  const ApiNetworkException() : super('Network request failed');
 }

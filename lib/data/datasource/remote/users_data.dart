@@ -1,17 +1,15 @@
-
 import '../../../core/class/crud.dart';
 import '../../../linkapi.dart';
 
-class UsersData{
+class UsersData {
   Crud crud;
   UsersData(this.crud);
 
-  getData()async{
+  getData() async {
     var response = await crud.postData(AppLink.usersview, {});
-    return response.fold((l) => l, (r) => r,);
-
+    return response.fold(
+      (l) => l,
+      (r) => r,
+    );
   }
-
-
-
 }

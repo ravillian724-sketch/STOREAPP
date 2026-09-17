@@ -25,7 +25,7 @@ class CustomCardHome extends GetView<HomeControllerImp> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin:  EdgeInsets.symmetric(vertical: Responsive.margin(16)),
+      margin: EdgeInsets.symmetric(vertical: Responsive.margin(16)),
       child: Stack(
         children: [
           Container(
@@ -35,7 +35,7 @@ class CustomCardHome extends GetView<HomeControllerImp> {
               color: AppColor.primaryColor,
               boxShadow: [
                 BoxShadow(
-                  color: AppColor.primaryColor.withOpacity(0.3),
+                  color: AppColor.primaryColor.withValues(alpha: 0.3),
                   spreadRadius: 2,
                   blurRadius: 8,
                   offset: const Offset(0, 3),
@@ -52,10 +52,12 @@ class CustomCardHome extends GetView<HomeControllerImp> {
             ),
             height: Responsive.h(300),
             child: ListTile(
-              contentPadding:  EdgeInsets.symmetric(horizontal: Responsive.padding(30), vertical: Responsive.padding(10)),
+              contentPadding: EdgeInsets.symmetric(
+                  horizontal: Responsive.padding(30),
+                  vertical: Responsive.padding(10)),
               title: Text(
                 title!,
-                style:  TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: Responsive.font(30),
                   fontWeight: FontWeight.bold,
@@ -69,10 +71,10 @@ class CustomCardHome extends GetView<HomeControllerImp> {
                 ),
               ),
               subtitle: Padding(
-                padding:  EdgeInsets.only(top: Responsive.padding(12)),
+                padding: EdgeInsets.only(top: Responsive.padding(12)),
                 child: Text(
                   body!,
-                  style:  TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: Responsive.font(60),
                     fontWeight: FontWeight.w600,
@@ -152,10 +154,12 @@ class _AnimatedLottieWidgetState extends State<AnimatedLottieWidget> {
       height: Responsive.h(300),
       width: Responsive.w(300),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(Responsive.radius(280),),
+        borderRadius: BorderRadius.circular(
+          Responsive.radius(280),
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColor.secondColor.withOpacity(0.2),
+            color: AppColor.secondColor.withValues(alpha: 0.2),
             spreadRadius: 1,
             blurRadius: 6,
           ),
@@ -164,7 +168,8 @@ class _AnimatedLottieWidgetState extends State<AnimatedLottieWidget> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(Responsive.radius(280)),
         child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 500), // مدة الانتقال بين الملفين
+          duration:
+              const Duration(milliseconds: 500), // مدة الانتقال بين الملفين
           child: _showInitialLottie
               ? Lottie.asset(
                   widget.initialLottiePath,

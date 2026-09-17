@@ -48,7 +48,6 @@ dependencies:
   show_up_animation: ^2.0.0
   auto_animated: ^3.0.1
   #Google Map
-  flutter_polyline_points: ^2.1.0
   google_maps_flutter: ^2.12.1
   google_maps_flutter_web: ^0.5.12
   geolocator: ^13.0.2
@@ -66,12 +65,9 @@ dependencies:
   shared_preferences: ^2.0.15
   path: ^1.8.0
   #Google Auth
-  googleapis_auth: ^2.0.0
   google_sign_in: ^6.2.2
   device_preview: ^1.2.0
   responsive_builder: ^0.7.1
-  image_picker_web:
-  image_picker_android:
   #Qrcode
   qr_flutter: ^4.0.0
   grouped_list: ^6.0.0
@@ -88,7 +84,6 @@ dependencies:
   geocoding: ^3.0.0
   flutter_ringtone_player: ^4.0.0+4
   rating_dialog: ^2.0.4
-  google_generative_ai: ^0.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -118,17 +113,17 @@ flutter:
   fonts:
     - family: Cairo
       fonts:
+        - asset: assets/fonts/Cairo-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Cairo-Light.ttf
+          weight: 300
         - asset: assets/fonts/Cairo-Regular.ttf
-          weight: 700
+          weight: 400
+        - asset: assets/fonts/Cairo-SemiBold.ttf
+          weight: 600
         - asset: assets/fonts/Cairo-Bold.ttf
           weight: 700
-        - asset: assets/fonts/Cairo-ExtraLight.ttf
-          weight: 500
         - asset: assets/fonts/Cairo-Black.ttf
-          weight: 900
-        - asset: assets/fonts/Cairo-Light.ttf
-          weight: 900
-        - asset: assets/fonts/Cairo-SemiBold.ttf
           weight: 900
 #    - family: Roboto
 #      fonts:

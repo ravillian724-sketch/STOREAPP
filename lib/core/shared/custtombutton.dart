@@ -9,15 +9,17 @@ class Custtombutton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 10,right: 20,left: 20),
+      margin: const EdgeInsets.only(top: 10, right: 20, left: 20),
       child: MaterialButton(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(vertical: 5),
-        onPressed:onPressed,
+        onPressed: onPressed,
         color: AppColor.primaryColor,
         textColor: Colors.white,
-        child: Text(text,style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold),),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

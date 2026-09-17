@@ -5,32 +5,34 @@ import 'package:get/get.dart';
 
 import '../core/constant/routes.dart';
 
-abstract class onBoardingController extends GetxController{
+abstract class OnBoardingController extends GetxController {
   next();
   onPageChanged(int index);
 }
-class onBoardingControllerImp extends onBoardingController{
 
+class OnBoardingControllerImp extends OnBoardingController {
   final PageController pageController = PageController();
-  int cuurentPage=0;
+  int currentPage = 0;
 
   MyServices myServices = Get.find();
   @override
   next() {
-    cuurentPage++;
-    if(cuurentPage>onBoardingList.length-1){
+    currentPage++;
+    if (currentPage > onBoardingList.length - 1) {
       myServices.sharedPreferences.setString("step", "1");
       Get.offAllNamed(AppRoute.login);
-    }else{
-      pageController.animateToPage(cuurentPage, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+    } else {
+      pageController.animateToPage(currentPage,
+          duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
     }
   }
 
   @override
   onPageChanged(int index) {
-    cuurentPage = index;
+    currentPage = index;
     update();
   }
+
   @override
   void dispose() {
     pageController.dispose(); // تنظيف الموارد

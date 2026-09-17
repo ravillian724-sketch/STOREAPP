@@ -4,8 +4,7 @@ import 'package:ecommerce_app/view/widget/auth/customtexttitelauth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_otp_text_field/flutter_otp_text_field.dart';
 import 'package:get/get.dart';
-import '../../../../controller/forgetpassword/verfiycode_controller.dart';
-
+import 'package:ecommerce_app/controller/forgetpassword/verfiycode_controller.dart';
 
 class VerfiyCode extends StatelessWidget {
   const VerfiyCode({super.key});
@@ -19,64 +18,78 @@ class VerfiyCode extends StatelessWidget {
         backgroundColor: AppColor.backgroundCoor,
         elevation: 0.0,
         centerTitle: true,
-        title: Text("Verification Code",style: Theme.of(context).textTheme.headlineLarge!.copyWith(color: AppColor.grey),),
+        title: Text(
+          "Verification Code",
+          style: Theme.of(context)
+              .textTheme
+              .headlineLarge!
+              .copyWith(color: AppColor.grey),
+        ),
       ),
-      body:Container(
-        padding: const EdgeInsets.symmetric(vertical: 15,horizontal: 30),
+      body: Container(
+        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(30),
             topRight: Radius.circular(30),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               spreadRadius: 1,
               blurRadius: 5,
-              offset: Offset(0, -3),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
         child: ListView(
-          children:[
+          children: [
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                color: AppColor.primaryColor.withOpacity(0.1),
+                color: AppColor.primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColor.primaryColor.withOpacity(0.2),
+                    color: AppColor.primaryColor.withValues(alpha: 0.2),
                     spreadRadius: 1,
                     blurRadius: 15,
-                    offset: Offset(0, 5),
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.security,
                 size: 80,
                 color: AppColor.primaryColor,
               ),
             ),
             const SizedBox(height: 20),
-            CustomTextTitelAuth(text: '23'.tr,), //"Check Code"
-            const SizedBox(height: 10,),
+            CustomTextTitelAuth(
+              text: '23'.tr,
+            ), //"Check Code"
+            const SizedBox(
+              height: 10,
+            ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(
-                  color: AppColor.primaryColor.withOpacity(0.2),
+                  color: AppColor.primaryColor.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),
-              child: CustomTextBodyAuth(bodyText: "${"25".tr}\n${controller.email}"), //"Please Enter The Digit Code Sent To love14144Mn@gmail.com"
+              child: CustomTextBodyAuth(
+                  bodyText:
+                      "${"25".tr}\n${controller.email}"), //"Please Enter The Digit Code Sent To love14144Mn@gmail.com"
             ),
-            const SizedBox(height: 25,),
+            const SizedBox(
+              height: 25,
+            ),
             Directionality(
               textDirection: TextDirection.ltr,
               child: OtpTextField(
@@ -92,10 +105,10 @@ class VerfiyCode extends StatelessWidget {
                   //handle validation or checks here
                 },
                 //runs when every textfield is filled
-                onSubmit: (String verificationCode){
+                onSubmit: (String verificationCode) {
                   controller.goToRestPassword(verificationCode);
                 }, // end onSubmit
-                textStyle: TextStyle(
+                textStyle: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -107,8 +120,6 @@ class VerfiyCode extends StatelessWidget {
             //   text:"22".tr,//Check
             //   onPressed: (){},
             // ),
-
-
           ],
         ),
       ),

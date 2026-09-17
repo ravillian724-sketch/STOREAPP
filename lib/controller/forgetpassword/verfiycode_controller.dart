@@ -7,32 +7,36 @@ import '../../core/constant/color.dart';
 import '../../core/functions/handlingdatacontroller.dart';
 import '../../view/widget/dialogwarning.dart';
 
-abstract class VerfiyCodeController extends GetxController{
+import 'package:ecommerce_app/core/logging/app_logger.dart';
+
+abstract class VerfiyCodeController extends GetxController {
   checkCode();
   goToRestPassword(String verfiycode);
-
 }
-class VerfiyCodeControllerImp extends VerfiyCodeController{
-  VerfiyCodeForgetPasswordData verfiyCodeForgetPasswordData = VerfiyCodeForgetPasswordData(Get.find());
+
+class VerfiyCodeControllerImp extends VerfiyCodeController {
+  VerfiyCodeForgetPasswordData verfiyCodeForgetPasswordData =
+      VerfiyCodeForgetPasswordData(Get.find());
   String? email;
   StatusRequest? statusRequest;
 
   @override
-  checkCode() {
-  }
+  checkCode() {}
   @override
-  goToRestPassword(verfiycode) async{
+  goToRestPassword(verfiycode) async {
     statusRequest = StatusRequest.loading;
     update();
-    var response = await verfiyCodeForgetPasswordData.postData(email! , verfiycode);
+    var response =
+        await verfiyCodeForgetPasswordData.postData(email!, verfiycode);
     await Future.delayed(const Duration(seconds: 3));
-    print("========================================Controller $response==============");
+    appDebugLog(
+        "========================================Controller $response==============");
     statusRequest = handlingData(response);
-    if(StatusRequest.success==statusRequest){
-      if(response['status']=="success"){
-        Get.offNamed(AppRoute.resetPassword,arguments: {"email":email});
-      }else{
-      //  Get.defaultDialog(title: "44".tr ,middleText: "46".tr); // "Warning  Verfiy Code Not Correct"
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success") {
+        Get.offNamed(AppRoute.resetPassword, arguments: {"email": email});
+      } else {
+        //  Get.defaultDialog(title: "44".tr ,middleText: "46".tr); // "Warning  Verfiy Code Not Correct"
         statusRequest = StatusRequest.failure;
         DialogWarning(
           title: "44".tr,
@@ -44,7 +48,7 @@ class VerfiyCodeControllerImp extends VerfiyCodeController{
       }
     }
     update();
-    print("valid");
+    appDebugLog("valid");
   }
 
   @override

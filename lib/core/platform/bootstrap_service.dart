@@ -15,12 +15,15 @@ class BootstrapService {
     http.Client? client,
     this.timeout = StartupPerformancePolicy.bootstrapNetworkTimeout,
     String? appInstanceKey,
+    String? apiBaseUrl,
   })  : _client = client ?? http.Client(),
-        _appInstanceKey = appInstanceKey ?? AppInstanceConfig.instanceKey;
+        _appInstanceKey = appInstanceKey ?? AppInstanceConfig.instanceKey,
+        _apiBaseUrl = apiBaseUrl;
 
   final http.Client _client;
   final Duration timeout;
   final String _appInstanceKey;
+  final String? _apiBaseUrl;
 
   Future<BootstrapResult> load() async {
     final normalizedInstanceKey = _appInstanceKey.trim();
@@ -31,13 +34,12 @@ class BootstrapService {
       );
     }
 
-    final normalizedBaseUrl = EnvironmentConfig.apiBaseUrl.replaceFirst(
-      RegExp(r'/+$'),
-      '',
-    );
-
-    final uri = Uri.parse(
-      '$normalizedBaseUrl/api/v1/bootstrap',
+    final baseUri = EnvironmentConfig.requireApiBaseUri(_apiBaseUrl);
+    final basePath = baseUri.path == '/' ? '' : baseUri.path;
+    final uri = baseUri.replace(
+      path: '$basePath/api/v1/bootstrap',
+      query: null,
+      fragment: null,
     );
 
     try {

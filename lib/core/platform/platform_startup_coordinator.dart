@@ -3,39 +3,32 @@ import 'bootstrap_result.dart';
 import 'platform_service.dart';
 import 'platform_startup_state.dart';
 
-typedef PlatformBootstrap =
-    Future<BootstrapResult> Function();
+typedef PlatformBootstrap = Future<BootstrapResult> Function();
 
 class PlatformStartupCoordinator {
   PlatformStartupCoordinator({
     PlatformBootstrap? bootstrap,
-  }) : _bootstrap =
-            bootstrap ?? PlatformService.instance.bootstrap;
+  }) : _bootstrap = bootstrap ?? PlatformService.instance.bootstrap;
 
   final PlatformBootstrap _bootstrap;
 
-  PlatformStartupState _state =
-      const PlatformStartupState.idle();
+  PlatformStartupState _state = const PlatformStartupState.idle();
 
   PlatformStartupState get state => _state;
 
   Future<PlatformStartupState> start() async {
-    _state =
-        const PlatformStartupState.bootstrapping();
+    _state = const PlatformStartupState.bootstrapping();
 
     try {
       await _bootstrap();
 
-      _state =
-          const PlatformStartupState.ready();
+      _state = const PlatformStartupState.ready();
     } on ApiNetworkException catch (error) {
-      _state =
-          PlatformStartupState.networkUnavailable(
+      _state = PlatformStartupState.networkUnavailable(
         message: error.message,
       );
     } on ApiTimeoutException catch (error) {
-      _state =
-          PlatformStartupState.serverUnavailable(
+      _state = PlatformStartupState.serverUnavailable(
         message: error.message,
       );
     } on ApiException catch (error) {
@@ -75,8 +68,7 @@ class PlatformStartupCoordinator {
 
     if (statusCode == 408 ||
         statusCode == 429 ||
-        (statusCode != null &&
-            statusCode >= 500)) {
+        (statusCode != null && statusCode >= 500)) {
       return PlatformStartupState.serverUnavailable(
         message: error.message,
         statusCode: statusCode,

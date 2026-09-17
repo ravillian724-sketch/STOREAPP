@@ -1,20 +1,17 @@
 import 'package:ecommerce_app/core/class/handlingdataview.dart';
-import 'package:ecommerce_app/core/constant/color.dart';
 import 'package:ecommerce_app/core/constant/routes.dart';
-import 'package:ecommerce_app/view/widget/auth/custombuttomauth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../controller/orders/details_controller.dart';
-import '../widget/orders/CustomBottonTracking.dart';
+import '../widget/orders/custom_button_tracking.dart';
 
 class OrdersDetails extends StatelessWidget {
   const OrdersDetails({super.key});
 
   @override
   Widget build(BuildContext context) {
-    OrdersDetailsController controller = Get.put(OrdersDetailsController());
+    Get.put(OrdersDetailsController());
     return Scaffold(
       appBar: AppBar(
         title: Text("146".tr), //Orders Details
@@ -24,8 +21,7 @@ class OrdersDetails extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         color: Colors.white,
         child: GetBuilder<OrdersDetailsController>(
-            builder: (controller) =>
-                HandlingDataView(
+            builder: (controller) => HandlingDataView(
                   statusRequest: controller.statusRequest,
                   widget: ListView(
                     children: [
@@ -43,7 +39,8 @@ class OrdersDetails extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.shopping_bag_outlined, color: Color(0xFF0D6E9E)),
+                                  const Icon(Icons.shopping_bag_outlined,
+                                      color: Color(0xFF0D6E9E)),
                                   const SizedBox(width: 8),
                                   Text(
                                     "146".tr, // Order Details
@@ -79,7 +76,8 @@ class OrdersDetails extends StatelessWidget {
                                       ),
                                       children: [
                                         Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 6),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 6),
                                           child: Text(
                                             "147".tr, // Product Name
                                             textAlign: TextAlign.start,
@@ -104,7 +102,8 @@ class OrdersDetails extends StatelessWidget {
                                           ),
                                         ),
                                         Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 6),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 6),
                                           child: Text(
                                             "150".tr, // Price
                                             textAlign: TextAlign.end,
@@ -119,32 +118,42 @@ class OrdersDetails extends StatelessWidget {
                                     ),
                                     ...List.generate(
                                       controller.data.length,
-                                          (index) =>
-                                          TableRow(
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                                child: Text(
-                                                  "${controller.data[index].itemsName}", textAlign: TextAlign.start,
-                                                  style: const TextStyle(fontSize: 16),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                                child: Text(
-                                                  "${controller.data[index].countitems}", textAlign: TextAlign.center,
-                                                  style: const TextStyle(fontSize: 16,fontFamily: "ciro"),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                                child: Text(
-                                                  "${controller.data[index].itemsPrice} \$",
-                                                  textAlign: TextAlign.end, style: const TextStyle(fontSize: 16,fontFamily: "cairo"),
-                                                ),
-                                              ),
-                                            ],
+                                      (index) => TableRow(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 8),
+                                            child: Text(
+                                              "${controller.data[index].itemsName}",
+                                              textAlign: TextAlign.start,
+                                              style:
+                                                  const TextStyle(fontSize: 16),
+                                            ),
                                           ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 8),
+                                            child: Text(
+                                              "${controller.data[index].countitems}",
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontFamily: "ciro"),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 8),
+                                            child: Text(
+                                              "${controller.data[index].itemsPrice} \$",
+                                              textAlign: TextAlign.end,
+                                              style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontFamily: "cairo"),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -159,8 +168,8 @@ class OrdersDetails extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment
-                                      .spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       "151".tr, // Total Price
@@ -171,8 +180,7 @@ class OrdersDetails extends StatelessWidget {
                                       ),
                                     ),
                                     Text(
-                                      "${controller.ordersModel
-                                          .ordersTotalprice!.round()} \$",
+                                      "${controller.ordersModel.ordersTotalprice!.round()} \$",
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -186,106 +194,110 @@ class OrdersDetails extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (controller.ordersModel.ordersType == "0") Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 1,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.location_on_outlined,
-                                      color: Color(0xFF0D6E9E)),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "153".tr, // Shipping Address
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  "${controller.ordersModel
-                                      .addressCity} ${controller.ordersModel
-                                      .addressStreet} ${controller.ordersModel
-                                      .addressName}",
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      if (controller.ordersModel.ordersType == "0")
+                        Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        ),
-                      ),
-                      if (controller.ordersModel.ordersType == "0") Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 5, // تقليل الظل
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.map_outlined,
-                                      color: Color(0xFF0D6E9E)),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "153".tr, // Delivery Location
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on_outlined,
+                                        color: Color(0xFF0D6E9E)),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "153".tr, // Shipping Address
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  height: 200,
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
                                   width: double.infinity,
-                                  child: GoogleMap(
-                                    mapType: MapType.normal,
-                                    markers: controller.markers.toSet(),
-                                    initialCameraPosition: controller
-                                        .cameraPosition!,
-                                    onMapCreated: (
-                                        GoogleMapController controllermap) {
-                                      controller.Completercontroller!.complete(
-                                          controllermap);
-                                    },
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    "${controller.ordersModel.addressCity} ${controller.ordersModel.addressStreet} ${controller.ordersModel.addressName}",
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                      if (controller.ordersModel.ordersType == "0")
+                        Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          elevation: 5, // تقليل الظل
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.map_outlined,
+                                        color: Color(0xFF0D6E9E)),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "153".tr, // Delivery Location
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: SizedBox(
+                                    height: 200,
+                                    width: double.infinity,
+                                    child: GoogleMap(
+                                      mapType: MapType.normal,
+                                      markers: controller.markers.toSet(),
+                                      initialCameraPosition:
+                                          controller.cameraPosition!,
+                                      onMapCreated:
+                                          (GoogleMapController controllermap) {
+                                        controller.completerController
+                                            .complete(controllermap);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 10),
-                      if(controller.ordersModel.ordersStatus == "3")
-                        CustomBottonTracking(text: "195".tr, onPressed: (){
-                        Get.toNamed(AppRoute.tracking, arguments: {"ordersmodel": controller.ordersModel});
-                      },)
+                      if (controller.ordersModel.ordersStatus == "3")
+                        CustomButtonTracking(
+                          text: "195".tr,
+                          onPressed: () {
+                            Get.toNamed(AppRoute.tracking, arguments: {
+                              "ordersmodel": controller.ordersModel
+                            });
+                          },
+                        )
                     ],
                   ),
                 )),

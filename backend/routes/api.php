@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Staff\AuthController;
+use App\Http\Controllers\Api\V1\StorefrontCatalogController;
 use App\Support\Authorization\PermissionCatalog;
 use App\Support\Authorization\StaffLoginRateLimit;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,16 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/branches',
             [BranchController::class, 'index'],
+        );
+
+        Route::get(
+            '/storefront/home',
+            [StorefrontCatalogController::class, 'home'],
+        );
+
+        Route::get(
+            '/storefront/products',
+            [StorefrontCatalogController::class, 'index'],
         );
 
         Route::prefix('staff/auth')

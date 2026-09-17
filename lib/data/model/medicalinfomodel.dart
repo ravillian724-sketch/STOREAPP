@@ -14,17 +14,17 @@ class MedicalInfoModel {
 
   MedicalInfoModel(
       {this.medicalInfoId,
-        this.medicalInfoUsersId,
-        this.medicalInfoAge,
-        this.medicalInfoHeight,
-        this.medicalInfoWeight,
-        this.medicalInfoGender,
-        this.medicalInfoChronicDiseases,
-        this.medicalInfoAllergies,
-        this.medicalInfoCurrentMedications,
-        this.medicalInfoBloodType,
-        this.medicalInfoAdditionalNotes,
-        this.medicalInfoCreatedate});
+      this.medicalInfoUsersId,
+      this.medicalInfoAge,
+      this.medicalInfoHeight,
+      this.medicalInfoWeight,
+      this.medicalInfoGender,
+      this.medicalInfoChronicDiseases,
+      this.medicalInfoAllergies,
+      this.medicalInfoCurrentMedications,
+      this.medicalInfoBloodType,
+      this.medicalInfoAdditionalNotes,
+      this.medicalInfoCreatedate});
 
   MedicalInfoModel.fromJson(Map<String, dynamic> json) {
     medicalInfoId = json['medical_info_id'];
@@ -42,20 +42,19 @@ class MedicalInfoModel {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['medical_info_id'] = this.medicalInfoId;
-    data['medical_info_users_id'] = this.medicalInfoUsersId;
-    data['medical_info_age'] = this.medicalInfoAge;
-    data['medical_info_height'] = this.medicalInfoHeight;
-    data['medical_info_weight'] = this.medicalInfoWeight;
-    data['medical_info_gender'] = this.medicalInfoGender;
-    data['medical_info_chronic_diseases'] = this.medicalInfoChronicDiseases;
-    data['medical_info_allergies'] = this.medicalInfoAllergies;
-    data['medical_info_current_medications'] =
-        this.medicalInfoCurrentMedications;
-    data['medical_info_blood_type'] = this.medicalInfoBloodType;
-    data['medical_info_additional_notes'] = this.medicalInfoAdditionalNotes;
-    data['medical_info_createdate'] = this.medicalInfoCreatedate;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['medical_info_id'] = medicalInfoId;
+    data['medical_info_users_id'] = medicalInfoUsersId;
+    data['medical_info_age'] = medicalInfoAge;
+    data['medical_info_height'] = medicalInfoHeight;
+    data['medical_info_weight'] = medicalInfoWeight;
+    data['medical_info_gender'] = medicalInfoGender;
+    data['medical_info_chronic_diseases'] = medicalInfoChronicDiseases;
+    data['medical_info_allergies'] = medicalInfoAllergies;
+    data['medical_info_current_medications'] = medicalInfoCurrentMedications;
+    data['medical_info_blood_type'] = medicalInfoBloodType;
+    data['medical_info_additional_notes'] = medicalInfoAdditionalNotes;
+    data['medical_info_createdate'] = medicalInfoCreatedate;
     return data;
   }
 }

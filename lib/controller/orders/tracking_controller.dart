@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +8,8 @@ import '../../core/class/statusrequest.dart';
 import '../../core/constant/color.dart';
 import '../../core/services/services.dart';
 import '../../data/model/ordersmodel.dart';
+
+import 'package:ecommerce_app/core/logging/app_logger.dart';
 
 class TrackingController extends GetxController {
   List<Marker> markers = [];
@@ -61,7 +62,7 @@ class TrackingController extends GetxController {
   }
 
   void getLocationDelivery() {
-    print("✅ بدء الاستماع لموقع عامل التوصيل");
+    appDebugLog("✅ بدء الاستماع لموقع عامل التوصيل");
 
     FirebaseFirestore.instance
         .collection("delivery")
@@ -107,12 +108,12 @@ class TrackingController extends GetxController {
         currentlong == null ||
         destlat == null ||
         destlong == null) {
-      print("❌ بيانات المواقع غير مكتملة");
+      appDebugLog("❌ بيانات المواقع غير مكتملة");
       return;
     }
 
     final url =
-        "http://router.project-osrm.org/route/v1/driving/$currentlong,$currentlat;$destlong,$destlat?overview=full&geometries=geojson";
+        "https://router.project-osrm.org/route/v1/driving/$currentlong,$currentlat;$destlong,$destlat?overview=full&geometries=geojson";
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -160,22 +161,26 @@ class TrackingController extends GetxController {
             });
           }
         } else {
-          print("❌ لا توجد مسارات من OSRM.");
+          appDebugLog("❌ لا توجد مسارات من OSRM.");
         }
       } else {
-        print("❌ فشل تحميل المسار. كود: ${response.statusCode}");
+        appDebugLog("❌ فشل تحميل المسار. كود: ${response.statusCode}");
       }
     } catch (e) {
-      print("❌ خطأ في جلب المسار: $e");
+      appDebugLog("❌ خطأ في جلب المسار: $e");
     }
   }
 
   LatLngBounds _getLatLngBounds(LatLng pos1, LatLng pos2) {
-    double southWestLat = pos1.latitude < pos2.latitude ? pos1.latitude : pos2.latitude;
-    double southWestLng = pos1.longitude < pos2.longitude ? pos1.longitude : pos2.longitude;
+    double southWestLat =
+        pos1.latitude < pos2.latitude ? pos1.latitude : pos2.latitude;
+    double southWestLng =
+        pos1.longitude < pos2.longitude ? pos1.longitude : pos2.longitude;
 
-    double northEastLat = pos1.latitude > pos2.latitude ? pos1.latitude : pos2.latitude;
-    double northEastLng = pos1.longitude > pos2.longitude ? pos1.longitude : pos2.longitude;
+    double northEastLat =
+        pos1.latitude > pos2.latitude ? pos1.latitude : pos2.latitude;
+    double northEastLng =
+        pos1.longitude > pos2.longitude ? pos1.longitude : pos2.longitude;
 
     return LatLngBounds(
       southwest: LatLng(southWestLat, southWestLng),
@@ -185,7 +190,7 @@ class TrackingController extends GetxController {
 
   @override
   void onClose() {
-    print("🛑 تم إغلاق التتبع");
+    appDebugLog("🛑 تم إغلاق التتبع");
     gmc?.dispose();
     super.onClose();
   }

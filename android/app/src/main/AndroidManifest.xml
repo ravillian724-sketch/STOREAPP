@@ -25,12 +25,12 @@
 
 
     <application
-        android:usesCleartextTraffic="true"
-        android:label="ecommerce_app"
+        android:usesCleartextTraffic="${usesCleartextTraffic}"
+        android:label="${appDisplayName}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDS2gU2fTsXjHNcebRtaHcUxWkyWO2pdFs"/>
+            android:value="${googleMapsApiKey}"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

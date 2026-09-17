@@ -1,7 +1,6 @@
 import 'package:ecommerce_app/controller/items_controller.dart';
 import 'package:ecommerce_app/core/class/handlingdataview.dart';
 import 'package:ecommerce_app/data/model/itemsmodel.dart';
-import 'package:ecommerce_app/view/widget/items/listcategoriesitems.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -17,7 +16,7 @@ class Items extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     FavoriteController controllerFav = Get.put(FavoriteController());
-   ItemsControllerImp controller = Get.put(ItemsControllerImp());
+    Get.put(ItemsControllerImp());
     Get.lazyPut(() => ItemsControllerImp());
     return Scaffold(
       body: Container(
@@ -60,24 +59,30 @@ class Items extends StatelessWidget {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: controller.data.length,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             childAspectRatio: 0.6,
                             crossAxisSpacing: 15,
                             mainAxisSpacing: 15,
                           ),
                           itemBuilder: (BuildContext context, index) {
-                            controllerFav.isFavorite[controller.data[index]['items_id']] =
+                            controllerFav.isFavorite[controller.data[index]
+                                    ['items_id']] =
                                 controller.data[index]['favorite'];
                             return TweenAnimationBuilder(
-                              duration: Duration(milliseconds: 300 + (index * 50)), // تسريع الانيميشن
-                              curve: Curves.easeInOut, // إضافة منحنى حركة أكثر سلاسة
+                              duration: Duration(
+                                  milliseconds:
+                                      300 + (index * 50)), // تسريع الانيميشن
+                              curve: Curves
+                                  .easeInOut, // إضافة منحنى حركة أكثر سلاسة
                               tween: Tween<double>(begin: 0, end: 1),
                               builder: (context, double value, child) {
                                 return Transform.scale(
                                   scale: value,
                                   child: CustomListItems(
-                                    itemsModel: ItemsModel.fromJson(controller.data[index]),
+                                    itemsModel: ItemsModel.fromJson(
+                                        controller.data[index]),
                                   ),
                                 );
                               },

@@ -4,13 +4,13 @@ import 'package:get/get.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/functions/responsivehelper.dart';
 
-class CustomBouttonOnBoarding extends GetView<onBoardingControllerImp> {
+class CustomBouttonOnBoarding extends GetView<OnBoardingControllerImp> {
   const CustomBouttonOnBoarding({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin:  EdgeInsets.only(bottom: Responsive.margin(60)),
+      margin: EdgeInsets.only(bottom: Responsive.margin(60)),
       height: Responsive.h(90),
       width: Responsive.w(400),
       decoration: BoxDecoration(
@@ -18,17 +18,17 @@ class CustomBouttonOnBoarding extends GetView<onBoardingControllerImp> {
         gradient: LinearGradient(
           colors: [
             AppColor.primaryColor,
-            AppColor.primaryColor.withOpacity(0.7),
+            AppColor.primaryColor.withValues(alpha: 0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColor.primaryColor.withOpacity(0.4),
+            color: AppColor.primaryColor.withValues(alpha: 0.4),
             spreadRadius: 1,
             blurRadius: 8,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -45,7 +45,7 @@ class CustomBouttonOnBoarding extends GetView<onBoardingControllerImp> {
           ),
           padding: EdgeInsets.zero,
         ),
-        child:  Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(

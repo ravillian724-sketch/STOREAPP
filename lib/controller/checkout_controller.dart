@@ -10,11 +10,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
 import '../core/functions/handlingdatacontroller.dart';
-import '../core/services/NotificationService.dart';
+import '../core/services/notification_service.dart';
 import 'package:ecommerce_app/core/functions/session_guard.dart';
 
-class CheckoutController extends GetxController{
+import 'package:ecommerce_app/core/logging/app_logger.dart';
 
+class CheckoutController extends GetxController {
   AddressData addressData = Get.put(AddressData(Get.find()));
 
   CheckoutData checkoutData = Get.put(CheckoutData(Get.find()));
@@ -27,7 +28,7 @@ class CheckoutController extends GetxController{
 
   StatusRequest statusRequest = StatusRequest.none;
 
-  List<AddressModel> dataaddress=[];
+  List<AddressModel> dataaddress = [];
 
   String? paymentMethod;
   String? deliveryType;
@@ -58,58 +59,56 @@ class CheckoutController extends GetxController{
     selectedBloodType = value;
     update();
   }
-  choosePaymentMethod(String val){
-    paymentMethod =val;
-        update();
-  }
 
+  choosePaymentMethod(String val) {
+    paymentMethod = val;
+    update();
+  }
 
   chooseDeliveryType(String val) {
     deliveryType = val;
     update();
   }
 
-
   chooseShippingAddress(String val) {
     addressId = val;
     update();
-
   }
 
-  getShippingAddress()async{
+  getShippingAddress() async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
+    if (userId == null) {
+      return;
+    }
 
-      statusRequest = StatusRequest.loading;
+    statusRequest = StatusRequest.loading;
 
-      var response = await addressData.getData(userId);
+    var response = await addressData.getData(userId);
 
-      print("========================================Controller  $response");
+    appDebugLog(
+        "========================================Controller  $response");
 
-      statusRequest = handlingData(response);
+    statusRequest = handlingData(response);
 
-      if(StatusRequest.success==statusRequest){
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success") {
+        List listdata = response['data'];
+        dataaddress.clear();
+        dataaddress.addAll(
+          listdata.map((e) => AddressModel.fromJson(e)),
+        );
 
-        if(response['status']=="success"){
-
-          List listdata = response['data'];
-          dataaddress.clear();
-          dataaddress.addAll(
-            listdata.map((e) => AddressModel.fromJson(e)),
-          );
-
-          if (dataaddress.isNotEmpty) {
-            addressId = dataaddress.first.addressId?.toString() ?? "0";
-          } else {
-            addressId = "0";
-          }
+        if (dataaddress.isNotEmpty) {
+          addressId = dataaddress.first.addressId?.toString() ?? "0";
+        } else {
+          addressId = "0";
         }
-        else{
-          statusRequest = StatusRequest.success;
-       //   notificationService.showErrorNotification(title: "71".tr, message: "NO Address".tr);
-        }
+      } else {
+        statusRequest = StatusRequest.success;
+        //   notificationService.showErrorNotification(title: "71".tr, message: "NO Address".tr);
       }
-      update();
+    }
+    update();
   }
 
   bool validateMedicalInfo() {
@@ -117,9 +116,8 @@ class CheckoutController extends GetxController{
       int? age = int.tryParse(ageController.text);
       if (age == null || age <= 0 || age > 120) {
         notificationService.showErrorNotification(
-          title: "Invalid Age",
-          message: "Please enter a valid age between 1 and 120"
-        );
+            title: "Invalid Age",
+            message: "Please enter a valid age between 1 and 120");
         return false;
       }
     }
@@ -128,9 +126,8 @@ class CheckoutController extends GetxController{
       int? height = int.tryParse(heightController.text);
       if (height == null || height <= 0 || height > 250) {
         notificationService.showErrorNotification(
-          title: "Invalid Height",
-          message: "Please enter a valid height in cm (1-250)"
-        );
+            title: "Invalid Height",
+            message: "Please enter a valid height in cm (1-250)");
         return false;
       }
     }
@@ -139,20 +136,27 @@ class CheckoutController extends GetxController{
       int? weight = int.tryParse(weightController.text);
       if (weight == null || weight <= 0 || weight > 300) {
         notificationService.showErrorNotification(
-          title: "Invalid Weight",
-          message: "Please enter a valid weight in kg (1-300)"
-        );
+            title: "Invalid Weight",
+            message: "Please enter a valid weight in kg (1-300)");
         return false;
       }
     }
 
     if (selectedBloodType != null) {
-      final validBloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+      final validBloodTypes = [
+        'A+',
+        'A-',
+        'B+',
+        'B-',
+        'AB+',
+        'AB-',
+        'O+',
+        'O-'
+      ];
       if (!validBloodTypes.contains(selectedBloodType)) {
         notificationService.showErrorNotification(
-          title: "Invalid Blood Type",
-          message: "Please select a valid blood type"
-        );
+            title: "Invalid Blood Type",
+            message: "Please select a valid blood type");
         return false;
       }
     }
@@ -161,9 +165,7 @@ class CheckoutController extends GetxController{
       final validGenders = ['Male', 'Female'];
       if (!validGenders.contains(selectedGender)) {
         notificationService.showErrorNotification(
-          title: "Invalid Gender",
-          message: "Please select a valid gender"
-        );
+            title: "Invalid Gender", message: "Please select a valid gender");
         return false;
       }
     }
@@ -173,16 +175,18 @@ class CheckoutController extends GetxController{
 
   Future<void> useMedicalProfile() async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
+    if (userId == null) {
+      return;
+    }
     try {
       statusRequest = StatusRequest.loading;
       update();
 
       var response = await medicalInfoData.getData(userId);
-      
+
       if (response['status'] == "success" && response['data'].isNotEmpty) {
         var medicalInfo = MedicalInfoModel.fromJson(response['data'][0]);
-        
+
         if (medicalInfo.medicalInfoAge != null) {
           ageController.text = medicalInfo.medicalInfoAge.toString();
         }
@@ -205,28 +209,26 @@ class CheckoutController extends GetxController{
           allergiesController.text = medicalInfo.medicalInfoAllergies!;
         }
         if (medicalInfo.medicalInfoCurrentMedications != null) {
-          medicationsController.text = medicalInfo.medicalInfoCurrentMedications!;
+          medicationsController.text =
+              medicalInfo.medicalInfoCurrentMedications!;
         }
         if (medicalInfo.medicalInfoAdditionalNotes != null) {
           notesController.text = medicalInfo.medicalInfoAdditionalNotes!;
         }
 
         notificationService.showSuccessNotification(
-          title: "Success",
-          message: "Medical profile loaded successfully"
-        );
+            title: "Success", message: "Medical profile loaded successfully");
       } else {
         notificationService.showErrorNotification(
-          title: "No Medical Profile",
-          message: "No medical profile found. You can fill the information manually."
-        );
+            title: "No Medical Profile",
+            message:
+                "No medical profile found. You can fill the information manually.");
       }
     } catch (e) {
-      print("Error loading medical profile: $e");
+      appDebugLog("Error loading medical profile: $e");
       notificationService.showErrorNotification(
-        title: "Error",
-        message: "Failed to load medical profile. Please try again."
-      );
+          title: "Error",
+          message: "Failed to load medical profile. Please try again.");
     } finally {
       statusRequest = StatusRequest.none;
       update();
@@ -235,24 +237,20 @@ class CheckoutController extends GetxController{
 
   checkout(String diseases, String medications, String notes) async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
+    if (userId == null) {
+      return;
+    }
     if (paymentMethod == null) {
       return notificationService.showErrorNotification(
-        title: "71".tr, 
-        message: "Please Choose Payment Method".tr
-      );
+          title: "71".tr, message: "Please Choose Payment Method".tr);
     }
     if (deliveryType == null) {
       return notificationService.showErrorNotification(
-        title: "71".tr, 
-        message: "Please Choose Delivery Type".tr
-      );
+          title: "71".tr, message: "Please Choose Delivery Type".tr);
     }
     if (dataaddress.isEmpty) {
       return notificationService.showErrorNotification(
-        title: "71".tr, 
-        message: "Please Select Address".tr
-      );
+          title: "71".tr, message: "Please Select Address".tr);
     }
 
     if (!validateMedicalInfo()) {
@@ -267,16 +265,14 @@ class CheckoutController extends GetxController{
         "usersid": userId,
         "addressid": addressId.toString(),
         "orderstype": deliveryType.toString(),
-        "pricedelivery": deliveryType.toString() =="0"? "10000":"0" ,
+        "pricedelivery": deliveryType.toString() == "0" ? "10000" : "0",
         "ordersprice": priceorders.toString(),
         "couponid": couponid.toString(),
         "coupondiscount": coupondiscount.toString(),
         "paymentmethod": paymentMethod.toString(),
-        
         "orders_diseases": diseases.trim(),
         "orders_medications": medications.trim(),
         "orders_doctornotes": notes.trim(),
-        
         "orders_age": ageController.text.trim(),
         "orders_height": heightController.text.trim(),
         "orders_weight": weightController.text.trim(),
@@ -286,31 +282,28 @@ class CheckoutController extends GetxController{
       };
 
       var response = await checkoutData.checkoutData(data);
-      print("========================================Controller  $response");
-      
+      appDebugLog(
+          "========================================Controller  $response");
+
       statusRequest = handlingData(response);
-      
+
       if (StatusRequest.success == statusRequest) {
         if (response['status'] == "success") {
           Get.offAllNamed(AppRoute.homepage);
           notificationService.showSuccessNotification(
-            title: "success".tr, 
-            message: "Order Submitted Successfully!"
-          );
+              title: "success".tr, message: "Order Submitted Successfully!");
         } else {
           statusRequest = StatusRequest.none;
           notificationService.showErrorNotification(
-            title: "71".tr, 
-            message: "Fail, Please Try Again!".tr
-          );
+              title: "71".tr, message: "Fail, Please Try Again!".tr);
         }
       }
     } catch (e) {
-      print("Error in checkout: $e");
+      appDebugLog("Error in checkout: $e");
       notificationService.showErrorNotification(
-        title: "Error",
-        message: "An error occurred while processing your order. Please try again."
-      );
+          title: "Error",
+          message:
+              "An error occurred while processing your order. Please try again.");
       statusRequest = StatusRequest.failure;
     } finally {
       update();
@@ -324,8 +317,7 @@ class CheckoutController extends GetxController{
     if (arguments is Map) {
       couponid = arguments["couponid"]?.toString() ?? "0";
       priceorders = arguments["priceorders"]?.toString() ?? "0";
-      coupondiscount =
-          arguments["discountcoupon"]?.toString() ?? "0";
+      coupondiscount = arguments["discountcoupon"]?.toString() ?? "0";
     } else {
       couponid = "0";
       priceorders = "0";

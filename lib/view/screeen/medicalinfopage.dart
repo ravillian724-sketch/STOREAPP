@@ -3,28 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ecommerce_app/core/class/handlingdataview.dart';
 import 'package:ecommerce_app/core/constant/color.dart';
-import 'package:ecommerce_app/core/constant/routes.dart';
 
 import '../../controller/medical_controller.dart';
-import '../widget/auth/coustomtextformauth.dart';
 
 class MedicalInfoScreen extends StatelessWidget {
-  const MedicalInfoScreen({Key? key}) : super(key: key);
+  const MedicalInfoScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     Get.put(MediaclInfoController());
     return Scaffold(
       appBar: AppBar(
-        title:  Text("157".tr),
+        title: Text("157".tr),
         elevation: 0,
       ),
       body: GetBuilder<MediaclInfoController>(
         builder: (controller) => HandlingDataView(
           statusRequest: controller.statusRequest,
-          widget: controller.data.isEmpty 
-            ? _buildAddForm(controller)
-            : _buildViewData(controller),
+          widget: controller.data.isEmpty
+              ? _buildAddForm(controller)
+              : _buildViewData(controller),
         ),
       ),
     );
@@ -45,7 +43,7 @@ class MedicalInfoScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 1),
@@ -62,17 +60,18 @@ class MedicalInfoScreen extends StatelessWidget {
           prefixIcon: Icon(icon, color: AppColor.primaryColor),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: AppColor.grey),
+            borderSide: const BorderSide(color: AppColor.grey),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: AppColor.grey.withOpacity(0.5)),
+            borderSide: BorderSide(color: AppColor.grey.withValues(alpha: 0.5)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: const BorderSide(color: AppColor.primaryColor),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
         ),
       ),
     );
@@ -83,16 +82,14 @@ class MedicalInfoScreen extends StatelessWidget {
       key: controller.formstate,
       child: SingleChildScrollView(
         child: Container(
-            padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(15),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
-              Center(
+              const Center(
                 child: Icon(Icons.health_and_safety,
-                  color: AppColor.primaryColor,
-                  size: 60
-                ),
+                    color: AppColor.primaryColor, size: 60),
               ),
               const SizedBox(height: 20),
               Row(
@@ -165,7 +162,7 @@ class MedicalInfoScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: Colors.grey.withValues(alpha: 0.1),
                             spreadRadius: 1,
                             blurRadius: 5,
                             offset: const Offset(0, 1),
@@ -176,24 +173,30 @@ class MedicalInfoScreen extends StatelessWidget {
                         value: controller.selectedGender,
                         decoration: InputDecoration(
                           labelText: "171".tr,
-                          prefixIcon: Icon(Icons.person, color: AppColor.primaryColor),
+                          prefixIcon: const Icon(Icons.person,
+                              color: AppColor.primaryColor),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(color: AppColor.grey),
+                            borderSide: const BorderSide(color: AppColor.grey),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(color: AppColor.grey.withOpacity(0.5)),
+                            borderSide: BorderSide(
+                                color: AppColor.grey.withValues(alpha: 0.5)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
-                            borderSide: const BorderSide(color: AppColor.primaryColor),
+                            borderSide:
+                                const BorderSide(color: AppColor.primaryColor),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 15, vertical: 15),
                         ),
-                        items:  [
-                          DropdownMenuItem(value: "Male", child: Text("172".tr)),
-                          DropdownMenuItem(value: "Female", child: Text("173".tr)),
+                        items: [
+                          DropdownMenuItem(
+                              value: "Male", child: Text("172".tr)),
+                          DropdownMenuItem(
+                              value: "Female", child: Text("173".tr)),
                         ],
                         onChanged: controller.updateGender,
                         validator: (value) {
@@ -213,7 +216,7 @@ class MedicalInfoScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: Colors.grey.withValues(alpha: 0.1),
                             spreadRadius: 1,
                             blurRadius: 5,
                             offset: const Offset(0, 1),
@@ -224,20 +227,24 @@ class MedicalInfoScreen extends StatelessWidget {
                         value: controller.selectedBloodType,
                         decoration: InputDecoration(
                           labelText: "175".tr,
-                          prefixIcon: Icon(Icons.bloodtype, color: AppColor.primaryColor),
+                          prefixIcon: const Icon(Icons.bloodtype,
+                              color: AppColor.primaryColor),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(color: AppColor.grey),
+                            borderSide: const BorderSide(color: AppColor.grey),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(color: AppColor.grey.withOpacity(0.5)),
+                            borderSide: BorderSide(
+                                color: AppColor.grey.withValues(alpha: 0.5)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
-                            borderSide: const BorderSide(color: AppColor.primaryColor),
+                            borderSide:
+                                const BorderSide(color: AppColor.primaryColor),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 15, vertical: 15),
                         ),
                         items: const [
                           DropdownMenuItem(value: "A+", child: Text("A+")),
@@ -273,7 +280,7 @@ class MedicalInfoScreen extends StatelessWidget {
                 label: "180".tr,
                 icon: Icons.warning_amber_rounded,
                 hint: "181".tr,
-            ),
+              ),
               _buildCustomTextField(
                 controller: controller.medicationsController,
                 label: "182".tr,
@@ -284,7 +291,7 @@ class MedicalInfoScreen extends StatelessWidget {
                 controller: controller.notesController,
                 label: "184".tr,
                 icon: Icons.note_alt_outlined,
-                hint:  "184".tr,
+                hint: "184".tr,
               ),
               const SizedBox(height: 20),
               CustomButtomAuth(
@@ -310,11 +317,9 @@ class MedicalInfoScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            Center(
-              child: Icon(Icons.health_and_safety, 
-                color: AppColor.primaryColor, 
-                size: 60
-              ),
+            const Center(
+              child: Icon(Icons.health_and_safety,
+                  color: AppColor.primaryColor, size: 60),
             ),
             const SizedBox(height: 20),
             Card(
@@ -327,17 +332,22 @@ class MedicalInfoScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoRow("161".tr, "${info.medicalInfoAge} ${"186".tr}"),
-                    _buildInfoRow("165".tr, "${info.medicalInfoHeight} ${"187".tr}"),
-                    _buildInfoRow("168".tr, "${info.medicalInfoWeight} ${"188".tr}"),
+                    _buildInfoRow(
+                        "161".tr, "${info.medicalInfoAge} ${"186".tr}"),
+                    _buildInfoRow(
+                        "165".tr, "${info.medicalInfoHeight} ${"187".tr}"),
+                    _buildInfoRow(
+                        "168".tr, "${info.medicalInfoWeight} ${"188".tr}"),
                     _buildInfoRow("171".tr, info.medicalInfoGender ?? "189".tr),
-                    _buildInfoRow("175".tr, info.medicalInfoBloodType ?? "190".tr),
+                    _buildInfoRow(
+                        "175".tr, info.medicalInfoBloodType ?? "190".tr),
                     if (info.medicalInfoChronicDiseases?.isNotEmpty ?? false)
                       _buildInfoRow("178".tr, info.medicalInfoChronicDiseases!),
                     if (info.medicalInfoAllergies?.isNotEmpty ?? false)
                       _buildInfoRow("180".tr, info.medicalInfoAllergies!),
                     if (info.medicalInfoCurrentMedications?.isNotEmpty ?? false)
-                      _buildInfoRow("182".tr, info.medicalInfoCurrentMedications!),
+                      _buildInfoRow(
+                          "182".tr, info.medicalInfoCurrentMedications!),
                     if (info.medicalInfoAdditionalNotes?.isNotEmpty ?? false)
                       _buildInfoRow("184".tr, info.medicalInfoAdditionalNotes!),
                   ],

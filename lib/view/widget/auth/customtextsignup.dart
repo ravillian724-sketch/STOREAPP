@@ -6,7 +6,11 @@ class CustomTextSignUpOrSignIn extends StatelessWidget {
   final String textOne;
   final String textTwo;
   final void Function() onTap;
-  const CustomTextSignUpOrSignIn({super.key, required this.textOne, required this.textTwo, required this.onTap});
+  const CustomTextSignUpOrSignIn(
+      {super.key,
+      required this.textOne,
+      required this.textTwo,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -25,20 +29,20 @@ class CustomTextSignUpOrSignIn extends StatelessWidget {
           InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(10),
-            splashColor: AppColor.primaryColor.withOpacity(0.2),
+            splashColor: AppColor.primaryColor.withValues(alpha: 0.2),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColor.primaryColor.withOpacity(0.1),
+                color: AppColor.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: AppColor.primaryColor.withOpacity(0.3),
+                  color: AppColor.primaryColor.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
               child: Text(
                 textTwo,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColor.primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,

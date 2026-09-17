@@ -7,10 +7,10 @@ class CardNotesFieldInput extends StatelessWidget {
   final TextEditingController? controllerInput;
   final String titleInput;
   final bool isNumber;
-  
+
   const CardNotesFieldInput({
-    super.key, 
-    required this.controllerInput, 
+    super.key,
+    required this.controllerInput,
     required this.titleInput,
     this.isNumber = false,
   });
@@ -22,7 +22,7 @@ class CardNotesFieldInput extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
         side: BorderSide(
-          color: AppColor.primaryColor.withOpacity(0.3),
+          color: AppColor.primaryColor.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -55,7 +55,8 @@ class CardNotesFieldInput extends StatelessWidget {
             ),
             TextField(
               controller: controllerInput,
-              keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+              keyboardType:
+                  isNumber ? TextInputType.number : TextInputType.text,
               decoration: InputDecoration(
                 hintText: "106".tr, //"Type Here...",
                 hintStyle: TextStyle(
@@ -63,7 +64,8 @@ class CardNotesFieldInput extends StatelessWidget {
                   fontSize: 14,
                 ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
                 suffixIcon: Icon(
                   isNumber ? Icons.numbers : Icons.health_and_safety_outlined,
                   color: AppColor.primaryColor,

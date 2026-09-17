@@ -2,82 +2,76 @@ import 'package:ecommerce_app/data/datasource/remote/favorite_data.dart';
 import 'package:get/get.dart';
 import '../core/class/statusrequest.dart';
 import '../core/functions/handlingdatacontroller.dart';
-import '../core/services/NotificationService.dart';
+import '../core/services/notification_service.dart';
 import '../core/services/services.dart';
 import 'package:ecommerce_app/core/functions/session_guard.dart';
 
-class FavoriteController extends GetxController{
+import 'package:ecommerce_app/core/logging/app_logger.dart';
 
+class FavoriteController extends GetxController {
   FavoriteData favoriteData = FavoriteData(Get.find());
   NotificationService notificationService = Get.find<NotificationService>();
   List data = [];
-  late StatusRequest statusRequest;
+  StatusRequest statusRequest = StatusRequest.none;
 
   MyServices myServices = Get.find();
-
 
   Map isFavorite = {};
   // key => id items
   // value =>  1 OR 0
-  setFavorite(id, val ){
+  setFavorite(id, val) {
     isFavorite[id] = val;
     update();
   }
 
-  addFavorite(String itemsid) async{
+  addFavorite(String itemsid) async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
+    if (userId == null) {
+      return;
+    }
     data.clear();
     statusRequest = StatusRequest.loading;
-    var response = await favoriteData.addFavorite(userId,itemsid);
-    print("========================================Controller  $response");
+    var response = await favoriteData.addFavorite(userId, itemsid);
+    appDebugLog(
+        "========================================Controller  $response");
     statusRequest = handlingData(response);
     // Start Backend
     if (StatusRequest.success == statusRequest) {
       if (response['status'] == "success") {
-        notificationService.showSuccessNotification(title: "71".tr, message: "69".tr); //notification // done adding product to favorite
-       // data.addAll(response['data']);
-      }
-      else {
-        statusRequest = StatusRequest.failure;
-      }
-    }
-  //End
-  }
-
-
-  removeFavorite(String itemsid)async{
-    final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
-    data.clear();
-    statusRequest = StatusRequest.loading;
-    var response = await favoriteData.removeFavorite(userId,itemsid);
-    print("========================================Controller  $response");
-    statusRequest = handlingData(response);
-    //Start Backend
-    if (StatusRequest.success == statusRequest) {
-      if (response['status'] == "success") {
-        notificationService.showSuccessNotification(title: "71".tr, message: "70".tr); //notification // done removing product from favorite
-      //  data.addAll(response['data']);
-      }
-      else {
+        notificationService.showSuccessNotification(
+            title: "71".tr,
+            message: "69".tr); //notification // done adding product to favorite
+        // data.addAll(response['data']);
+      } else {
         statusRequest = StatusRequest.failure;
       }
     }
     //End
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+  removeFavorite(String itemsid) async {
+    final userId = await requireUserId(myServices);
+    if (userId == null) {
+      return;
+    }
+    data.clear();
+    statusRequest = StatusRequest.loading;
+    var response = await favoriteData.removeFavorite(userId, itemsid);
+    appDebugLog(
+        "========================================Controller  $response");
+    statusRequest = handlingData(response);
+    //Start Backend
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success") {
+        notificationService.showSuccessNotification(
+            title: "71".tr,
+            message:
+                "70".tr); //notification // done removing product from favorite
+        //  data.addAll(response['data']);
+      } else {
+        statusRequest = StatusRequest.failure;
+      }
+    }
+    //End
+  }
 }

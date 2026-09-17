@@ -1,5 +1,6 @@
 import 'package:ecommerce_app/core/network/api_client.dart';
 
+import 'app_instance_config.dart';
 import 'bootstrap_result.dart';
 import 'bootstrap_service.dart';
 import 'environment_config.dart';
@@ -9,8 +10,7 @@ import 'tenant_context.dart';
 class PlatformService {
   PlatformService._();
 
-  static final PlatformService instance =
-      PlatformService._();
+  static final PlatformService instance = PlatformService._();
 
   StoreConfig? _storeConfig;
   TenantContext? _tenantContext;
@@ -18,22 +18,18 @@ class PlatformService {
 
   StoreConfig? get storeConfig => _storeConfig;
 
-  TenantContext? get tenantContext =>
-      _tenantContext;
+  TenantContext? get tenantContext => _tenantContext;
 
   ApiClient? get apiClient => _apiClient;
 
   bool get isInitialized =>
-      _storeConfig != null &&
-      _tenantContext != null &&
-      _apiClient != null;
+      _storeConfig != null && _tenantContext != null && _apiClient != null;
 
   Future<BootstrapResult> bootstrap({
     BootstrapService? bootstrapService,
   }) async {
     final ownsService = bootstrapService == null;
-    final service =
-        bootstrapService ?? BootstrapService();
+    final service = bootstrapService ?? BootstrapService();
 
     try {
       final result = await service.load();
@@ -65,13 +61,12 @@ class PlatformService {
       branchId: branchId,
     );
 
-    final baseUri = Uri.parse(
-      EnvironmentConfig.apiBaseUrl,
-    );
+    final baseUri = EnvironmentConfig.requireApiBaseUri();
 
     _apiClient = ApiClient(
       baseUri: baseUri,
       tenantContext: _tenantContext!,
+      appInstanceKey: AppInstanceConfig.instanceKey,
     );
   }
 
@@ -91,10 +86,7 @@ class PlatformService {
   }
 
   bool featureEnabled(String feature) {
-    return _storeConfig
-            ?.features
-            .enabled(feature) ??
-        false;
+    return _storeConfig?.features.enabled(feature) ?? false;
   }
 
   void reset() {

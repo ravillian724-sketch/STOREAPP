@@ -11,4 +11,4 @@ PRODUCT_NAME = ecommerce_app
 PRODUCT_BUNDLE_IDENTIFIER = com.Abdulah.ecommerceApp
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2024 com.Abdulah. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © STOREAPP. All rights reserved.

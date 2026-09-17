@@ -4,116 +4,108 @@ import '../../core/class/statusrequest.dart';
 import '../../core/constant/routes.dart';
 import '../../core/functions/handlingdatacontroller.dart';
 import '../../core/services/services.dart';
-import '../../data/datasource/remote/items_data.dart';
 import '../../data/datasource/remote/orders/pending_data.dart';
 import '../../data/model/ordersmodel.dart';
 import 'package:ecommerce_app/core/functions/session_guard.dart';
 
-class OrdersPendingController extends GetxController{
+import 'package:ecommerce_app/core/logging/app_logger.dart';
 
-
-
+class OrdersPendingController extends GetxController {
   List categories = [];
   String? catid;
   int? selectedCat;
   OrdersPendingData oredersPendingData = OrdersPendingData(Get.find());
 
   List<OrdersModel> data = [];
-  late StatusRequest statusRequest;
+  StatusRequest statusRequest = StatusRequest.none;
 
   MyServices myServices = Get.find();
 
-  String printOrderType(String val){
-    if(val == "0"){
+  String printOrderType(String val) {
+    if (val == "0") {
       return "137".tr; //Delivery
-    }else {
+    } else {
       return "138".tr; //Local
     }
   }
 
-  String printPaymentMethod(String val){
-    if(val == "0"){
+  String printPaymentMethod(String val) {
+    if (val == "0") {
       return "139".tr; //Cash On Delivery
-    }else {
+    } else {
       return "140".tr; //Syriatel Cash
     }
   }
 
-  String printOrdersStatus(String val){
-    if(val == "0"){
+  String printOrdersStatus(String val) {
+    if (val == "0") {
       return "141".tr; //Pending Approval
-    }else if(val == "1"){
+    } else if (val == "1") {
       return "142".tr; //The Order is Being Prepared
-    }else if(val == "2"){
+    } else if (val == "2") {
       return "300".tr;
-    }else if(val == "3"){
+    } else if (val == "3") {
       return "143".tr; //On The Way
-    }
-    else if (val == "-1"){
+    } else if (val == "-1") {
       return "Rejected";
-    }else{
+    } else {
       return "144".tr; //Archive
     }
   }
-  getOrders()async{
+
+  getOrders() async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
+    if (userId == null) {
+      return;
+    }
     data.clear();
     statusRequest = StatusRequest.loading;
     update();
     var response = await oredersPendingData.getData(userId);
-    print("========================================Controller  $response");
+    appDebugLog(
+        "========================================Controller  $response");
     statusRequest = handlingData(response);
-    if(StatusRequest.success==statusRequest){
-      if(response['status']=="success"){
-       List listdata = response['data'];
-       data.addAll(listdata.map((e)=>OrdersModel.fromJson(e)));
-      }
-      else{
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success") {
+        List listdata = response['data'];
+        data.addAll(listdata.map((e) => OrdersModel.fromJson(e)));
+      } else {
         statusRequest = StatusRequest.none;
       }
     }
     update();
   }
 
-  deleteOrders(String orderid)async{
+  deleteOrders(String orderid) async {
     data.clear();
     statusRequest = StatusRequest.loading;
     update();
     var response = await oredersPendingData.deleteData(orderid);
-    print("=====delete response ====Controller  $response");
+    appDebugLog("=====delete response ====Controller  $response");
     statusRequest = handlingData(response);
-    if(StatusRequest.success==statusRequest){
-      if(response['status']=="success"){
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success") {
         refreshOrder();
-      }
-      else{
+      } else {
         statusRequest = StatusRequest.failure;
       }
     }
     update();
   }
 
+  refreshOrder() {
+    getOrders();
+  }
 
-    refreshOrder(){
-      getOrders();
-    }
-
-    goToPageTracking(OrdersModel ordersmodel){
-      Get.toNamed(AppRoute.tracking, arguments: {
-        "ordersmodel" : ordersmodel,
-
-      });
-    }
-
+  goToPageTracking(OrdersModel ordersmodel) {
+    Get.toNamed(AppRoute.tracking, arguments: {
+      "ordersmodel": ordersmodel,
+    });
+  }
 
   @override
   void onInit() {
     getOrders();
     super.onInit();
   }
-
-
-
-
 }

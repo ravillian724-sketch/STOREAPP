@@ -2,17 +2,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import '../../linkapi.dart';
+import 'package:ecommerce_app/linkapi.dart';
 
 class ChatBotController extends GetxController {
-
   late bool isTypeing = false;
   var messages = <Map<String, String>>[].obs;
   var showChat = false.obs;
   final TextEditingController textController = TextEditingController();
 
   Future<void> sendMessage(String text) async {
-
     messages.add({"role": "user", "text": text});
 
     try {
@@ -38,7 +36,5 @@ class ChatBotController extends GetxController {
   void closeChat() {
     showChat.value = false;
     messages.clear();
-
   }
-
 }

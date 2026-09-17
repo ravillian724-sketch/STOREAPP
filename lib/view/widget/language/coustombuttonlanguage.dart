@@ -5,7 +5,8 @@ import '../../../core/constant/color.dart';
 class Coustombuttonlanguage extends StatelessWidget {
   final String textButton;
   final void Function()? onPressed;
-  const Coustombuttonlanguage({super.key, required this.textButton, this.onPressed});
+  const Coustombuttonlanguage(
+      {super.key, required this.textButton, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -18,17 +19,17 @@ class Coustombuttonlanguage extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             AppColor.primaryColor,
-            AppColor.primaryColor.withOpacity(0.8),
+            AppColor.primaryColor.withValues(alpha: 0.8),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColor.primaryColor.withOpacity(0.3),
+            color: AppColor.primaryColor.withValues(alpha: 0.3),
             spreadRadius: 1,
             blurRadius: 5,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -46,8 +47,8 @@ class Coustombuttonlanguage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.language, size: 24),
-            SizedBox(width: 10),
+            const Icon(Icons.language, size: 24),
+            const SizedBox(width: 10),
             Text(
               textButton,
               style: const TextStyle(

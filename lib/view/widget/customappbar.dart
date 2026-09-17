@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/constant/color.dart';
+import 'package:ecommerce_app/core/constant/color.dart';
 
 class CustomAppBar extends StatelessWidget {
   final String titleappbar;
@@ -8,14 +8,13 @@ class CustomAppBar extends StatelessWidget {
   final void Function(String)? onChanged;
   final TextEditingController mycontroller;
 
-  const CustomAppBar({
-    super.key,
-    required this.titleappbar,
-    required this.onPressedSearch,
-    required this.onPressedIconFavorite,
-    this.onChanged,
-    required this.mycontroller
-  });
+  const CustomAppBar(
+      {super.key,
+      required this.titleappbar,
+      required this.onPressedSearch,
+      required this.onPressedIconFavorite,
+      this.onChanged,
+      required this.mycontroller});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +27,7 @@ class CustomAppBar extends StatelessWidget {
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
+                    color: Colors.grey.withValues(alpha: 0.2),
                     spreadRadius: 1,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
@@ -66,7 +65,8 @@ class CustomAppBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: AppColor.primaryColor, width: 1),
+                    borderSide: const BorderSide(
+                        color: AppColor.primaryColor, width: 1),
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
@@ -80,7 +80,7 @@ class CustomAppBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   spreadRadius: 1,
                   blurRadius: 4,
                   offset: const Offset(0, 2),

@@ -7,10 +7,10 @@ class CategoriesModel {
 
   CategoriesModel(
       {this.categoriesId,
-        this.categoriesName,
-        this.categoriesNameAr,
-        this.categoriesImage,
-        this.categoriesDatetime});
+      this.categoriesName,
+      this.categoriesNameAr,
+      this.categoriesImage,
+      this.categoriesDatetime});
 
   CategoriesModel.fromJson(Map<String, dynamic> json) {
     categoriesId = json['categories_id'];

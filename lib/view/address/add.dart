@@ -11,13 +11,12 @@ class AddressAdd extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AdDAddressController controllerpage = Get.put(AdDAddressController());
+    Get.put(AdDAddressController());
     return Scaffold(
       appBar: AppBar(
-        title:  Text("116".tr), // Add New Address
+        title: Text("116".tr), // Add New Address
       ),
-      body: Container(
-          child: GetBuilder<AdDAddressController>(
+      body: GetBuilder<AdDAddressController>(
         builder: (controllerpage) => HandlingDataView(
             statusRequest: controllerpage.statusRequest,
             widget: Column(
@@ -30,34 +29,36 @@ class AddressAdd extends StatelessWidget {
                         GoogleMap(
                           mapType: MapType.normal,
                           markers: controllerpage.markers.toSet(),
-                          onTap: (Latlang) {
-                            controllerpage.addMarkers(Latlang);
+                          onTap: (latLng) {
+                            controllerpage.addMarkers(latLng);
                           },
                           initialCameraPosition: controllerpage.kGooglePlex!,
                           onMapCreated: (GoogleMapController controllermap) {
-                            controllerpage.Completercontroller!
+                            controllerpage.completerController
                                 .complete(controllermap);
                           },
                         ),
                         Positioned(
                           bottom: 10,
-                          child: Container(
-                              child: MaterialButton(
-                                minWidth: 200,
-                            onPressed:(){
+                          child: MaterialButton(
+                            minWidth: 200,
+                            onPressed: () {
                               controllerpage.goToPageAddDetailsAddress();
                             },
                             color: AppColor.primaryColor,
                             textColor: Colors.white,
-                            child:  Text("117".tr,style: const TextStyle(fontSize: 18),),
-                          )),
+                            child: Text(
+                              "117".tr,
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                          ),
                         )
                       ],
                     ),
                   ),
               ],
             )),
-      )),
+      ),
     );
   }
 }

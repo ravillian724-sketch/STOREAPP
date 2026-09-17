@@ -12,45 +12,42 @@ class AddressView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AddressViewController controller = Get.put(AddressViewController());
+    Get.put(AddressViewController());
     return Scaffold(
       appBar: AppBar(
-        title:  Text("115".tr) , //Address
+        title: Text("115".tr), //Address
       ),
       floatingActionButton: FloatingActionButton(
-          onPressed: (){
-            Get.toNamed(AppRoute.addressadd);
-          },
-        child: const  Icon(Icons.add_outlined),
+        onPressed: () {
+          Get.toNamed(AppRoute.addressadd);
+        },
+        child: const Icon(Icons.add_outlined),
       ),
       body: GetBuilder<AddressViewController>(
-        builder: (controller)=>
-           HandlingDataView(
-               statusRequest: controller.statusRequest,
-               widget:  Container(
-                 child: ListView.builder(
-                   itemCount: controller.data.length,
-                   itemBuilder: (context, i){
-                     return CardAddress(
-                       addressModel: controller.data[i],
-                       onDelete: (){
-                         controller.deleteAddress(controller.data[i].addressId!.toString());
-                       },
-                     );
-                   },
-                 ),
-               ),
-           )
-      ),
+          builder: (controller) => HandlingDataView(
+                statusRequest: controller.statusRequest,
+                widget: ListView.builder(
+                  itemCount: controller.data.length,
+                  itemBuilder: (context, i) {
+                    return CardAddress(
+                      addressModel: controller.data[i],
+                      onDelete: () {
+                        controller.deleteAddress(
+                            controller.data[i].addressId!.toString());
+                      },
+                    );
+                  },
+                ),
+              )),
     );
   }
 }
 
-
 class CardAddress extends StatelessWidget {
   final AddressModel addressModel;
   final void Function() onDelete;
-  const CardAddress({super.key, required this.addressModel, required this.onDelete});
+  const CardAddress(
+      {super.key, required this.addressModel, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +58,7 @@ class CardAddress extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             spreadRadius: 1,
             blurRadius: 6,
             offset: const Offset(0, 3),
@@ -77,9 +74,7 @@ class CardAddress extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-
-            },
+            onTap: () {},
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -91,7 +86,7 @@ class CardAddress extends StatelessWidget {
                       color: Colors.blue.shade50,
                       shape: BoxShape.circle,
                     ),
-                    child: const  Icon(
+                    child: const Icon(
                       Icons.location_on,
                       color: AppColor.primaryColor,
                       size: 24,
@@ -103,7 +98,7 @@ class CardAddress extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: EdgeInsets.all(5),
+                          padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: AppColor.primaryColor,
@@ -156,30 +151,29 @@ class CardAddress extends StatelessWidget {
                             ),
                           ],
                         ),
-
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.note,
-                                  size: 16,
-                                  color: Colors.grey.shade600,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    addressModel.addressNote!,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.grey.shade700,
-                                    ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.note,
+                                size: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  addressModel.addressNote!,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Colors.grey.shade700,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
+                        ),
                       ],
                     ),
                   ),
@@ -200,4 +194,3 @@ class CardAddress extends StatelessWidget {
     );
   }
 }
-

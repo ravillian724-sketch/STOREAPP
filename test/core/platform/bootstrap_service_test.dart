@@ -48,6 +48,7 @@ void main() {
       final service = BootstrapService(
         client: client,
         appInstanceKey: 'test-instance',
+        apiBaseUrl: 'https://api.example.test/platform',
         timeout: const Duration(seconds: 1),
       );
 
@@ -64,6 +65,10 @@ void main() {
       expect(
         capturedRequest.headers['X-App-Instance-Key'],
         'test-instance',
+      );
+      expect(
+        capturedRequest.url.toString(),
+        'https://api.example.test/platform/api/v1/bootstrap',
       );
       expect(
         requestBody.containsKey('app_instance_key'),
@@ -88,6 +93,7 @@ void main() {
       final service = BootstrapService(
         client: client,
         appInstanceKey: 'test-instance',
+        apiBaseUrl: 'https://api.example.test',
         timeout: const Duration(milliseconds: 10),
       );
 

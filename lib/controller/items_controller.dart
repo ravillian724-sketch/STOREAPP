@@ -5,18 +5,19 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import '../core/class/statusrequest.dart';
 import '../core/functions/handlingdatacontroller.dart';
-import '../data/datasource/remote/home_data.dart';
 import 'home_controller.dart';
 import 'package:ecommerce_app/core/functions/session_guard.dart';
 
-abstract class ItemsController extends SearchMixController{
-intialData();
-changeCat(int val,String catval);
-getItems(String categoryid);
-goToPageProductDetails(ItemsModel itemsModel);
-}
-class ItemsControllerImp extends ItemsController {
+import 'package:ecommerce_app/core/logging/app_logger.dart';
 
+abstract class ItemsController extends SearchMixController {
+  intialData();
+  changeCat(int val, String catval);
+  getItems(String categoryid);
+  goToPageProductDetails(ItemsModel itemsModel);
+}
+
+class ItemsControllerImp extends ItemsController {
   List categories = [];
   String? catid;
   int? selectedCat;
@@ -24,12 +25,12 @@ class ItemsControllerImp extends ItemsController {
 
   List data = [];
 
-  String deliverytime="";
-   MyServices myServices = Get.find();
+  String deliverytime = "";
+  MyServices myServices = Get.find();
 
   @override
   void onInit() {
-    search =TextEditingController();
+    search = TextEditingController();
     intialData();
     super.onInit();
   }
@@ -47,23 +48,25 @@ class ItemsControllerImp extends ItemsController {
     deliverytime = myServices.sharedPreferences.getString("deliverytime")!;
     // التحقق من وجود البيانات قبل استخدامها
     if (Get.arguments != null) {
-      print("Get.arguments: ${Get.arguments}"); // طباعة جميع الوسائط المستلمة
-      
+      appDebugLog(
+          "Get.arguments: ${Get.arguments}"); // طباعة جميع الوسائط المستلمة
+
       // استخدام الوسيطات التي تم تمريرها من home2_controller
-      if (Get.arguments.containsKey('subcategoryid') && Get.arguments.containsKey('categoryid')) {
-        print("تم استلام categoryid: ${Get.arguments['categoryid']}");
+      if (Get.arguments.containsKey('subcategoryid') &&
+          Get.arguments.containsKey('categoryid')) {
+        appDebugLog("تم استلام categoryid: ${Get.arguments['categoryid']}");
         // استخدام معرف القسم الفرعي للحصول على المنتجات
         catid = Get.arguments['categoryid'];
         getItems(catid!);
-      } 
+      }
       // التعامل مع الوسيطات القديمة للحفاظ على التوافق
-      else if (Get.arguments.containsKey('categories') && 
-               Get.arguments.containsKey('selectedCat') && 
-               Get.arguments.containsKey('categoryid')) {
+      else if (Get.arguments.containsKey('categories') &&
+          Get.arguments.containsKey('selectedCat') &&
+          Get.arguments.containsKey('categoryid')) {
         categories = Get.arguments['categories'] ?? [];
         selectedCat = Get.arguments['selectedCat'];
         catid = Get.arguments['categoryid'];
-        
+
         if (catid != null) {
           getItems(catid!);
         } else {
@@ -88,33 +91,35 @@ class ItemsControllerImp extends ItemsController {
     update();
   }
 
-
-
   @override
   getItems(categoryid) async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
-    print("Sending categoryid: $categoryid, userid: ${userId}");
+    if (userId == null) {
+      return;
+    }
+    appDebugLog("Sending categoryid: $categoryid, userid: $userId");
     data.clear();
     statusRequest = StatusRequest.loading;
     update();
-    
+
     try {
       var response = await testData.getData(categoryid, userId);
-      print("Response from server: $response");
-      
+      appDebugLog("Response from server: $response");
+
       if (response is String) {
-        print("Error: Response is a string - $response");
+        appDebugLog("Error: Response is a string - $response");
         statusRequest = StatusRequest.serverfailuer;
       } else {
         statusRequest = handlingData(response);
-        
+
         if (StatusRequest.success == statusRequest) {
           if (response['status'] == "success") {
-            if (response['data'] != null && response['data'] is List && response['data'].isNotEmpty) {
+            if (response['data'] != null &&
+                response['data'] is List &&
+                response['data'].isNotEmpty) {
               data.addAll(response['data']);
             } else {
-              print("لا توجد بيانات متاحة أو تنسيق البيانات غير صحيح");
+              appDebugLog("لا توجد بيانات متاحة أو تنسيق البيانات غير صحيح");
               statusRequest = StatusRequest.failure;
             }
           } else {
@@ -123,23 +128,15 @@ class ItemsControllerImp extends ItemsController {
         }
       }
     } catch (e) {
-      print("حدث خطأ أثناء جلب البيانات: $e");
+      appDebugLog("حدث خطأ أثناء جلب البيانات: $e");
       statusRequest = StatusRequest.serverfailuer;
     }
-    
+
     update();
   }
-
 
   @override
   goToPageProductDetails(itemsModel) {
     Get.toNamed("productdetails", arguments: {"itemsModel": itemsModel});
   }
-
-
-
-
-
-
-
 }

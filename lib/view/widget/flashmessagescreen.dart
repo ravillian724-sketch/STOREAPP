@@ -12,11 +12,12 @@ class FlashMessageScreen extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: CustomSnakBarMessage(errorText: " done removing from favorite",),
+              content: CustomSnakBarMessage(
+                errorText: " done removing from favorite",
+              ),
               behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.transparent,
               elevation: 0,
-
             ));
           },
           child: const Text("show message"),
@@ -70,7 +71,7 @@ class CustomFlashMessage {
 
 class CustomSnakBarMessage extends StatelessWidget {
   const CustomSnakBarMessage({
-    super.key, 
+    super.key,
     required this.errorText,
     this.backgroundColor = Colors.red,
     this.bubbleColor = const Color(0xFF801336),
@@ -79,7 +80,7 @@ class CustomSnakBarMessage extends StatelessWidget {
     this.title = "Oh Snap",
     this.customIconPath,
   });
-  
+
   final String errorText;
   final Color backgroundColor;
   final Color bubbleColor;
@@ -87,7 +88,7 @@ class CustomSnakBarMessage extends StatelessWidget {
   final Color textColor;
   final String title;
   final String? customIconPath;
-  
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -101,7 +102,7 @@ class CustomSnakBarMessage extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: backgroundColor.withOpacity(0.3),
+                color: backgroundColor.withValues(alpha: 0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
@@ -127,7 +128,7 @@ class CustomSnakBarMessage extends StatelessWidget {
                       errorText,
                       style: TextStyle(
                         fontSize: 13,
-                        color: textColor.withOpacity(0.9),
+                        color: textColor.withValues(alpha: 0.9),
                         height: 1.3,
                       ),
                       maxLines: 2,
@@ -149,7 +150,7 @@ class CustomSnakBarMessage extends StatelessWidget {
               "assets/images/bubbles.svg",
               height: 58,
               width: 50,
-              color: bubbleColor,
+              colorFilter: ColorFilter.mode(bubbleColor, BlendMode.srcIn),
             ),
           ),
         ),
@@ -163,7 +164,7 @@ class CustomSnakBarMessage extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: backgroundColor.withOpacity(0.3),
+                  color: backgroundColor.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -172,7 +173,7 @@ class CustomSnakBarMessage extends StatelessWidget {
             child: SvgPicture.asset(
               customIconPath ?? "assets/images/fail.svg",
               height: 20,
-              color: backgroundColor,
+              colorFilter: ColorFilter.mode(backgroundColor, BlendMode.srcIn),
             ),
           ),
         ),

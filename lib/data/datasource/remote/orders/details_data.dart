@@ -1,15 +1,16 @@
 import 'package:ecommerce_app/core/class/crud.dart';
 import 'package:ecommerce_app/linkapi.dart';
 
-class OrdersDetailsData{
+class OrdersDetailsData {
   Crud crud;
   OrdersDetailsData(this.crud);
-  getData(String id)async{
+  getData(String id) async {
     var response = await crud.postData(AppLink.ordersdetails, {
-      "id":id,
+      "id": id,
     });
-    return response.fold((l) => l, (r) => r,);
-
+    return response.fold(
+      (l) => l,
+      (r) => r,
+    );
   }
-
 }

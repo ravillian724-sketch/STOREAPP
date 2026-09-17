@@ -10,7 +10,7 @@ class OrdersPending extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    OrdersPendingController controller = Get.put(OrdersPendingController());
+    Get.put(OrdersPendingController());
     return Scaffold(
       appBar: AppBar(
         title: Text("128".tr), //Orders
@@ -20,7 +20,10 @@ class OrdersPending extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColor.primaryColor.withOpacity(0.1), Colors.white],
+            colors: [
+              AppColor.primaryColor.withValues(alpha: 0.1),
+              Colors.white
+            ],
             stops: const [0.0, 0.3],
           ),
         ),
@@ -38,12 +41,13 @@ class OrdersPending extends StatelessWidget {
                               Icon(
                                 Icons.shopping_bag_outlined,
                                 size: 80,
-                                color: AppColor.primaryColor.withOpacity(0.5),
+                                color: AppColor.primaryColor
+                                    .withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 20),
                               const Text(
                                 "There is No Orders",
-                                style:  TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: AppColor.primaryColor,
@@ -55,9 +59,7 @@ class OrdersPending extends StatelessWidget {
                       : ListView.builder(
                           padding: const EdgeInsets.all(10),
                           itemCount: controller.data.length,
-                          itemBuilder:
-                              (context, index) =>
-                                  CardOrdersList(
+                          itemBuilder: (context, index) => CardOrdersList(
                             listdata: controller.data[index],
                           ),
                         ),
@@ -70,5 +72,3 @@ class OrdersPending extends StatelessWidget {
     );
   }
 }
-
-

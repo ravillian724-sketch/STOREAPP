@@ -15,14 +15,14 @@ class CustomTextBodyAuth extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 3,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
         border: Border.all(
-          color: AppColor.primaryColor.withOpacity(0.1),
+          color: AppColor.primaryColor.withValues(alpha: 0.1),
           width: 1,
         ),
       ),

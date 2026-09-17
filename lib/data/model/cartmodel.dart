@@ -19,29 +19,29 @@ class CartModel {
 
   CartModel(
       {this.itemsprice,
-        this.countitems,
-        this.cartId,
-        this.cartUsersid,
-        this.cartItemsid,
-        this.itemsId,
-        this.itemsName,
-        this.itemsNameAr,
-        this.itemsDesc,
-        this.itemsDescAr,
-        this.itemsImage,
-        this.itemsCount,
-        this.itemsActive,
-        this.itemsPrice,
-        this.itemsDiscount,
-        this.itemsDate,
-        this.itemsCat});
+      this.countitems,
+      this.cartId,
+      this.cartUsersid,
+      this.cartItemsid,
+      this.itemsId,
+      this.itemsName,
+      this.itemsNameAr,
+      this.itemsDesc,
+      this.itemsDescAr,
+      this.itemsImage,
+      this.itemsCount,
+      this.itemsActive,
+      this.itemsPrice,
+      this.itemsDiscount,
+      this.itemsDate,
+      this.itemsCat});
 
   CartModel.fromJson(Map<String, dynamic> json) {
     // تحويل itemsprice إلى double
-    itemsprice = (json['itemsprice'] is int) 
+    itemsprice = (json['itemsprice'] is int)
         ? (json['itemsprice'] as int).toDouble()
         : double.tryParse(json['itemsprice'].toString());
-        
+
     countitems = json['countitems'];
     cartId = json['cart_id'];
     cartUsersid = json['cart_usersid'];
@@ -54,12 +54,12 @@ class CartModel {
     itemsImage = json['items_image'];
     itemsCount = json['items_count'];
     itemsActive = json['items_active'];
-    
+
     // تحويل items_price إلى double
-    itemsPrice = (json['items_price'] is int) 
+    itemsPrice = (json['items_price'] is int)
         ? (json['items_price'] as int).toDouble()
         : double.tryParse(json['items_price'].toString());
-        
+
     itemsDiscount = json['items_discount'];
     itemsDate = json['items_date'];
     itemsCat = json['items_cat'];

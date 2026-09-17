@@ -32,7 +32,8 @@ class ListCategoriesHome extends GetView<HomeControllerImp> {
             itemBuilder: (context, index) {
               return Categories(
                 i: index,
-                categoriesModel: CategoriesModel.fromJson(controller.categories[index]),
+                categoriesModel:
+                    CategoriesModel.fromJson(controller.categories[index]),
               );
             },
           ),
@@ -50,24 +51,25 @@ class Categories extends GetView<HomeControllerImp> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin:  EdgeInsets.symmetric(horizontal: Responsive.margin(4)),
+      margin: EdgeInsets.symmetric(horizontal: Responsive.margin(4)),
       child: InkWell(
         borderRadius: BorderRadius.circular(Responsive.radius(25)),
         onTap: () {
-          controller.goToSubCategories(controller.categories, i!, categoriesModel.categoriesId!.toString());
-         // Get.toNamed(AppRoute.home2);
+          controller.goToSubCategories(controller.categories, i!,
+              categoriesModel.categoriesId!.toString());
+          // Get.toNamed(AppRoute.home2);
         },
         child: Column(
           children: [
             Expanded(
               child: Container(
-                padding:  EdgeInsets.all(Responsive.padding(15)),
+                padding: EdgeInsets.all(Responsive.padding(15)),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEDF1FF),
                   borderRadius: BorderRadius.circular(Responsive.radius(30)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.grey.withValues(alpha: 0.3),
                       spreadRadius: 1,
                       blurRadius: 4,
                       offset: const Offset(1, 2),
@@ -77,7 +79,8 @@ class Categories extends GetView<HomeControllerImp> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(Responsive.radius(24)),
                   child: CachedNetworkImage(
-                    imageUrl: "${AppLink.imageCategories}/${categoriesModel.categoriesImage}",
+                    imageUrl:
+                        "${AppLink.imageCategories}/${categoriesModel.categoriesImage}",
                     fit: BoxFit.contain,
                     width: double.infinity,
                     height: double.infinity,
@@ -101,10 +104,10 @@ class Categories extends GetView<HomeControllerImp> {
             const SizedBox(height: 6),
             Container(
               width: double.infinity,
-              padding:  EdgeInsets.symmetric(horizontal: Responsive.padding(4)),
+              padding: EdgeInsets.symmetric(horizontal: Responsive.padding(4)),
               child: Text(
                 "${translateDatabase(categoriesModel.categoriesNameAr, categoriesModel.categoriesName)}",
-                style:  TextStyle(
+                style: TextStyle(
                   fontSize: Responsive.font(22),
                   fontWeight: FontWeight.w500,
                   color: AppColor.black,

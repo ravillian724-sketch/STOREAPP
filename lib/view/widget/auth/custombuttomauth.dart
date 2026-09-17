@@ -17,17 +17,17 @@ class CustomButtomAuth extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             AppColor.primaryColor,
-            AppColor.primaryColor.withOpacity(0.7),
+            AppColor.primaryColor.withValues(alpha: 0.7),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColor.primaryColor.withOpacity(0.4),
+            color: AppColor.primaryColor.withValues(alpha: 0.4),
             spreadRadius: 1,
             blurRadius: 8,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -45,14 +45,14 @@ class CustomButtomAuth extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.login_rounded,
               size: 22,
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Text(
               text,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,

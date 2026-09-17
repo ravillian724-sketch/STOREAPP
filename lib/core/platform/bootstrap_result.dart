@@ -12,8 +12,7 @@ class BootstrapResult {
   factory BootstrapResult.fromJson(
     Map<String, dynamic> json,
   ) {
-    final rawStore =
-        json['store'] as Map<String, dynamic>?;
+    final rawStore = json['store'] as Map<String, dynamic>?;
 
     if (rawStore == null) {
       throw const FormatException(
@@ -21,8 +20,7 @@ class BootstrapResult {
       );
     }
 
-    final storeConfig =
-        StoreConfig.fromJson(rawStore);
+    final storeConfig = StoreConfig.fromJson(rawStore);
 
     if (storeConfig.tenantId.trim().isEmpty) {
       throw const FormatException(
@@ -32,8 +30,7 @@ class BootstrapResult {
 
     return BootstrapResult(
       storeConfig: storeConfig,
-      defaultBranchId:
-          json['default_branch_id']?.toString(),
+      defaultBranchId: json['default_branch_id']?.toString(),
     );
   }
 }

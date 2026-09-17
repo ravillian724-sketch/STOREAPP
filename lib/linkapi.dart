@@ -1,115 +1,62 @@
+import 'package:ecommerce_app/core/platform/environment_config.dart';
 
-class AppLink{
+/// Transitional endpoints for legacy services that have not yet moved to API v1.
+/// No IP/domain fallback is allowed: builds must provide API_BASE_URL explicitly.
+class AppLink {
+  static String get server => EnvironmentConfig.requireApiBaseUri().toString();
 
-  //if emulator use 10.0.2.2
-  // static const String server="10.0.2.2";
-  static const String server = String.fromEnvironment(
-    "API_BASE_URL",
-    defaultValue: "http://192.168.130.157/ecommerce",
-  );
-  //==========================Image=============================//
-  static const String imageStatic = "$server/upload";
-  static const String imageCategories = "$imageStatic/categories";
-  static const String imageItems = "$imageStatic/items";
-  static const String imagesubcategories = "$imageStatic/subcategories";
-//==============================test====================================//
-  static const String test = "$server/test.php";
+  static String get imageStatic => '$server/upload';
+  static String get imageCategories => '$imageStatic/categories';
+  static String get imageItems => '$imageStatic/items';
+  static String get imagesubcategories => '$imageStatic/subcategories';
 
+  static String get signUp => '$server/auth/signup.php';
+  static String get verfiycodesignup => '$server/auth/verfiycode.php';
+  static String get resend => '$server/auth/resend.php';
+  static String get login => '$server/auth/login.php';
 
-  //===========================Auth=============================//
+  static String get checkemail => '$server/forgetpassword/checkemail.php';
+  static String get verfiycodeforgetpassword =>
+      '$server/forgetpassword/verfiycode.php';
+  static String get resetpassword => '$server/forgetpassword/resetpassword.php';
 
-  static const String signUp = "$server/auth/signup.php";
-  static const String verfiycodesignup   = "$server/auth/verfiycode.php";
-  static const String resend = "$server/auth/resend.php";
-  static const String login = "$server/auth/login.php";
-  //==================ForgetPassword ==========================//
-  static const String checkemail = "$server/forgetpassword/checkemail.php";
-  static const String verfiycodeforgetpassword = "$server/forgetpassword/verfiycode.php";
-  static const String resetpassword = "$server/forgetpassword/resetpassword.php";
+  static String get homepage => '$server/home.php';
+  static String get subcategories => '$server/subcategories/view.php';
+  static String get items => '$server/items/items.php';
+  static String get searchitems => '$server/items/search.php';
 
+  static String get favoriteAdd => '$server/favorite/add.php';
+  static String get favoriteRemove => '$server/favorite/remove.php';
+  static String get favoriteview => '$server/favorite/view.php';
+  static String get deletefromfavorite =>
+      '$server/favorite/deletefromfavorite.php';
 
-//=======================Home=========================//
+  static String get cartview => '$server/cart/view.php';
+  static String get cartAdd => '$server/cart/add.php';
+  static String get cartDelete => '$server/cart/delete.php';
+  static String get cartgetcountitems => '$server/cart/getcountitems.php';
 
-  static const String homepage = "$server/home.php";
+  static String get addressView => '$server/address/view.php';
+  static String get addressAdd => '$server/address/add.php';
+  static String get addressEdit => '$server/address/edit.php';
+  static String get addressDelete => '$server/address/delete.php';
 
-//=====================Sub Categories===================//
-static const String subcategories = "$server/subcategories/view.php";
-  //=================items========================//
-
-  static const String items = "$server/items/items.php";
-  static const String itemstest = "$server/items/items_test.php";
-  static const String searchitems = "$server/items/search.php";
-  //================favorite====================//
-
-  static const String favoriteAdd = "$server/favorite/add.php";
-  static const String favoriteRemove = "$server/favorite/remove.php";
-  static const String favoriteview = "$server/favorite/view.php";
-  static const String  deletefromfavorite = "$server/favorite/deletefromfavorite.php";
-
-// =============Cart=======================//
-  static const String cartview   = "$server/cart/view.php";
-  static const String cartAdd    = "$server/cart/add.php";
-  static const String cartDelete = "$server/cart/delete.php";
-  static const String cartgetcountitems = "$server/cart/getcountitems.php";
-
-// =============Address=======================//
-
-
-  static const String addressView   = "$server/address/view.php";
-  static const String addressAdd    = "$server/address/add.php";
-  static const String addressEdit = "$server/address/edit.php";
-  static const String addressDelete = "$server/address/delete.php";
-
-//===============Coupon=======================//
-  static const String checkCoupon   = "$server/coupon/checkcoupon.php";
-
-//=============Checkout============================//
-  static const String checkout = "$server/orders/checkout.php";
-
-  //==========orders===============================//
-
-
-  static const String pendingorders = "$server/orders/pending.php";
-  static const String ordersdetails = "$server/orders/details.php";
-  static const String ordersdelete = "$server/orders/delete.php";
-  static const String ordersarchive = "$server/orders/archive.php";
-  static const String rejectedorders = "$server/orders/rejected.php";
-
-
-//===========notification================//
-
-  static const String notification = "$server/notification.php";
-
-
-//===========offer================//
-
-  static const String offers = "$server/offers.php";
-
-  //==============chatbot================//
-  static const String chatbot = "$server/chatbot.php";
-  static const String geminisave = "$server/save_ai_caht.php";
-  //===========Rating================//
-  static const String rating = "$server/rating.php";
-
-//==============chat================//
-
-  static const String sendmessage = "$server/chat/send.php";
-  static const String getmessage = "$server/chat/get.php";
-
-
-
-
-//============Medical Info================//
-  static const String medicalInfoView = "$server/mediacl_info/view.php";
-  static const String medicalInfoAdd = "$server/mediacl_info/add.php";
-  static const String medicalInfoUpdate = "$server/mediacl_info/edit.php";
-
-//==========Users================//
-  static String get usersview => "$server/admin/admin_users/view.php";
-
-
-
-
-
-
+  static String get checkCoupon => '$server/coupon/checkcoupon.php';
+  static String get checkout => '$server/orders/checkout.php';
+  static String get pendingorders => '$server/orders/pending.php';
+  static String get ordersdetails => '$server/orders/details.php';
+  static String get ordersdelete => '$server/orders/delete.php';
+  static String get ordersarchive => '$server/orders/archive.php';
+  static String get rejectedorders => '$server/orders/rejected.php';
+  static String get notification => '$server/notification.php';
+  static String get offers => '$server/offers.php';
+  static String get chatbot => '$server/chatbot.php';
+  static String get geminisave => '$server/save_ai_caht.php';
+  static String get rating => '$server/rating.php';
+  static String get sendmessage => '$server/chat/send.php';
+  static String get getmessage => '$server/chat/get.php';
+  static String get medicalInfoView => '$server/mediacl_info/view.php';
+  static String get medicalInfoAdd => '$server/mediacl_info/add.php';
+  static String get medicalInfoUpdate => '$server/mediacl_info/edit.php';
+  static String get usersview => '$server/admin/admin_users/view.php';
 }

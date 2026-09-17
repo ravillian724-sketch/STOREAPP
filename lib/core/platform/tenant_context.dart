@@ -9,11 +9,9 @@ class TenantContext {
     this.branchId,
   });
 
-  bool get hasBrand =>
-      brandId != null && brandId!.trim().isNotEmpty;
+  bool get hasBrand => brandId != null && brandId!.trim().isNotEmpty;
 
-  bool get hasBranch =>
-      branchId != null && branchId!.trim().isNotEmpty;
+  bool get hasBranch => branchId != null && branchId!.trim().isNotEmpty;
 
   TenantContext copyWith({
     String? tenantId,

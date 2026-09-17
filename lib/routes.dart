@@ -1,6 +1,3 @@
-import 'package:ecommerce_app/controller/test_controller.dart';
-import 'package:ecommerce_app/core/middelware/mymiddelware.dart';
-import 'package:ecommerce_app/test.dart';
 import 'package:ecommerce_app/view/address/add.dart';
 import 'package:ecommerce_app/view/address/adddetails.dart';
 import 'package:ecommerce_app/view/address/view.dart';
@@ -13,7 +10,6 @@ import 'package:ecommerce_app/view/screeen/auth/signup.dart';
 import 'package:ecommerce_app/view/screeen/auth/success_signup.dart';
 import 'package:ecommerce_app/view/screeen/auth/verfiycode_siginup.dart';
 import 'package:ecommerce_app/view/screeen/cart.dart';
-import 'package:ecommerce_app/view/screeen/chat.dart';
 import 'package:ecommerce_app/view/screeen/checkout.dart';
 import 'package:ecommerce_app/view/screeen/forgetpassword/forgetpassword.dart';
 import 'package:ecommerce_app/view/screeen/forgetpassword/resetpassword.dart';
@@ -25,59 +21,59 @@ import 'package:ecommerce_app/view/screeen/items.dart';
 import 'package:ecommerce_app/view/screeen/language.dart';
 import 'package:ecommerce_app/view/screeen/medicalinfopage.dart';
 import 'package:ecommerce_app/view/screeen/myfavorite.dart';
-import 'package:ecommerce_app/view/screeen/offers.dart';
 import 'package:ecommerce_app/view/screeen/onboarding.dart';
 import 'package:ecommerce_app/view/screeen/productdetails.dart';
 import 'package:get/get_navigation/src/routes/get_route.dart';
 import 'package:ecommerce_app/view/screeen/auth/login.dart';
 import 'core/constant/routes.dart';
 
-List<GetPage<dynamic>>? routes=[
- GetPage(name:"/", page: ()=>const Language(),middlewares: [MyMiddelWare()]),
-  //GetPage(name: "/", page:()=> const  Test()),//middlewares: [MyMiddelWare()]
+List<GetPage<dynamic>>? routes = [
+  GetPage(name: "/", page: () => const HomeScreen()),
+  GetPage(name: AppRoute.language, page: () => const Language()),
   //Auth
-  GetPage(name:AppRoute.login, page: ()=>const Login()),
-GetPage(name:AppRoute.cart, page: ()=>const Cart()),
-  GetPage(name:AppRoute.signUp, page: ()=>const SignUp()),
-  GetPage(name: AppRoute.forgetPassword, page: ()=>const ForgetPassword()),
-  GetPage(name:AppRoute.resetPassword, page: ()=>const ResetPassword()),
-  GetPage(name: AppRoute.verfiyCode, page: ()=>const VerfiyCode()),
-  GetPage(name:  AppRoute.successResetPassword, page: ()=>const SuccessResetPassword()),
-  GetPage(name: AppRoute.successSignUp , page: ()=>const SuccessSignup() ),
-  GetPage(name: AppRoute.verfiyCodeSignUp, page: ()=> const VerfiyCodeSignUp()),
-  GetPage(name: AppRoute.onBoarding, page: ()=>const OnBoarding() ),
+  GetPage(name: AppRoute.login, page: () => const Login()),
+  GetPage(name: AppRoute.cart, page: () => const Cart()),
+  GetPage(name: AppRoute.signUp, page: () => const SignUp()),
+  GetPage(name: AppRoute.forgetPassword, page: () => const ForgetPassword()),
+  GetPage(name: AppRoute.resetPassword, page: () => const ResetPassword()),
+  GetPage(name: AppRoute.verfiyCode, page: () => const VerfiyCode()),
+  GetPage(
+      name: AppRoute.successResetPassword,
+      page: () => const SuccessResetPassword()),
+  GetPage(name: AppRoute.successSignUp, page: () => const SuccessSignup()),
+  GetPage(
+      name: AppRoute.verfiyCodeSignUp, page: () => const VerfiyCodeSignUp()),
+  GetPage(name: AppRoute.onBoarding, page: () => const OnBoarding()),
 //Home
-  GetPage(name: AppRoute.homepage, page: ()=>const HomeScreen()),
-  GetPage(name: AppRoute.items, page: ()=>const Items()),
-  GetPage(name: AppRoute.productdetails, page: ()=> const ProductDetails()),
-  GetPage(name: AppRoute.myfavorite, page: ()=> const MyFavorite()),
+  GetPage(name: AppRoute.homepage, page: () => const HomeScreen()),
+  GetPage(name: AppRoute.items, page: () => const Items()),
+  GetPage(name: AppRoute.productdetails, page: () => const ProductDetails()),
+  GetPage(name: AppRoute.myfavorite, page: () => const MyFavorite()),
 //Hom2
-  GetPage(name: AppRoute.home2, page: ()=> const Home2()),
+  GetPage(name: AppRoute.home2, page: () => const Home2()),
 
 //Address
 
-  GetPage(name: AppRoute.addressview, page: ()=> const AddressView()),
-  GetPage(name: AppRoute.addressadd, page: ()=> const AddressAdd()),
-  GetPage(name: AppRoute.addressadddetails, page: ()=> const AddressAddDetails()),
-
+  GetPage(name: AppRoute.addressview, page: () => const AddressView()),
+  GetPage(name: AppRoute.addressadd, page: () => const AddressAdd()),
+  GetPage(
+      name: AppRoute.addressadddetails, page: () => const AddressAddDetails()),
 
 //Checkout + Orders
 
-  GetPage(name: AppRoute.checkout, page: ()=> const Checkout()),
-  GetPage(name: AppRoute.orederspending, page: ()=> const OrdersPending()),
-  GetPage(name: AppRoute.ordersdetails, page: ()=> const OrdersDetails()),
-  GetPage(name: AppRoute.ordersarchive, page: ()=> const OrdersArchiveView()),
-  GetPage(name: AppRoute.tracking, page: ()=> const OrdersTracking()),
-  GetPage(name: AppRoute.rejectedorders, page: ()=> const OrdersRejectedView()),
+  GetPage(name: AppRoute.checkout, page: () => const Checkout()),
+  GetPage(name: AppRoute.orederspending, page: () => const OrdersPending()),
+  GetPage(name: AppRoute.ordersdetails, page: () => const OrdersDetails()),
+  GetPage(name: AppRoute.ordersarchive, page: () => const OrdersArchiveView()),
+  GetPage(name: AppRoute.tracking, page: () => const OrdersTracking()),
+  GetPage(
+      name: AppRoute.rejectedorders, page: () => const OrdersRejectedView()),
 
-
- //Medical info
-  GetPage(name: AppRoute.mdicinfo, page: ()=> const MedicalInfoScreen()),
+  //Medical info
+  GetPage(name: AppRoute.mdicinfo, page: () => const MedicalInfoScreen()),
 
   //offers
   //GetPage(name: AppRoute.offers, page: ()=> const OffersView()),
-
-
 ];
 
 // Map<String, Widget Function(BuildContext)> routes={

@@ -6,9 +6,9 @@ import '../../../core/constant/color.dart';
 import '../../../core/functions/responsivehelper.dart';
 import '../../../data/datasource/static/static.dart';
 
-class CustomsliderOnBoading extends GetView<onBoardingControllerImp> {
+class CustomsliderOnBoading extends GetView<OnBoardingControllerImp> {
   const CustomsliderOnBoading({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return PageView.builder(
@@ -21,14 +21,14 @@ class CustomsliderOnBoading extends GetView<onBoardingControllerImp> {
         padding: EdgeInsets.symmetric(horizontal: Responsive.padding(40)),
         child: Column(
           children: [
-             SizedBox(height: Responsive.h(40)),
+            SizedBox(height: Responsive.h(40)),
             Container(
               height: Get.width / 1.3,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(Responsive.radius(50)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                     spreadRadius: 2,
                     blurRadius: 10,
                     offset: const Offset(0, 5),
@@ -43,15 +43,17 @@ class CustomsliderOnBoading extends GetView<onBoardingControllerImp> {
                 ),
               ),
             ),
-             SizedBox(height: Responsive.h(100)),
+            SizedBox(height: Responsive.h(100)),
             Container(
-              padding: EdgeInsets.symmetric(horizontal: Responsive.padding(20), vertical: Responsive.padding(20)),
+              padding: EdgeInsets.symmetric(
+                  horizontal: Responsive.padding(20),
+                  vertical: Responsive.padding(20)),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(Responsive.radius(30)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     spreadRadius: 1,
                     blurRadius: 5,
                     offset: const Offset(0, 2),
@@ -69,7 +71,7 @@ class CustomsliderOnBoading extends GetView<onBoardingControllerImp> {
                       letterSpacing: 0.5,
                     ),
                   ),
-                   SizedBox(height: Responsive.h(40)),
+                  SizedBox(height: Responsive.h(40)),
                   Container(
                     width: double.infinity,
                     alignment: Alignment.center,

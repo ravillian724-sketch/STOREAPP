@@ -9,6 +9,5 @@ class ApiResponse {
     this.headers = const {},
   });
 
-  bool get isSuccess =>
-      statusCode >= 200 && statusCode < 300;
+  bool get isSuccess => statusCode >= 200 && statusCode < 300;
 }

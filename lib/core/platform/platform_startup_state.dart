@@ -68,11 +68,9 @@ class PlatformStartupState {
           statusCode: statusCode,
         );
 
-  bool get isLoading =>
-      status == PlatformStartupStatus.bootstrapping;
+  bool get isLoading => status == PlatformStartupStatus.bootstrapping;
 
-  bool get isReady =>
-      status == PlatformStartupStatus.ready;
+  bool get isReady => status == PlatformStartupStatus.ready;
 
   bool get canRetry =>
       status == PlatformStartupStatus.networkUnavailable ||

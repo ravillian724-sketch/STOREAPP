@@ -16,7 +16,7 @@ Future<String?> requireUserId(MyServices services) async {
   await services.clearUserSession();
 
   if (Get.currentRoute != AppRoute.login) {
-    Get.offAllNamed(AppRoute.login);
+    Get.toNamed(AppRoute.login);
   }
 
   return null;

@@ -12,7 +12,6 @@ import 'package:get/get.dart';
 
 import '../../core/constant/routes.dart';
 
-
 class Home2 extends StatelessWidget {
   const Home2({super.key});
 
@@ -25,7 +24,10 @@ class Home2 extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.white, AppColor.primaryColor.withOpacity(0.05)],
+            colors: [
+              Colors.white,
+              AppColor.primaryColor.withValues(alpha: 0.05)
+            ],
           ),
         ),
         padding: const EdgeInsets.all(15),
@@ -51,12 +53,13 @@ class Home2 extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: AppColor.primaryColor.withOpacity(0.1),
+                            color: AppColor.primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child:  Text(
+                          child: Text(
                             "76".tr,
                             style: const TextStyle(
                               fontSize: 22,
@@ -72,7 +75,8 @@ class Home2 extends StatelessWidget {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: controller.subcategories.length,
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               childAspectRatio: 0.8,
                               crossAxisSpacing: 15,
@@ -92,14 +96,15 @@ class Home2 extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                               colors: [
-                                AppColor.primaryColor.withOpacity(0.2),
-                                AppColor.primaryColor.withOpacity(0.05),
+                                AppColor.primaryColor.withValues(alpha: 0.2),
+                                AppColor.primaryColor.withValues(alpha: 0.05),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(10),
@@ -116,7 +121,8 @@ class Home2 extends StatelessWidget {
                         const SizedBox(height: 15),
                         HandlingDataView(
                           statusRequest: controller.statusRequest,
-                          widget: ListItemsSearch(listdatamodel: controller.listdata),
+                          widget: ListItemsSearch(
+                              listdatamodel: controller.listdata),
                         ),
                       ],
                     ),
@@ -131,16 +137,17 @@ class Home2 extends StatelessWidget {
 class SubCategoryCard extends GetView<Home2ControllerImp> {
   final Home2Model home2Model;
   final int index;
-  const SubCategoryCard({super.key, required this.home2Model, required this.index});
+  const SubCategoryCard(
+      {super.key, required this.home2Model, required this.index});
 
   @override
   Widget build(BuildContext context) {
     // تحديد اللون بناءً على معرف القسم الرئيسي
     Color primaryColor;
     Color secondaryColor;
-    
+
     // استخدام معرف القسم الرئيسي لتحديد اللون
-    switch(home2Model.categoryId) {
+    switch (home2Model.categoryId) {
       case 1:
         primaryColor = Colors.green;
         secondaryColor = Colors.green.shade100;
@@ -174,7 +181,7 @@ class SubCategoryCard extends GetView<Home2ControllerImp> {
         secondaryColor = Colors.green.shade100;
         break;
       case 9:
-        primaryColor =const Color(0xff3d66c7);
+        primaryColor = const Color(0xff3d66c7);
         secondaryColor = Colors.red.shade100;
         break;
       case 10:
@@ -183,16 +190,13 @@ class SubCategoryCard extends GetView<Home2ControllerImp> {
         break;
       default:
         primaryColor = const Color(0xffdcffe4);
-        secondaryColor = const Color(0xff127e40).withOpacity(0.1);
+        secondaryColor = const Color(0xff127e40).withValues(alpha: 0.1);
     }
-    
+
     return InkWell(
       onTap: () {
         controller.goToItems(
-          controller.subcategories, 
-          index, 
-          home2Model.categoryId.toString()
-        );
+            controller.subcategories, index, home2Model.categoryId.toString());
       },
       child: Container(
         decoration: BoxDecoration(
@@ -201,13 +205,13 @@ class SubCategoryCard extends GetView<Home2ControllerImp> {
             end: Alignment.bottomRight,
             colors: [
               Colors.white,
-              secondaryColor.withOpacity(0.3),
+              secondaryColor.withValues(alpha: 0.3),
             ],
           ),
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withOpacity(0.2),
+              color: primaryColor.withValues(alpha: 0.2),
               spreadRadius: 1,
               blurRadius: 5,
               offset: const Offset(0, 3),
@@ -224,7 +228,8 @@ class SubCategoryCard extends GetView<Home2ControllerImp> {
                 child: Hero(
                   tag: "subcategory-${home2Model.subcategoryId}",
                   child: CachedNetworkImage(
-                    imageUrl: "${AppLink.imagesubcategories}/${home2Model.subcategoryImage}",
+                    imageUrl:
+                        "${AppLink.imagesubcategories}/${home2Model.subcategoryImage}",
                     height: 100,
                     fit: BoxFit.contain,
                     placeholder: (context, url) => Center(
@@ -248,8 +253,8 @@ class SubCategoryCard extends GetView<Home2ControllerImp> {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    primaryColor.withOpacity(0.3),
-                    primaryColor.withOpacity(0.1),
+                    primaryColor.withValues(alpha: 0.3),
+                    primaryColor.withValues(alpha: 0.1),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -281,7 +286,8 @@ class SubCategoryCard extends GetView<Home2ControllerImp> {
 
 class ListSubCategoriesSearch extends GetView<Home2ControllerImp> {
   final List listSubCategoriesSearch;
-  const ListSubCategoriesSearch({super.key, required this.listSubCategoriesSearch});
+  const ListSubCategoriesSearch(
+      {super.key, required this.listSubCategoriesSearch});
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +311,7 @@ class ListSubCategoriesSearch extends GetView<Home2ControllerImp> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   spreadRadius: 1,
                   blurRadius: 5,
                   offset: const Offset(0, 2),
@@ -313,17 +319,19 @@ class ListSubCategoriesSearch extends GetView<Home2ControllerImp> {
               ],
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
               leading: Container(
                 width: 70,
                 height: 70,
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: AppColor.primaryColor.withOpacity(0.1),
+                  color: AppColor.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: CachedNetworkImage(
-                  imageUrl: "${AppLink.imagesubcategories}/${listSubCategoriesSearch[index].subcategoryImage}",
+                  imageUrl:
+                      "${AppLink.imagesubcategories}/${listSubCategoriesSearch[index].subcategoryImage}",
                   fit: BoxFit.contain,
                   placeholder: (context, url) => const Center(
                     child: CircularProgressIndicator(

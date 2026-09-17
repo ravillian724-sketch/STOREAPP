@@ -9,7 +9,11 @@ class CustomTitleHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(top: Responsive.margin(10), bottom: Responsive.margin(10), left: Responsive.margin(5), right: Responsive.margin(5)),
+      margin: EdgeInsets.only(
+          top: Responsive.margin(10),
+          bottom: Responsive.margin(10),
+          left: Responsive.margin(5),
+          right: Responsive.margin(5)),
       child: Row(
         children: [
           Container(
@@ -20,7 +24,7 @@ class CustomTitleHome extends StatelessWidget {
               borderRadius: BorderRadius.circular(Responsive.radius(20)),
             ),
           ),
-           SizedBox(width: Responsive.w(20)),
+          SizedBox(width: Responsive.w(20)),
           Expanded(
             child: Text(
               title,
@@ -33,7 +37,7 @@ class CustomTitleHome extends StatelessWidget {
                   Shadow(
                     offset: const Offset(0.5, 0.5),
                     blurRadius: 1,
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                   ),
                 ],
               ),

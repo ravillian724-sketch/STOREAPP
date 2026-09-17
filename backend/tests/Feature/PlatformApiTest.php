@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\AppInstance;
+use App\Models\Branch;
 use App\Models\Tenant;
 use App\Services\AppInstanceCredentialService;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -48,6 +50,25 @@ class PlatformApiTest extends TestCase
         return $tenant;
     }
 
+    private function inTenant(
+        Tenant $tenant,
+        callable $callback,
+    ): mixed {
+        $context = app(TenantContext::class);
+        $previous = $context->id();
+        $context->set($tenant->id);
+
+        try {
+            return $callback();
+        } finally {
+            if ($previous === null) {
+                $context->clear();
+            } else {
+                $context->set($previous);
+            }
+        }
+    }
+
     public function test_health_endpoint_is_available(): void
     {
         $response = $this->getJson('/api/v1/health');
@@ -63,6 +84,16 @@ class PlatformApiTest extends TestCase
     {
         $tenant = $this->createTenant();
 
+        $branch = $this->inTenant(
+            $tenant,
+            fn (): Branch => Branch::query()->create([
+                'code' => 'MAIN',
+                'name_ar' => 'الرئيسي',
+                'name_en' => 'Main',
+                'is_active' => true,
+            ]),
+        );
+
         $response = $this
             ->withHeader(
                 'X-App-Instance-Key',
@@ -76,7 +107,32 @@ class PlatformApiTest extends TestCase
             ->assertOk()
             ->assertHeader('X-Request-Id')
             ->assertJsonPath('data.store.tenant_id', (string) $tenant->id)
-            ->assertJsonPath('data.store.name_en', 'Test Store');
+            ->assertJsonPath('data.store.name_en', 'Test Store')
+            ->assertJsonPath('data.default_branch_id', (string) $branch->id);
+    }
+
+    public function test_bootstrap_ignores_inactive_branch_when_selecting_default(): void
+    {
+        $tenant = $this->createTenant();
+
+        $this->inTenant(
+            $tenant,
+            function (): void {
+                Branch::query()->create([
+                    'code' => 'CLOSED',
+                    'name_ar' => 'مغلق',
+                    'name_en' => 'Closed',
+                    'is_active' => false,
+                ]);
+            },
+        );
+
+        $this->withHeader(
+            'X-App-Instance-Key',
+            $this->token('test-instance-key'),
+        )->postJson('/api/v1/bootstrap')
+            ->assertOk()
+            ->assertJsonPath('data.default_branch_id', null);
     }
 
     public function test_invalid_app_instance_is_rejected(): void

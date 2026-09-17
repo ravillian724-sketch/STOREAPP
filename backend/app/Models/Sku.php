@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sku extends Model
 {
@@ -39,6 +40,13 @@ class Sku extends Model
     {
         return $this->belongsTo(
             Product::class
+        );
+    }
+
+    public function prices(): HasMany
+    {
+        return $this->hasMany(
+            SkuPrice::class
         );
     }
 }

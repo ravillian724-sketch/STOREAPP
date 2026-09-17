@@ -31,10 +31,10 @@ class CustomTextFormAuth extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 3,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -45,7 +45,7 @@ class CustomTextFormAuth extends StatelessWidget {
         validator: valid,
         controller: mycontroller,
         obscureText: obscuretext == null || obscuretext == false ? false : true,
-        style: TextStyle(fontSize: 16),
+        style: const TextStyle(fontSize: 16),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(
@@ -53,18 +53,20 @@ class CustomTextFormAuth extends StatelessWidget {
             color: Colors.grey.shade500,
           ),
           floatingLabelBehavior: FloatingLabelBehavior.always,
-          contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 30),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 18, horizontal: 30),
           label: Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColor.primaryColor.withOpacity(0.3)),
+              border: Border.all(
+                  color: AppColor.primaryColor.withValues(alpha: 0.3)),
             ),
             margin: const EdgeInsets.symmetric(horizontal: 7),
             child: Text(
               labelText,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColor.primaryColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
@@ -74,10 +76,10 @@ class CustomTextFormAuth extends StatelessWidget {
           suffixIcon: InkWell(
             onTap: onTapIcon,
             child: Container(
-              padding: EdgeInsets.all(8),
-              margin: EdgeInsets.all(4),
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: AppColor.primaryColor.withOpacity(0.1),
+                color: AppColor.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(50),
               ),
               child: Icon(
@@ -98,7 +100,7 @@ class CustomTextFormAuth extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(
+            borderSide: const BorderSide(
               color: AppColor.primaryColor,
               width: 2,
             ),
@@ -112,7 +114,7 @@ class CustomTextFormAuth extends StatelessWidget {
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(
+            borderSide: const BorderSide(
               color: Colors.red,
               width: 2,
             ),

@@ -1,6 +1,5 @@
 import 'package:ecommerce_app/core/class/handlingdataview.dart';
 import 'package:ecommerce_app/core/constant/color.dart';
-import 'package:ecommerce_app/core/constant/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
@@ -11,16 +10,13 @@ class NotificationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    NotificationContrller controller = Get.put(NotificationContrller());
+    Get.put(NotificationContrller());
     return GetBuilder<NotificationContrller>(
       builder: (controller) => HandlingDataView(
         statusRequest: controller.statusRequest,
         widget: Scaffold(
           appBar: AppBar(
-            leading: IconButton(onPressed: (){
-
-            },
-                icon:Icon(Icons.chat)),
+            leading: IconButton(onPressed: () {}, icon: const Icon(Icons.chat)),
             backgroundColor: Colors.transparent,
             elevation: 0,
             centerTitle: true,
@@ -35,7 +31,8 @@ class NotificationView extends StatelessWidget {
           ),
           body: Container(
             padding: const EdgeInsets.all(10),
-            child: controller.data.isEmpty ? const Center(
+            child: controller.data.isEmpty
+                ? const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -65,12 +62,12 @@ class NotificationView extends StatelessWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(15),
                           border: Border.all(
-                            color: AppColor.primaryColor.withOpacity(0.3),
+                            color: AppColor.primaryColor.withValues(alpha: 0.3),
                             width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
+                              color: Colors.grey.withValues(alpha: 0.2),
                               spreadRadius: 1,
                               blurRadius: 6,
                               offset: const Offset(0, 3),
@@ -82,9 +79,7 @@ class NotificationView extends StatelessWidget {
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              onTap: () {
-
-                              },
+                              onTap: () {},
                               child: Padding(
                                 padding: const EdgeInsets.all(12),
                                 child: Column(
@@ -95,7 +90,8 @@ class NotificationView extends StatelessWidget {
                                         Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            color: AppColor.primaryColor.withOpacity(0.1),
+                                            color: AppColor.primaryColor
+                                                .withValues(alpha: 0.1),
                                             shape: BoxShape.circle,
                                           ),
                                           child: const Icon(
@@ -107,7 +103,8 @@ class NotificationView extends StatelessWidget {
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
-                                            controller.data[index]['notification_titel'],
+                                            controller.data[index]
+                                                ['notification_titel'],
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
@@ -120,11 +117,15 @@ class NotificationView extends StatelessWidget {
                                             vertical: 5,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppColor.primaryColor.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(12),
+                                            color: AppColor.primaryColor
+                                                .withValues(alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
                                           child: Text(
-                                            Jiffy.parse(controller.data[index]['notification_datetime']).fromNow(),
+                                            Jiffy.parse(controller.data[index]
+                                                    ['notification_datetime'])
+                                                .fromNow(),
                                             style: const TextStyle(
                                               color: AppColor.primaryColor,
                                               fontWeight: FontWeight.bold,
@@ -138,7 +139,8 @@ class NotificationView extends StatelessWidget {
                                     Padding(
                                       padding: const EdgeInsets.only(right: 42),
                                       child: Text(
-                                        controller.data[index]['notification_body'],
+                                        controller.data[index]
+                                            ['notification_body'],
                                         style: TextStyle(
                                           fontSize: 14,
                                           color: Colors.grey[700],

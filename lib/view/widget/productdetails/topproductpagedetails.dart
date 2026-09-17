@@ -28,7 +28,7 @@ class TopProductPageDetails extends GetView<ProductDetailsControllerImp> {
             tag: "${controller.itemsModel.itemsId}",
             child: CachedNetworkImage(
               imageUrl:
-              "${AppLink.imageItems}/${controller.itemsModel.itemsImage!}",
+                  "${AppLink.imageItems}/${controller.itemsModel.itemsImage!}",
               height: 250,
               fit: BoxFit.fill,
             ),

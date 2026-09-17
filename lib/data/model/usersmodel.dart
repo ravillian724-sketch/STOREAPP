@@ -10,13 +10,13 @@ class UsersModel {
 
   UsersModel(
       {this.usersId,
-        this.usersName,
-        this.usersPassword,
-        this.usersEmail,
-        this.usersPhone,
-        this.usersVerfiycode,
-        this.usersApprove,
-        this.useresCreate});
+      this.usersName,
+      this.usersPassword,
+      this.usersEmail,
+      this.usersPhone,
+      this.usersVerfiycode,
+      this.usersApprove,
+      this.useresCreate});
 
   UsersModel.fromJson(Map<String, dynamic> json) {
     usersId = json['users_id'];

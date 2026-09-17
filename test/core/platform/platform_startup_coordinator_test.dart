@@ -40,8 +40,7 @@ void main() {
       expect(state.isReady, isTrue);
     });
 
-    test('maps network failure to networkUnavailable',
-        () async {
+    test('maps network failure to networkUnavailable', () async {
       final coordinator = PlatformStartupCoordinator(
         bootstrap: () async {
           throw const ApiNetworkException();
@@ -57,8 +56,7 @@ void main() {
       expect(state.canRetry, isTrue);
     });
 
-    test('maps timeout to serverUnavailable',
-        () async {
+    test('maps timeout to serverUnavailable', () async {
       final coordinator = PlatformStartupCoordinator(
         bootstrap: () async {
           throw const ApiTimeoutException();
@@ -94,8 +92,7 @@ void main() {
       expect(state.canRetry, isFalse);
     });
 
-    test('maps 500 to serverUnavailable',
-        () async {
+    test('maps 500 to serverUnavailable', () async {
       final coordinator = PlatformStartupCoordinator(
         bootstrap: () async {
           throw const ApiException(
@@ -114,8 +111,7 @@ void main() {
       expect(state.canRetry, isTrue);
     });
 
-    test('maps 429 to serverUnavailable',
-        () async {
+    test('maps 429 to serverUnavailable', () async {
       final coordinator = PlatformStartupCoordinator(
         bootstrap: () async {
           throw const ApiException(
@@ -134,8 +130,7 @@ void main() {
       expect(state.canRetry, isTrue);
     });
 
-    test('retry succeeds after temporary network failure',
-        () async {
+    test('retry succeeds after temporary network failure', () async {
       var attempts = 0;
 
       final coordinator = PlatformStartupCoordinator(

@@ -35,29 +35,29 @@ class OrdersModel {
 
   OrdersModel(
       {this.ordersId,
-        this.ordersUsersid,
-        this.ordersAddress,
-        this.ordersType,
-        this.ordersPricedelivery,
-        this.ordersPrice,
-        this.ordersTotalprice,
-        this.ordersCoupon,
-        this.ordersRating,
-        this.ordersNoterating,
-        this.ordersPaymrntmethod,
-        this.ordersStatus,
-        this.ordersDiseases,
-        this.ordersMedications,
-        this.ordersDoctornotes,
-        this.ordersDatetime,
-        this.addressId,
-        this.addressUsersid,
-        this.addressName,
-        this.addressCity,
-        this.addressStreet,
-        this.addressNote,
-        this.addressLat,
-        this.addressLong});
+      this.ordersUsersid,
+      this.ordersAddress,
+      this.ordersType,
+      this.ordersPricedelivery,
+      this.ordersPrice,
+      this.ordersTotalprice,
+      this.ordersCoupon,
+      this.ordersRating,
+      this.ordersNoterating,
+      this.ordersPaymrntmethod,
+      this.ordersStatus,
+      this.ordersDiseases,
+      this.ordersMedications,
+      this.ordersDoctornotes,
+      this.ordersDatetime,
+      this.addressId,
+      this.addressUsersid,
+      this.addressName,
+      this.addressCity,
+      this.addressStreet,
+      this.addressNote,
+      this.addressLat,
+      this.addressLong});
 
   OrdersModel.fromJson(Map<String, dynamic> json) {
     ordersId = json['orders_id'];
@@ -79,13 +79,19 @@ class OrdersModel {
     ordersDoctornotes = json['orders_doctornotes'].toString();
     ordersDatetime = json['orders_datetime'].toString();
 
-    ordersAge = json['orders_age'] != null ? int.tryParse(json['orders_age'].toString()) : null;
-    ordersHeight = json['orders_height'] != null ? int.tryParse(json['orders_height'].toString()) : null;
-    ordersWeight = json['orders_weight'] != null ? int.tryParse(json['orders_weight'].toString()) : null;
+    ordersAge = json['orders_age'] != null
+        ? int.tryParse(json['orders_age'].toString())
+        : null;
+    ordersHeight = json['orders_height'] != null
+        ? int.tryParse(json['orders_height'].toString())
+        : null;
+    ordersWeight = json['orders_weight'] != null
+        ? int.tryParse(json['orders_weight'].toString())
+        : null;
     ordersGender = json['orders_gender'];
     ordersBloodType = json['orders_blood_type'];
     ordersAllergies = json['orders_allergies'];
-    
+
     addressId = json['address_id'];
     addressUsersid = json['address_usersid'];
     addressName = json['address_name'];
@@ -114,7 +120,7 @@ class OrdersModel {
     data['orders_medications'] = ordersMedications;
     data['orders_doctornotes'] = ordersDoctornotes;
     data['orders_datetime'] = ordersDatetime;
-    
+
     // إضافة الحقول الطبية الجديدة
     data['orders_age'] = ordersAge;
     data['orders_height'] = ordersHeight;
@@ -122,7 +128,7 @@ class OrdersModel {
     data['orders_gender'] = ordersGender;
     data['orders_blood_type'] = ordersBloodType;
     data['orders_allergies'] = ordersAllergies;
-    
+
     data['address_id'] = addressId;
     data['address_usersid'] = addressUsersid;
     data['address_name'] = addressName;

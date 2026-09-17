@@ -13,20 +13,20 @@ class TopAppBarCart extends StatelessWidget {
         children: [
           Expanded(
               child: Container(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                    onPressed: (){
-                      Get.back();
-                    },
-                    icon:const Icon(Icons.arrow_back) ),
-              )
-          ),
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+                onPressed: () {
+                  Get.back();
+                },
+                icon: const Icon(Icons.arrow_back)),
+          )),
           Expanded(
             child: Container(
               alignment: Alignment.center,
               child: Text(
                 title,
-                style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -35,5 +35,4 @@ class TopAppBarCart extends StatelessWidget {
       ),
     );
   }
-
 }

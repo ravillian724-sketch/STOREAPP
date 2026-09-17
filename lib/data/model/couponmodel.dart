@@ -7,10 +7,10 @@ class CouponModel {
 
   CouponModel(
       {this.couponId,
-        this.couponName,
-        this.couponCount,
-        this.couponExpierdate,
-        this.couponDiscount});
+      this.couponName,
+      this.couponCount,
+      this.couponExpierdate,
+      this.couponDiscount});
 
   CouponModel.fromJson(Map<String, dynamic> json) {
     couponId = json['coupon_id'];
@@ -21,12 +21,12 @@ class CouponModel {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['coupon_id'] = this.couponId;
-    data['coupon_name'] = this.couponName;
-    data['coupon_count'] = this.couponCount;
-    data['coupon_expierdate'] = this.couponExpierdate;
-    data['coupon_discount'] = this.couponDiscount;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['coupon_id'] = couponId;
+    data['coupon_name'] = couponName;
+    data['coupon_count'] = couponCount;
+    data['coupon_expierdate'] = couponExpierdate;
+    data['coupon_discount'] = couponDiscount;
     return data;
   }
 }

@@ -5,12 +5,17 @@ import 'package:get/get.dart';
 
 import '../../../core/constant/color.dart';
 
-class PriceAndCountItems extends GetView<ItemsControllerImp>{
+class PriceAndCountItems extends GetView<ItemsControllerImp> {
   final void Function()? onAdd;
   final void Function()? onRemove;
   final String price;
   final String count;
-  const PriceAndCountItems({super.key, required this.price, required this.count, required this.onAdd, required this.onRemove});
+  const PriceAndCountItems(
+      {super.key,
+      required this.price,
+      required this.count,
+      required this.onAdd,
+      required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +33,7 @@ class PriceAndCountItems extends GetView<ItemsControllerImp>{
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.15),
+                    color: Colors.grey.withValues(alpha: 0.15),
                     blurRadius: 6,
                     spreadRadius: 1,
                   ),
@@ -47,7 +52,8 @@ class PriceAndCountItems extends GetView<ItemsControllerImp>{
                     ),
                     child: IconButton(
                       onPressed: onAdd,
-                      icon: const Icon(Icons.add, color: Colors.white, size: 16),
+                      icon:
+                          const Icon(Icons.add, color: Colors.white, size: 16),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -55,7 +61,8 @@ class PriceAndCountItems extends GetView<ItemsControllerImp>{
                   Container(
                     alignment: Alignment.center,
                     margin: const EdgeInsets.symmetric(horizontal: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(8),
@@ -64,8 +71,8 @@ class PriceAndCountItems extends GetView<ItemsControllerImp>{
                     child: Text(
                       count,
                       style: const TextStyle(
-                        fontFamily: "sans", 
-                        fontSize: 18, 
+                        fontFamily: "sans",
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -79,7 +86,8 @@ class PriceAndCountItems extends GetView<ItemsControllerImp>{
                     ),
                     child: IconButton(
                       onPressed: onRemove,
-                      icon: const Icon(Icons.remove, color: Colors.white, size: 16),
+                      icon: const Icon(Icons.remove,
+                          color: Colors.white, size: 16),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -87,7 +95,7 @@ class PriceAndCountItems extends GetView<ItemsControllerImp>{
                 ],
               ),
             ),
-            
+
             // مربع السعر
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -100,7 +108,7 @@ class PriceAndCountItems extends GetView<ItemsControllerImp>{
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
@@ -113,7 +121,8 @@ class PriceAndCountItems extends GetView<ItemsControllerImp>{
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.price_change_outlined, color: AppColor.primaryColor, size: 16),
+                      const Icon(Icons.price_change_outlined,
+                          color: AppColor.primaryColor, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         translateDatabase("السعر", "Price"),
@@ -131,7 +140,8 @@ class PriceAndCountItems extends GetView<ItemsControllerImp>{
                     children: [
                       if (price.contains(" ")) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.red.shade50,
                             borderRadius: BorderRadius.circular(6),

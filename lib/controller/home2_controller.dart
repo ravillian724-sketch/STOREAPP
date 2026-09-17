@@ -9,6 +9,8 @@ import 'package:get/get.dart';
 
 import 'package:ecommerce_app/data/model/itemsmodel.dart';
 
+import 'package:ecommerce_app/core/logging/app_logger.dart';
+
 abstract class Home2Controller extends GetxController {
   initialData();
   getSubCategories(String categoryId);
@@ -19,20 +21,20 @@ abstract class Home2Controller extends GetxController {
 
 class Home2ControllerImp extends Home2Controller {
   Home2Data home2Data = Home2Data(Get.find());
-  
+
   List categories = [];
   String? categoryid;
   int? selectedCat;
-  
+
   List subcategories = [];
   List subcategoriesSearch = [];
   List<ItemsModel> listdata = []; // إضافة قائمة للمنتجات
-  
+
   late StatusRequest statusRequest;
-  
+
   TextEditingController? search;
   bool isSearch = false;
-  
+
   MyServices myServices = Get.find();
 
   @override
@@ -52,33 +54,35 @@ class Home2ControllerImp extends Home2Controller {
 
   @override
   getSubCategories(categoryId) async {
-      subcategories = [];
-  statusRequest = StatusRequest.loading;
-  update();
-  
-  var response = await home2Data.getData(categoryId);
-  print("Response: $response");
-  statusRequest = handlingData(response);
-  
-  if (StatusRequest.success == statusRequest) {
-    if (response['status'] == "success" && 
-        response['categories'] != null && 
-        response['categories']['data'] != null) {
-          print(response);
-      List responsedata = response['categories']['data'];
-      subcategories.addAll(responsedata.map((e) => Home2Model.fromJson(e)));
-    } else {
-      statusRequest = StatusRequest.failure;
+    subcategories = [];
+    statusRequest = StatusRequest.loading;
+    update();
+
+    var response = await home2Data.getData(categoryId);
+    appDebugLog("Response: $response");
+    statusRequest = handlingData(response);
+
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success" &&
+          response['categories'] != null &&
+          response['categories']['data'] != null) {
+        appDebugLog(response);
+        List responsedata = response['categories']['data'];
+        subcategories.addAll(responsedata.map((e) => Home2Model.fromJson(e)));
+      } else {
+        statusRequest = StatusRequest.failure;
+      }
     }
-  }
-  update();
+    update();
   }
 
   @override
   goToItems(subcategories, selectedCat, categoryid) {
     Get.toNamed(AppRoute.items, arguments: {
       "subcategoryid": subcategories[selectedCat].subcategoryId.toString(),
-      "categoryid": subcategories[selectedCat].subcategoryId.toString() // استخدام subcategoryId بدلاً من categoryid
+      "categoryid": subcategories[selectedCat]
+          .subcategoryId
+          .toString() // استخدام subcategoryId بدلاً من categoryid
     });
   }
 
@@ -95,7 +99,7 @@ class Home2ControllerImp extends Home2Controller {
 
   @override
   onSearchItems() {
-    if(search!.text.isEmpty) {
+    if (search!.text.isEmpty) {
       isSearch = false;
       listdata.clear();
       update();
@@ -110,12 +114,12 @@ class Home2ControllerImp extends Home2Controller {
   searchData() async {
     statusRequest = StatusRequest.loading;
     update();
-    
+
     // استخدام دالة البحث من HomeData
     var response = await home2Data.searchData(search!.text);
-    print("Search Response: $response");
+    appDebugLog("Search Response: $response");
     statusRequest = handlingData(response);
-    
+
     if (StatusRequest.success == statusRequest) {
       if (response['status'] == "success") {
         List responsedata = response['data'];

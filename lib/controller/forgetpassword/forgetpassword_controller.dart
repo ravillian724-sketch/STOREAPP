@@ -6,41 +6,43 @@ import 'package:get/get.dart';
 
 import '../../core/functions/handlingdatacontroller.dart';
 
-abstract class ForgetPasswordController extends GetxController{
-  checkemail();
+import 'package:ecommerce_app/core/logging/app_logger.dart';
 
+abstract class ForgetPasswordController extends GetxController {
+  checkemail();
 }
-class ForgetPasswordControllerImp extends ForgetPasswordController{
+
+class ForgetPasswordControllerImp extends ForgetPasswordController {
   CheckEmailData checkEmailData = CheckEmailData(Get.find());
-  GlobalKey<FormState> formstate= GlobalKey<FormState>();
+  GlobalKey<FormState> formstate = GlobalKey<FormState>();
   StatusRequest statusRequest = StatusRequest.none;
   late TextEditingController email;
 
   @override
-  checkemail() async{
+  checkemail() async {
     var formdata = formstate.currentState;
-    if(formdata!.validate()){
+    if (formdata!.validate()) {
       statusRequest = StatusRequest.loading;
       update();
       var response = await checkEmailData.postData(email.text);
       await Future.delayed(const Duration(seconds: 3));
-      print("========================================Controller $response=======================================");
+      appDebugLog(
+          "========================================Controller $response=======================================");
       statusRequest = handlingData(response);
-      if(StatusRequest.success==statusRequest){
-        if(response['status']=="success"){
-          Get.offNamed(AppRoute.verfiyCode, arguments: {"email":email.text} );
-        }else{
-          Get.defaultDialog(title: "44".tr ,middleText: "48".tr); // "Warning  Email Not Exists"
+      if (StatusRequest.success == statusRequest) {
+        if (response['status'] == "success") {
+          Get.offNamed(AppRoute.verfiyCode, arguments: {"email": email.text});
+        } else {
+          Get.defaultDialog(
+              title: "44".tr,
+              middleText: "48".tr); // "Warning  Email Not Exists"
           statusRequest = StatusRequest.failure;
         }
       }
       update();
-      print("valid");
-
-
-    }else
-    {
-      print("not valid");
+      appDebugLog("valid");
+    } else {
+      appDebugLog("not valid");
     }
   }
 
@@ -49,10 +51,10 @@ class ForgetPasswordControllerImp extends ForgetPasswordController{
     email = TextEditingController();
     super.onInit();
   }
+
   @override
   void dispose() {
     email.dispose();
     super.dispose();
   }
-
 }

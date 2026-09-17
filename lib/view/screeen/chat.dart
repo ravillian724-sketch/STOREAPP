@@ -54,7 +54,8 @@ class Chat extends StatelessWidget {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 15),
                     ),
                   ),
                 ),

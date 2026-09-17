@@ -34,7 +34,7 @@ class CustomListItems extends GetView<ItemsControllerImp> {
                   borderRadius: BorderRadius.circular(Responsive.radius(25)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
+                      color: Colors.grey.withValues(alpha: 0.2),
                       spreadRadius: 1,
                       blurRadius: 7,
                       offset: const Offset(0, 3),
@@ -59,11 +59,12 @@ class CustomListItems extends GetView<ItemsControllerImp> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.only(
                                 topLeft: Radius.circular(Responsive.radius(30)),
-                                topRight: Radius.circular(Responsive.radius(30)),
+                                topRight:
+                                    Radius.circular(Responsive.radius(30)),
                               ),
                               child: CachedNetworkImage(
                                 imageUrl:
-                                "${AppLink.imageItems}/${itemsModel.itemsImage!}",
+                                    "${AppLink.imageItems}/${itemsModel.itemsImage!}",
                                 fit: BoxFit.contain,
                                 width: double.infinity,
                               ),
@@ -93,7 +94,8 @@ class CustomListItems extends GetView<ItemsControllerImp> {
                           Row(
                             children: [
                               Container(
-                                margin: EdgeInsets.only(top: Responsive.margin(6)),
+                                margin:
+                                    EdgeInsets.only(top: Responsive.margin(6)),
                                 child: const Icon(
                                   Icons.timer_sharp,
                                   color: AppColor.grey,
@@ -144,18 +146,23 @@ class CustomListItems extends GetView<ItemsControllerImp> {
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                   onPressed: () {
-                                    if (controller.isFavorite[itemsModel.itemsId] == "1") {
-                                      controller.setFavorite(itemsModel.itemsId, "0");
+                                    if (controller
+                                            .isFavorite[itemsModel.itemsId] ==
+                                        "1") {
+                                      controller.setFavorite(
+                                          itemsModel.itemsId, "0");
                                       controller.removeFavorite(
                                           itemsModel.itemsId!.toString());
                                     } else {
-                                      controller.setFavorite(itemsModel.itemsId, "1");
+                                      controller.setFavorite(
+                                          itemsModel.itemsId, "1");
                                       controller.addFavorite(
                                           itemsModel.itemsId!.toString());
                                     }
                                   },
                                   icon: Icon(
-                                    controller.isFavorite[itemsModel.itemsId] == "1"
+                                    controller.isFavorite[itemsModel.itemsId] ==
+                                            "1"
                                         ? Icons.favorite
                                         : Icons.favorite_border_outlined,
                                     color: AppColor.primaryColor,

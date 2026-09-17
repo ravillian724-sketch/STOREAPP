@@ -1,8 +1,6 @@
 import 'package:ecommerce_app/core/constant/routes.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_view.dart';
 import 'package:jiffy/jiffy.dart';
 
 import '../../../controller/orders/rejected_controller.dart';
@@ -30,9 +28,10 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppColor.primaryColor.withOpacity(0.2),
+                    color: AppColor.primaryColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -46,7 +45,7 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
                   ),
                 ),
                 const Spacer(),
-                Icon(
+                const Icon(
                   Icons.access_time_rounded,
                   size: 16,
                   color: AppColor.primaryColor,
@@ -77,7 +76,8 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
                   _buildInfoRow(
                     icon: Icons.shopping_bag_outlined,
                     title: "130".tr,
-                    value: controller.printOrderType(listdata.ordersType!.toString()),
+                    value: controller
+                        .printOrderType(listdata.ordersType!.toString()),
                   ),
                   const Divider(height: 16),
                   _buildInfoRow(
@@ -95,12 +95,14 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
                   _buildInfoRow(
                     icon: Icons.payment,
                     title: "133".tr,
-                    value: controller.printPaymentMethod(listdata.ordersPaymrntmethod!.toString()),
+                    value: controller.printPaymentMethod(
+                        listdata.ordersPaymrntmethod!.toString()),
                   ),
                   const Divider(height: 16),
                   _buildStatusRow(
                     title: "134".tr,
-                    value: controller.printOrdersStatus(listdata.ordersStatus!.toString()),
+                    value: controller
+                        .printOrdersStatus(listdata.ordersStatus!.toString()),
                     status: listdata.ordersStatus!.toString(),
                   ),
                 ],
@@ -114,22 +116,25 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
               children: [
                 ElevatedButton.icon(
                   onPressed: () {
-                    Get.toNamed(AppRoute.ordersdetails, arguments: {
-                      "ordersmodel": listdata
-                    });
+                    Get.toNamed(AppRoute.ordersdetails,
+                        arguments: {"ordersmodel": listdata});
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColor.primaryColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   icon: const Icon(Icons.visibility),
-                  label: Text("136".tr,style: TextStyle(color: Colors.white),), //Details
+                  label: Text(
+                    "136".tr,
+                    style: const TextStyle(color: Colors.white),
+                  ), //Details
                 ),
-                if(listdata.ordersType == "0" && listdata.ordersStatus == "3")
+                if (listdata.ordersType == "0" && listdata.ordersStatus == "3")
                   ElevatedButton.icon(
                     onPressed: () {
                       controller.goToPageTracking(listdata);
@@ -137,20 +142,27 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColor.redDark,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    icon: const Icon(Icons.location_on_outlined,color: Colors.white,),
-                    label: Text("Tracking",style: TextStyle(color: Colors.white),),
+                    icon: const Icon(
+                      Icons.location_on_outlined,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      "Tracking",
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
               ],
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColor.secondColor.withOpacity(0.2),
+                color: AppColor.secondColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -163,7 +175,8 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    "${"135".tr} ${listdata.ordersTotalprice!.round()}\$",textAlign: TextAlign.center, //Total Price
+                    "${"135".tr} ${listdata.ordersTotalprice!.round()}\$",
+                    textAlign: TextAlign.center, //Total Price
                     style: const TextStyle(
                       color: AppColor.secondColor,
                       fontWeight: FontWeight.bold,
@@ -180,7 +193,8 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
   }
 
   // دالة مساعدة لإنشاء صف معلومات
-  Widget _buildInfoRow({required IconData icon, required String title, required String value}) {
+  Widget _buildInfoRow(
+      {required IconData icon, required String title, required String value}) {
     return Row(
       children: [
         Icon(
@@ -211,7 +225,8 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
   }
 
   // دالة مساعدة لإنشاء صف الحالة مع لون مناسب
-  Widget _buildStatusRow({required String title, required String value, required String status}) {
+  Widget _buildStatusRow(
+      {required String title, required String value, required String status}) {
     Color statusColor;
 
     // تحديد اللون بناءً على حالة الطلب
@@ -251,7 +266,7 @@ class CardOrderRejected extends GetView<OrdersRejectedController> {
         const Spacer(),
         Container(
           decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.2),
+            color: statusColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(

@@ -18,5 +18,4 @@ class AppImageAsset {
   static const String chatbotimage = "$rootImage/chat_bg.png";
   static const String chatbotjson = "$rootLottie/chatbot.json";
 // static const String onBoardingImageFour = "$rootImage/onboardingfour.PNG";
-
 }

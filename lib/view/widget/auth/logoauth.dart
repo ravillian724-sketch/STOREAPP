@@ -13,7 +13,7 @@ class LogoAuth extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: AppColor.primaryColor.withOpacity(0.2),
+            color: AppColor.primaryColor.withValues(alpha: 0.2),
             spreadRadius: 2,
             blurRadius: 15,
             offset: const Offset(0, 5),
@@ -26,7 +26,7 @@ class LogoAuth extends StatelessWidget {
           color: Colors.white,
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColor.primaryColor.withOpacity(0.3),
+            color: AppColor.primaryColor.withValues(alpha: 0.3),
             width: 2,
           ),
         ),

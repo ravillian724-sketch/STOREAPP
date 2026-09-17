@@ -7,8 +7,7 @@ Future<bool> checkInternet() async {
       "google.com",
     ).timeout(const Duration(seconds: 5));
 
-    return result.isNotEmpty &&
-        result.first.rawAddress.isNotEmpty;
+    return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
   } on TimeoutException {
     return false;
   } on SocketException {

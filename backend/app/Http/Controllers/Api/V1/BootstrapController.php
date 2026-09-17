@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Tenant;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +15,11 @@ class BootstrapController extends Controller
     {
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('tenant');
+
+        $defaultBranch = Branch::query()
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->first();
 
         return ApiResponse::success($request, [
             'store' => [
@@ -30,7 +36,9 @@ class BootstrapController extends Controller
                 'vat_rate' => (float) $tenant->vat_rate,
                 'features' => [],
             ],
-            'default_branch_id' => null,
+            'default_branch_id' => $defaultBranch === null
+                ? null
+                : (string) $defaultBranch->id,
         ]);
     }
 }

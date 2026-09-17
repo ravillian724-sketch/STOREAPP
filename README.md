@@ -248,7 +248,7 @@ lib/
 4. **Configure API endpoints**
    ```dart
    // Update lib/linkapi.dart with your server URL
-   static const String server="http://your-server-url/ecommerce";
+   Configure API_BASE_URL explicitly for each environment; no network fallback is embedded in the app.
    ```
 
 5. **Run the application**

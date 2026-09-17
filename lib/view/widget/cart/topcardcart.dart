@@ -14,10 +14,10 @@ class TopCardCart extends StatelessWidget {
         color: AppColor.thirdColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             spreadRadius: 1,
             blurRadius: 4,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -26,17 +26,17 @@ class TopCardCart extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.info_outline,
             color: AppColor.primaryColor,
             size: 20,
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Flexible(
             child: Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColor.grey,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,

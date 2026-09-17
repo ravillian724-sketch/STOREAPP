@@ -4,7 +4,6 @@ import 'package:ecommerce_app/core/constant/color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../widget/orders/orderlistcardrejected.dart';
-import '../widget/orders/orderslistcard.dart';
 
 class OrdersRejectedView extends StatelessWidget {
   const OrdersRejectedView({super.key});
@@ -21,7 +20,10 @@ class OrdersRejectedView extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColor.primaryColor.withOpacity(0.1), Colors.white],
+            colors: [
+              AppColor.primaryColor.withValues(alpha: 0.1),
+              Colors.white
+            ],
             stops: const [0.0, 0.3],
           ),
         ),
@@ -39,7 +41,8 @@ class OrdersRejectedView extends StatelessWidget {
                               Icon(
                                 Icons.cancel_outlined,
                                 size: 80,
-                                color: AppColor.primaryColor.withOpacity(0.5),
+                                color: AppColor.primaryColor
+                                    .withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 20),
                               Text(

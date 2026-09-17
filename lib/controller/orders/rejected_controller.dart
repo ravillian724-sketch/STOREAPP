@@ -7,14 +7,16 @@ import '../../data/datasource/remote/orders/rejected_data.dart';
 import '../../data/model/ordersmodel.dart';
 import 'package:ecommerce_app/core/functions/session_guard.dart';
 
+import 'package:ecommerce_app/core/logging/app_logger.dart';
+
 class OrdersRejectedController extends GetxController {
   OrdersRejectedData ordersRejectedData = OrdersRejectedData(Get.find());
   List<OrdersModel> data = [];
-  late StatusRequest statusRequest;
+  StatusRequest statusRequest = StatusRequest.none;
   MyServices myServices = Get.find();
 
   String printOrderType(String val) {
-    if(val == "0") {
+    if (val == "0") {
       return "137".tr; //Delivery
     } else {
       return "138".tr; //Local
@@ -22,7 +24,7 @@ class OrdersRejectedController extends GetxController {
   }
 
   String printPaymentMethod(String val) {
-    if(val == "0") {
+    if (val == "0") {
       return "139".tr; //Cash On Delivery
     } else {
       return "140"; //Syriatel Cash
@@ -30,7 +32,7 @@ class OrdersRejectedController extends GetxController {
   }
 
   String printOrdersStatus(String val) {
-    if(val == "-1") {
+    if (val == "-1") {
       return "Rejected".tr;
     } else {
       return "Unknown".tr;
@@ -39,15 +41,18 @@ class OrdersRejectedController extends GetxController {
 
   getOrders() async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
+    if (userId == null) {
+      return;
+    }
     data.clear();
     statusRequest = StatusRequest.loading;
     update();
     var response = await ordersRejectedData.getData(userId);
-    print("========================================Controller  $response");
+    appDebugLog(
+        "========================================Controller  $response");
     statusRequest = handlingData(response);
-    if(StatusRequest.success == statusRequest) {
-      if(response['status'] == "success") {
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success") {
         List listdata = response['data'];
         data.addAll(listdata.map((e) => OrdersModel.fromJson(e)));
       } else {

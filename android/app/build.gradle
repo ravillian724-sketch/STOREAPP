@@ -1,16 +1,32 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
     id 'com.google.gms.google-services'
 }
 
-//android{
-//    defaultConfig{
-//        minSdkVersion 23
-//    }
-//}
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def googleMapsApiKey = (project.findProperty('GOOGLE_MAPS_API_KEY')
+        ?: System.getenv('GOOGLE_MAPS_API_KEY')
+        ?: '').toString()
+def appApplicationId = (project.findProperty('APP_APPLICATION_ID')
+        ?: System.getenv('APP_APPLICATION_ID')
+        ?: 'com.Abdulah.ecommerce_app').toString()
+def appDisplayName = (project.findProperty('APP_DISPLAY_NAME')
+        ?: System.getenv('APP_DISPLAY_NAME')
+        ?: 'STOREAPP').toString()
+def isReleaseTask = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains('release')
+}
+
 android {
     namespace = "com.Abdulah.ecommerce_app"
     compileSdk = flutter.compileSdkVersion
@@ -27,21 +43,56 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.Abdulah.ecommerce_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = appApplicationId
         minSdkVersion = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders = [
+            applicationName: "android.app.Application",
+            googleMapsApiKey: googleMapsApiKey,
+            appDisplayName: appDisplayName,
+            usesCleartextTraffic: "true",
+        ]
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders.usesCleartextTraffic = "true"
+        }
+
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            manifestPlaceholders.usesCleartextTraffic = "false"
+            signingConfig = signingConfigs.release
+
+            if (isReleaseTask) {
+                if (googleMapsApiKey.trim().isEmpty()) {
+                    throw new GradleException(
+                        'GOOGLE_MAPS_API_KEY is required for release builds.'
+                    )
+                }
+                if (!keystorePropertiesFile.exists()) {
+                    throw new GradleException(
+                        'android/key.properties is required for release signing.'
+                    )
+                }
+                if (appApplicationId == 'com.Abdulah.ecommerce_app') {
+                    throw new GradleException(
+                        'APP_APPLICATION_ID must be set to the production package id.'
+                    )
+                }
+            }
         }
     }
 }
@@ -49,6 +100,7 @@ android {
 flutter {
     source = "../.."
 }
+
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation platform('com.google.firebase:firebase-bom:33.14.0')

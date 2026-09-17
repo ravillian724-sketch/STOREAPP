@@ -5,7 +5,8 @@ import '../../../core/constant/color.dart';
 class CoustombuttonCart extends StatelessWidget {
   final String textButton;
   final void Function()? onPressed;
-  const CoustombuttonCart({super.key, required this.textButton, this.onPressed});
+  const CoustombuttonCart(
+      {super.key, required this.textButton, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -17,17 +18,17 @@ class CoustombuttonCart extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             AppColor.primaryColor,
-            AppColor.primaryColor.withOpacity(0.8),
+            AppColor.primaryColor.withValues(alpha: 0.8),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColor.primaryColor.withOpacity(0.4),
+            color: AppColor.primaryColor.withValues(alpha: 0.4),
             spreadRadius: 1,
             blurRadius: 8,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -40,13 +41,13 @@ class CoustombuttonCart extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          padding: EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shopping_cart_checkout, size: 24),
-            SizedBox(width: 12),
+            const Icon(Icons.shopping_cart_checkout, size: 24),
+            const SizedBox(width: 12),
             Text(
               textButton,
               style: const TextStyle(

@@ -9,20 +9,26 @@ import 'api_exception.dart';
 import 'api_response.dart';
 
 class ApiClient {
-  static const Duration defaultTimeout =
-      Duration(seconds: 20);
+  static const Duration defaultTimeout = Duration(seconds: 20);
 
   final Uri baseUri;
   final TenantContext tenantContext;
+  final String appInstanceKey;
   final http.Client _client;
   final Duration timeout;
 
   ApiClient({
     required this.baseUri,
     required this.tenantContext,
+    required String appInstanceKey,
     http.Client? client,
     this.timeout = defaultTimeout,
-  }) : _client = client ?? http.Client();
+  })  : appInstanceKey = appInstanceKey.trim(),
+        _client = client ?? http.Client() {
+    if (this.appInstanceKey.isEmpty) {
+      throw StateError('APP_INSTANCE_KEY is not configured.');
+    }
+  }
 
   Map<String, String> _buildHeaders({
     String? accessToken,
@@ -32,23 +38,20 @@ class ApiClient {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
       'X-Tenant-Id': tenantContext.tenantId,
+      'X-App-Instance-Key': appInstanceKey,
       'X-Channel': ChannelContext.code,
     };
 
     if (tenantContext.hasBrand) {
-      headers['X-Brand-Id'] =
-          tenantContext.brandId!;
+      headers['X-Brand-Id'] = tenantContext.brandId!;
     }
 
     if (tenantContext.hasBranch) {
-      headers['X-Branch-Id'] =
-          tenantContext.branchId!;
+      headers['X-Branch-Id'] = tenantContext.branchId!;
     }
 
-    if (accessToken != null &&
-        accessToken.trim().isNotEmpty) {
-      headers['Authorization'] =
-          'Bearer ${accessToken.trim()}';
+    if (accessToken != null && accessToken.trim().isNotEmpty) {
+      headers['Authorization'] = 'Bearer ${accessToken.trim()}';
     }
 
     if (extraHeaders != null) {
@@ -62,21 +65,15 @@ class ApiClient {
     String path, {
     Map<String, String>? queryParameters,
   }) {
-    final normalizedBase =
-        baseUri.toString().endsWith('/')
-            ? baseUri
-            : Uri.parse('${baseUri.toString()}/');
+    final normalizedBase = baseUri.toString().endsWith('/')
+        ? baseUri
+        : Uri.parse('${baseUri.toString()}/');
 
-    final normalizedPath =
-        path.startsWith('/')
-            ? path.substring(1)
-            : path;
+    final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
 
-    final uri =
-        normalizedBase.resolve(normalizedPath);
+    final uri = normalizedBase.resolve(normalizedPath);
 
-    if (queryParameters == null ||
-        queryParameters.isEmpty) {
+    if (queryParameters == null || queryParameters.isEmpty) {
       return uri;
     }
 
@@ -164,13 +161,9 @@ class ApiClient {
         request.body = jsonEncode(body);
       }
 
-      final streamedResponse =
-          await _client
-              .send(request)
-              .timeout(timeout);
+      final streamedResponse = await _client.send(request).timeout(timeout);
 
-      final response =
-          await http.Response.fromStream(
+      final response = await http.Response.fromStream(
         streamedResponse,
       );
 
@@ -178,8 +171,7 @@ class ApiClient {
 
       if (response.body.trim().isNotEmpty) {
         try {
-          decoded =
-              jsonDecode(response.body);
+          decoded = jsonDecode(response.body);
         } on FormatException {
           decoded = response.body;
         }

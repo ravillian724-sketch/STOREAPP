@@ -7,7 +7,7 @@ import '../../../core/constant/color.dart';
 class CustomItemsCartList extends StatelessWidget {
   final String name;
   final String price;
-  final String Count;
+  final String count;
   final String imagename;
   final void Function()? onAdd;
   final void Function()? onRemove;
@@ -15,7 +15,7 @@ class CustomItemsCartList extends StatelessWidget {
     super.key,
     required this.name,
     required this.price,
-    required this.Count,
+    required this.count,
     required this.imagename,
     required this.onAdd,
     required this.onRemove,
@@ -40,29 +40,29 @@ class CustomItemsCartList extends StatelessWidget {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: AppColor.thirdColor.withOpacity(0.3),
+                color: AppColor.thirdColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
-              padding: EdgeInsets.all(5),
+              padding: const EdgeInsets.all(5),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: CachedNetworkImage(
                   imageUrl: "${AppLink.imageItems}/$imagename",
                   fit: BoxFit.contain,
-                  placeholder: (context, url) => Center(
+                  placeholder: (context, url) => const Center(
                     child: CircularProgressIndicator(
                       color: AppColor.primaryColor,
                       strokeWidth: 2,
                     ),
                   ),
-                  errorWidget: (context, url, error) => Icon(
+                  errorWidget: (context, url, error) => const Icon(
                     Icons.image_not_supported,
                     color: Colors.grey,
                   ),
                 ),
               ),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Expanded(
               flex: 3,
               child: Column(
@@ -70,18 +70,18 @@ class CustomItemsCartList extends StatelessWidget {
                 children: [
                   Text(
                     name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  SizedBox(height: 5),
+                  const SizedBox(height: 5),
                   Row(
                     children: [
                       Text(
-                        "${(double.parse(price) * int.parse(Count)).toStringAsFixed(2)}\$",
-                        style: TextStyle(
+                        "${(double.parse(price) * int.parse(count)).toStringAsFixed(2)}\$",
+                        style: const TextStyle(
                           fontSize: 15,
                           color: AppColor.primaryColor,
                           fontWeight: FontWeight.bold,
@@ -97,7 +97,7 @@ class CustomItemsCartList extends StatelessWidget {
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(10),
               ),
-              padding: EdgeInsets.symmetric(vertical: 5, horizontal: 3),
+              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 3),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -108,8 +108,8 @@ class CustomItemsCartList extends StatelessWidget {
                         color: AppColor.primaryColor,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: EdgeInsets.all(4),
-                      child: Icon(
+                      padding: const EdgeInsets.all(4),
+                      child: const Icon(
                         Icons.add,
                         color: Colors.white,
                         size: 20,
@@ -117,10 +117,10 @@ class CustomItemsCartList extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      Count,
-                      style: TextStyle(
+                      count,
+                      style: const TextStyle(
                         fontFamily: "sans",
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -134,8 +134,8 @@ class CustomItemsCartList extends StatelessWidget {
                         color: Colors.red.shade400,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: EdgeInsets.all(4),
-                      child: Icon(
+                      padding: const EdgeInsets.all(4),
+                      child: const Icon(
                         Icons.remove,
                         color: Colors.white,
                         size: 20,

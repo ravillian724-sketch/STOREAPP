@@ -10,30 +10,27 @@ class CustomBottomAppBarHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<HomeScreenControllerImp>(
-      builder: (controller)=>
-       BottomAppBar(
+      builder: (controller) => BottomAppBar(
         height: Responsive.h(110),
         shape: const CircularNotchedRectangle(),
         notchMargin: Responsive.margin(16),
-        child:Row(
+        child: Row(
           children: [
-
-            ...List.generate(
-                controller.listPage.length+1,
-                    (index){
-                  int i= index>2? index-1 : index;
-                  return  index==2? const Spacer(): CustomButtonAppBar(
-                    onPressed:(){
-                      controller.changePage(i);
-                    },
-                    textButton: controller.bottomappbar[i]["title"],
-                    iconData: controller.bottomappbar[i]["icon"],
-                    active: controller.currentPage== i? true:false,
-                  );
-                }
-            ),
+            ...List.generate(controller.listPage.length + 1, (index) {
+              int i = index > 2 ? index - 1 : index;
+              return index == 2
+                  ? const Spacer()
+                  : CustomButtonAppBar(
+                      onPressed: () {
+                        controller.changePage(i);
+                      },
+                      textButton: controller.bottomappbar[i]["title"],
+                      iconData: controller.bottomappbar[i]["icon"],
+                      active: controller.currentPage == i ? true : false,
+                    );
+            }),
           ],
-        ) ,
+        ),
       ),
     );
   }

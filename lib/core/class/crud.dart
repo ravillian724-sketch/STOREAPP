@@ -8,8 +8,7 @@ import 'package:ecommerce_app/core/functions/checkinternet.dart';
 import 'package:http/http.dart' as http;
 
 class Crud {
-  static const Duration _requestTimeout =
-      Duration(seconds: 20);
+  static const Duration _requestTimeout = Duration(seconds: 20);
 
   Future<Either<StatusRequest, Map>> postData(
     String linkurl,
@@ -26,9 +25,7 @@ class Crud {
 
       final uri = Uri.tryParse(linkurl);
 
-      if (uri == null ||
-          !(uri.scheme == "http" ||
-              uri.scheme == "https")) {
+      if (uri == null || !(uri.scheme == "http" || uri.scheme == "https")) {
         return const Left(
           StatusRequest.serverException,
         );
@@ -41,8 +38,7 @@ class Crud {
           )
           .timeout(_requestTimeout);
 
-      if (response.statusCode != 200 &&
-          response.statusCode != 201) {
+      if (response.statusCode != 200 && response.statusCode != 201) {
         return const Left(
           StatusRequest.serverfailuer,
         );

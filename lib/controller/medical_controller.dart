@@ -3,11 +3,13 @@ import 'package:ecommerce_app/data/datasource/remote/medicalinfo_data.dart';
 import 'package:ecommerce_app/data/model/medicalinfomodel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:ecommerce_app/core/services/NotificationService.dart';
+import 'package:ecommerce_app/core/services/notification_service.dart';
 
 import '../core/class/statusrequest.dart';
 import '../core/functions/handlingdatacontroller.dart';
 import 'package:ecommerce_app/core/functions/session_guard.dart';
+
+import 'package:ecommerce_app/core/logging/app_logger.dart';
 
 class MediaclInfoController extends GetxController {
   GlobalKey<FormState> formstate = GlobalKey<FormState>();
@@ -29,7 +31,7 @@ class MediaclInfoController extends GetxController {
   String? selectedBloodType;
 
   List<MedicalInfoModel> data = [];
-  late StatusRequest statusRequest;
+  StatusRequest statusRequest = StatusRequest.none;
   MedicalInfoModel? existingInfo;
 
   @override
@@ -69,12 +71,15 @@ class MediaclInfoController extends GetxController {
 
   getData() async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
+    if (userId == null) {
+      return;
+    }
     statusRequest = StatusRequest.loading;
     update();
 
     var response = await medicalInfoData.getData(userId);
-    print("========================================Controller  $response");
+    appDebugLog(
+        "========================================Controller  $response");
     statusRequest = handlingData(response);
 
     if (StatusRequest.success == statusRequest) {
@@ -82,7 +87,8 @@ class MediaclInfoController extends GetxController {
         List datalist = response['data'];
         data.clear();
         if (datalist.isNotEmpty) {
-          data.addAll(datalist.map((e) => MedicalInfoModel.fromJson(e)).toList());
+          data.addAll(
+              datalist.map((e) => MedicalInfoModel.fromJson(e)).toList());
           existingInfo = data.first;
           populateFormWithExistingData();
         } else {
@@ -113,16 +119,20 @@ class MediaclInfoController extends GetxController {
       weightController.text = existingInfo!.medicalInfoWeight?.toString() ?? '';
       selectedGender = existingInfo!.medicalInfoGender;
       selectedBloodType = existingInfo!.medicalInfoBloodType;
-      chronicDiseasesController.text = existingInfo!.medicalInfoChronicDiseases ?? '';
+      chronicDiseasesController.text =
+          existingInfo!.medicalInfoChronicDiseases ?? '';
       allergiesController.text = existingInfo!.medicalInfoAllergies ?? '';
-      medicationsController.text = existingInfo!.medicalInfoCurrentMedications ?? '';
+      medicationsController.text =
+          existingInfo!.medicalInfoCurrentMedications ?? '';
       notesController.text = existingInfo!.medicalInfoAdditionalNotes ?? '';
     }
   }
 
   Future<void> saveMedicalInfo() async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
+    if (userId == null) {
+      return;
+    }
     try {
       if (!formstate.currentState!.validate()) {
         return;
@@ -130,9 +140,7 @@ class MediaclInfoController extends GetxController {
 
       if (selectedGender == null || selectedBloodType == null) {
         notificationService.showErrorNotification(
-            title: "Warning",
-            message: "Please fill in all required fields"
-        );
+            title: "Warning", message: "Please fill in all required fields");
         return;
       }
 
@@ -142,8 +150,7 @@ class MediaclInfoController extends GetxController {
           int.tryParse(weightController.text) == null) {
         notificationService.showErrorNotification(
             title: "Warning",
-            message: "Please enter valid numbers for age, height, and weight"
-        );
+            message: "Please enter valid numbers for age, height, and weight");
         return;
       }
 
@@ -163,9 +170,10 @@ class MediaclInfoController extends GetxController {
         "additional_notes": notesController.text,
       };
 
-      print("+++++++++++++++++++++++++++++++++++++++++Sending data to server: $data"); // Debug print
+      appDebugLog(
+          "+++++++++++++++++++++++++++++++++++++++++Sending data to server: $data"); // Debug print
 
-      var response;
+      dynamic response;
       if (existingInfo != null) {
         Map updateData = {
           "id": existingInfo!.medicalInfoId.toString(),
@@ -180,13 +188,15 @@ class MediaclInfoController extends GetxController {
           "medications": medicationsController.text,
           "additional_notes": notesController.text,
         };
-        print("+++++++++++++++++++++++++++++++++++++++++Sending update data to server: $updateData"); // Debug print
+        appDebugLog(
+            "+++++++++++++++++++++++++++++++++++++++++Sending update data to server: $updateData"); // Debug print
         response = await medicalInfoData.updateData(updateData);
       } else {
         response = await medicalInfoData.addData(data);
       }
 
-      print("===============================================Server response: $response"); // Debug print
+      appDebugLog(
+          "===============================================Server response: $response"); // Debug print
 
       if (response == null) {
         throw Exception("No response from server");
@@ -196,22 +206,21 @@ class MediaclInfoController extends GetxController {
         if (response == StatusRequest.serverException) {
           notificationService.showErrorNotification(
               title: "Server Error",
-              message: "Unable to connect to the server. Please check your internet connection and try again."
-          );
+              message:
+                  "Unable to connect to the server. Please check your internet connection and try again.");
           statusRequest = StatusRequest.serverException;
           return;
         } else if (response == StatusRequest.offlinefailuer) {
           notificationService.showErrorNotification(
               title: "No Internet",
-              message: "Please check your internet connection and try again."
-          );
+              message: "Please check your internet connection and try again.");
           statusRequest = StatusRequest.offlinefailuer;
           return;
         } else if (response == StatusRequest.serverfailuer) {
           notificationService.showErrorNotification(
               title: "Server Error",
-              message: "The server is currently unavailable. Please try again later."
-          );
+              message:
+                  "The server is currently unavailable. Please try again later.");
           statusRequest = StatusRequest.serverfailuer;
           return;
         }
@@ -223,24 +232,23 @@ class MediaclInfoController extends GetxController {
         if (response['status'] == "success") {
           notificationService.showSuccessNotification(
               title: "Success",
-              message: existingInfo != null ? "Medical information updated successfully" : "Medical information added successfully"
-          );
+              message: existingInfo != null
+                  ? "Medical information updated successfully"
+                  : "Medical information added successfully");
           await getData(); // Refresh data
         } else {
-          String errorMessage = response['message'] ?? "An error occurred while saving the information";
+          String errorMessage = response['message'] ??
+              "An error occurred while saving the information";
           notificationService.showErrorNotification(
-              title: "Error",
-              message: errorMessage
-          );
+              title: "Error", message: errorMessage);
           statusRequest = StatusRequest.failure;
         }
       }
     } catch (e) {
-      print("Error in saveMedicalInfo: $e"); // Debug print
+      appDebugLog("Error in saveMedicalInfo: $e"); // Debug print
       notificationService.showErrorNotification(
           title: "Error",
-          message: "An unexpected error occurred. Please try again."
-      );
+          message: "An unexpected error occurred. Please try again.");
       statusRequest = StatusRequest.failure;
     } finally {
       update();

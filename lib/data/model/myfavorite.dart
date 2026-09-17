@@ -18,21 +18,21 @@ class MyFavoriteModel {
 
   MyFavoriteModel(
       {this.favoriteId,
-        this.favoriteUsersid,
-        this.favoriteItemsid,
-        this.itemsId,
-        this.itemsName,
-        this.itemsNameAr,
-        this.itemsDesc,
-        this.itemsDescAr,
-        this.itemsImage,
-        this.itemsCount,
-        this.itemsActive,
-        this.itemsPrice,
-        this.itemsDiscount,
-        this.itemsDate,
-        this.itemsCat,
-        this.usersId});
+      this.favoriteUsersid,
+      this.favoriteItemsid,
+      this.itemsId,
+      this.itemsName,
+      this.itemsNameAr,
+      this.itemsDesc,
+      this.itemsDescAr,
+      this.itemsImage,
+      this.itemsCount,
+      this.itemsActive,
+      this.itemsPrice,
+      this.itemsDiscount,
+      this.itemsDate,
+      this.itemsCat,
+      this.usersId});
 
   MyFavoriteModel.fromJson(Map<String, dynamic> json) {
     favoriteId = json['favorite_id'];

@@ -1,8 +1,10 @@
 import 'package:ecommerce_app/binding/intiallbindings.dart';
+import 'package:ecommerce_app/core/constant/routes.dart';
 import 'package:ecommerce_app/core/localization/changelocal.dart';
 import 'package:ecommerce_app/core/localization/translation.dart';
+import 'package:ecommerce_app/core/platform/platform_service.dart';
 import 'package:ecommerce_app/core/platform/platform_startup_gate.dart';
-import 'package:ecommerce_app/core/services/NotificationService.dart';
+import 'package:ecommerce_app/core/services/notification_service.dart';
 import 'package:ecommerce_app/core/services/services.dart';
 import 'package:ecommerce_app/routes.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +36,15 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  String _applicationTitle(LocalController controller) {
+    final store = PlatformService.instance.storeConfig;
+    final isArabic = controller.language?.languageCode == 'ar';
+    final configured = isArabic ? store?.nameAr : store?.nameEn;
+    return configured?.trim().isNotEmpty == true
+        ? configured!.trim()
+        : 'Pharmacy';
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(LocalController());
@@ -41,10 +52,11 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       translations: MyTranslation(),
       debugShowCheckedModeBanner: false,
-      title: 'User App',
+      title: _applicationTitle(controller),
       locale: controller.language,
       theme: controller.appTheme,
       initialBinding: IntiallBindings(),
+      initialRoute: AppRoute.homepage,
       getPages: routes,
     );
   }

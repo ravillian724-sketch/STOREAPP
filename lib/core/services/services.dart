@@ -23,8 +23,7 @@ class MyServices extends GetxService {
   }
 
   bool get hasValidSession {
-    return sharedPreferences.getString("step") == "2" &&
-        userId != null;
+    return sharedPreferences.getString("step") == "2" && userId != null;
   }
 
   Future<void> clearUserSession() async {

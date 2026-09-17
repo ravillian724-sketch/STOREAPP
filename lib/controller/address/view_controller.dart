@@ -5,17 +5,18 @@ import 'package:get/get.dart';
 
 import '../../core/class/statusrequest.dart';
 import '../../core/functions/handlingdatacontroller.dart';
-import '../../core/services/NotificationService.dart';
+import '../../core/services/notification_service.dart';
 import 'package:ecommerce_app/core/functions/session_guard.dart';
 
-class AddressViewController extends GetxController{
+import 'package:ecommerce_app/core/logging/app_logger.dart';
 
+class AddressViewController extends GetxController {
   NotificationService notificationService = Get.find<NotificationService>();
 
   AddressData addressData = AddressData(Get.find());
 
   List<AddressModel> data = [];
-  late StatusRequest statusRequest;
+  StatusRequest statusRequest = StatusRequest.none;
 
   MyServices myServices = Get.find();
 
@@ -23,58 +24,57 @@ class AddressViewController extends GetxController{
     statusRequest = StatusRequest.loading;
     update();
     var response = await addressData.deleteData(addressid);
-    print("========================================Controller  $response");
+    appDebugLog(
+        "========================================Controller  $response");
     if (response != null && response['status'] == "success") {
       data.removeWhere((element) => element.addressId.toString() == addressid);
       statusRequest = StatusRequest.success;
-      print(" تم حذف العنوان بنجاح، عدد العناوين المتبقية: ${data.length}");
-      if(data.isEmpty){
+      appDebugLog(
+          " تم حذف العنوان بنجاح، عدد العناوين المتبقية: ${data.length}");
+      if (data.isEmpty) {
         statusRequest = StatusRequest.failure;
       }
     } else {
       statusRequest = StatusRequest.failure;
-      print("فشل في حذف العنوان");
+      appDebugLog("فشل في حذف العنوان");
     }
     update();
-    notificationService.showSuccessNotification(title: "71".tr, message: "Done Success");
+    notificationService.showSuccessNotification(
+        title: "71".tr, message: "Done Success");
   }
 
-  getData()async{
+  getData() async {
     final userId = await requireUserId(myServices);
-    if (userId == null) { return; }
+    if (userId == null) {
+      return;
+    }
     statusRequest = StatusRequest.loading;
     var response = await addressData.getData(userId);
 
     await Future.delayed(const Duration(seconds: 2));
 
-    print("========================================Controller  $response");
+    appDebugLog(
+        "========================================Controller  $response");
 
     statusRequest = handlingData(response);
-    if(StatusRequest.success==statusRequest){
-      if(response['status']=="success"){
+    if (StatusRequest.success == statusRequest) {
+      if (response['status'] == "success") {
         List listdata = response['data'];
-        data.addAll(listdata.map((e)=>AddressModel.fromJson(e)));
-        if(data.isEmpty){
+        data.addAll(listdata.map((e) => AddressModel.fromJson(e)));
+        if (data.isEmpty) {
           statusRequest = StatusRequest.failure;
         }
-      }
-      else{
-        print("+++++++++++ there is no data +++++++++++");
+      } else {
+        appDebugLog("+++++++++++ there is no data +++++++++++");
         statusRequest = StatusRequest.failure;
       }
     }
     update();
   }
-
-
 
   @override
   void onInit() {
     getData();
     super.onInit();
   }
-
-
-
-
 }
