@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Branch;
 use App\Models\Tenant;
+use App\Services\Storefront\StorefrontBranchResolver;
 use App\Services\Storefront\StorefrontCatalogService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +14,7 @@ class StorefrontCatalogController extends Controller
 {
     public function __construct(
         private readonly StorefrontCatalogService $catalog,
+        private readonly StorefrontBranchResolver $branches,
     ) {}
 
     public function home(Request $request): JsonResponse
@@ -42,17 +43,34 @@ class StorefrontCatalogController extends Controller
         /** @var Tenant $tenant */
         $tenant = $request->attributes->get('tenant');
 
-        $branch = $this->resolveBranch($request);
+        $claimedBranchId = trim(
+            (string) $request->header(
+                'X-Branch-Id',
+                '',
+            )
+        );
 
-        if ($branch instanceof JsonResponse) {
-            return $branch;
+        $branch = $this->branches->resolve(
+            $claimedBranchId,
+        );
+
+        if (
+            $claimedBranchId !== '' &&
+            $branch === null
+        ) {
+            return $this->branchNotFound(
+                $request
+            );
         }
 
         $perPage = max(
             1,
             min(
                 60,
-                $request->integer('per_page', $defaultPerPage),
+                $request->integer(
+                    'per_page',
+                    $defaultPerPage,
+                ),
             ),
         );
 
@@ -80,39 +98,6 @@ class StorefrontCatalogController extends Controller
                 perPage: $perPage,
             ),
         );
-    }
-
-    private function resolveBranch(
-        Request $request,
-    ): Branch|JsonResponse|null {
-        $claimed = trim(
-            (string) $request->header(
-                'X-Branch-Id',
-                '',
-            )
-        );
-
-        if ($claimed === '') {
-            return Branch::query()
-                ->where('is_active', true)
-                ->orderBy('id')
-                ->first();
-        }
-
-        if (! ctype_digit($claimed)) {
-            return $this->branchNotFound($request);
-        }
-
-        $branch = Branch::query()
-            ->whereKey((int) $claimed)
-            ->where('is_active', true)
-            ->first();
-
-        if ($branch === null) {
-            return $this->branchNotFound($request);
-        }
-
-        return $branch;
     }
 
     private function branchNotFound(
