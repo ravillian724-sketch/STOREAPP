@@ -439,9 +439,12 @@ class PaymentAttemptWebhookLifecycleServiceTest extends TestCase
         );
 
         $originalFailedAt =
-            $fixture['attempt']
-                ->refresh()
-                ->failed_at;
+            $this->inTenant(
+                $fixture['tenant'],
+                fn () => $fixture['attempt']
+                    ->refresh()
+                    ->failed_at,
+            );
 
         $cancelled =
             $this->receipt(
@@ -1201,6 +1204,154 @@ class PaymentAttemptWebhookLifecycleServiceTest extends TestCase
                 $this->assertSame(
                     PaymentWebhookProcessingOutcome::IGNORED_TERMINAL,
                     $lateReceipt->refresh()
+                        ->processing_outcome,
+                );
+            },
+        );
+    }
+
+    public function test_late_terminal_event_on_one_of_multiple_succeeded_attempts_requires_reconciliation(): void
+    {
+        $fixture =
+            $this->fixture();
+
+        $secondWinner =
+            $this->inTenant(
+                $fixture['tenant'],
+                function () use (
+                    $fixture
+                ): PaymentAttempt {
+                    $attempt =
+                        app(
+                            PaymentService::class
+                        )->createAttempt(
+                            $fixture['payment'],
+                            'attempt-double-success-late-terminal',
+                            'gateway_card',
+                            'visa',
+                        );
+
+                    return app(
+                        PaymentProviderReferenceService::class
+                    )->bind(
+                        $attempt,
+                        'provider-double-success-late-terminal',
+                    );
+                },
+            );
+
+        $settledAt =
+            $fixture['at']
+                ->addSecond();
+
+        $this->inTenant(
+            $fixture['tenant'],
+            function () use (
+                $fixture,
+                $secondWinner,
+                $settledAt,
+            ): void {
+                foreach (
+                    [
+                        $fixture['attempt'],
+                        $secondWinner,
+                    ] as $winner
+                ) {
+                    $winner->status =
+                        PaymentAttemptStatus::SUCCEEDED;
+
+                    $winner->succeeded_at =
+                        $settledAt;
+
+                    $winner->save();
+                }
+
+                $payment =
+                    $fixture['payment'];
+
+                $payment->status =
+                    PaymentStatus::PAID;
+
+                $payment->paid_at =
+                    $settledAt;
+
+                $payment->save();
+
+                $order =
+                    $fixture['order'];
+
+                $order->status =
+                    OrderStatus::CONFIRMED;
+
+                $order->confirmed_at =
+                    $settledAt;
+
+                $order->save();
+            },
+        );
+
+        $receipt =
+            $this->receipt(
+                $fixture,
+                PaymentWebhookEventType::FAILED,
+                'event-double-success-late-terminal',
+                $fixture['at']
+                    ->addSeconds(3),
+            );
+
+        $this->inTenant(
+            $fixture['tenant'],
+            function () use (
+                $fixture,
+                $receipt,
+                $settledAt,
+            ): void {
+                $attempt =
+                    app(
+                        PaymentAttemptWebhookLifecycleService::class
+                    )->process(
+                        $receipt,
+                        $fixture['at']
+                            ->addSeconds(5),
+                    );
+
+                $this->assertSame(
+                    PaymentAttemptStatus::SUCCEEDED,
+                    $attempt->status,
+                );
+
+                $this->assertTrue(
+                    $attempt->succeeded_at
+                        ->equalTo(
+                            $settledAt
+                        )
+                );
+
+                $this->assertNull(
+                    $attempt->failed_at
+                );
+
+                $this->assertNull(
+                    $attempt->cancelled_at
+                );
+
+                $this->assertSame(
+                    PaymentStatus::PAID,
+                    $fixture['payment']
+                        ->refresh()
+                        ->status,
+                );
+
+                $this->assertSame(
+                    OrderStatus::CONFIRMED,
+                    $fixture['order']
+                        ->refresh()
+                        ->status,
+                );
+
+                $this->assertSame(
+                    PaymentWebhookProcessingOutcome::REQUIRES_RECONCILIATION,
+                    $receipt->refresh()
                         ->processing_outcome,
                 );
             },

@@ -272,11 +272,14 @@ final class PaymentAttemptWebhookLifecycleService
                     $attempt->status ===
                     PaymentAttemptStatus::SUCCEEDED
                 ) {
+                    $aggregateIsCoherent =
+                        $this->aggregateLifecycleIsCoherent(
+                            $payment,
+                            $order,
+                        );
+
                     $outcome =
-                        $payment->status ===
-                            PaymentStatus::PAID &&
-                        $order->status ===
-                            OrderStatus::CONFIRMED
+                        $aggregateIsCoherent
                             ? PaymentWebhookProcessingOutcome::IGNORED_TERMINAL
                             : PaymentWebhookProcessingOutcome::REQUIRES_RECONCILIATION;
 
@@ -306,10 +309,9 @@ final class PaymentAttemptWebhookLifecycleService
                     )
                 ) {
                     $aggregateIsCoherent =
-                        $this->aggregateCanCoexistWithTerminalAttempt(
+                        $this->aggregateLifecycleIsCoherent(
                             $payment,
                             $order,
-                            $attempt,
                         );
 
                     return $this->finalizeReceipt(
@@ -349,10 +351,9 @@ final class PaymentAttemptWebhookLifecycleService
                  * reinterpret an already-terminal aggregate.
                  */
                 if (
-                    ! $this->aggregateCanCoexistWithTerminalAttempt(
+                    ! $this->aggregateLifecycleIsCoherent(
                         $payment,
                         $order,
-                        $attempt,
                     )
                 ) {
                     return $this->finalizeReceipt(
@@ -510,33 +511,27 @@ final class PaymentAttemptWebhookLifecycleService
         }
     }
 
-    private function aggregateCanCoexistWithTerminalAttempt(
+    private function aggregateLifecycleIsCoherent(
         Payment $payment,
         Order $order,
-        PaymentAttempt $attempt,
     ): bool {
         /*
          * Payment is already locked by the caller.
          *
-         * Every lifecycle mutation in this payment policy
-         * serializes on Payment before changing attempt
-         * status, so ordinary reads of sibling attempt
-         * statuses are stable for this transaction.
+         * Every payment-attempt lifecycle mutation serializes
+         * on Payment before changing attempt status, so these
+         * aggregate counts are stable for this transaction.
          *
-         * The current attempt is excluded because this
-         * method determines whether the aggregate state is
-         * explained by ANOTHER attempt.
+         * Count the whole payment aggregate, including the
+         * current attempt. Exact cardinality is intentional:
+         * multiple AUTHORIZED or SUCCEEDED attempts require
+         * reconciliation rather than being silently accepted.
          */
-        $authorizedSiblingCount =
+        $authorizedAttemptCount =
             PaymentAttempt::query()
                 ->where(
                     'payment_id',
                     $payment->id,
-                )
-                ->where(
-                    'id',
-                    '<>',
-                    $attempt->id,
                 )
                 ->where(
                     'status',
@@ -544,16 +539,11 @@ final class PaymentAttemptWebhookLifecycleService
                 )
                 ->count();
 
-        $succeededSiblingCount =
+        $succeededAttemptCount =
             PaymentAttempt::query()
                 ->where(
                     'payment_id',
                     $payment->id,
-                )
-                ->where(
-                    'id',
-                    '<>',
-                    $attempt->id,
                 )
                 ->where(
                     'status',
@@ -568,8 +558,8 @@ final class PaymentAttemptWebhookLifecycleService
                 OrderStatus::PENDING
         ) {
             return
-                $authorizedSiblingCount === 0 &&
-                $succeededSiblingCount === 0;
+                $authorizedAttemptCount === 0 &&
+                $succeededAttemptCount === 0;
         }
 
         if (
@@ -579,8 +569,8 @@ final class PaymentAttemptWebhookLifecycleService
                 OrderStatus::PENDING
         ) {
             return
-                $authorizedSiblingCount === 1 &&
-                $succeededSiblingCount === 0;
+                $authorizedAttemptCount === 1 &&
+                $succeededAttemptCount === 0;
         }
 
         if (
@@ -590,8 +580,8 @@ final class PaymentAttemptWebhookLifecycleService
                 OrderStatus::CONFIRMED
         ) {
             return
-                $authorizedSiblingCount === 0 &&
-                $succeededSiblingCount === 1;
+                $authorizedAttemptCount === 0 &&
+                $succeededAttemptCount === 1;
         }
 
         if (
@@ -601,8 +591,8 @@ final class PaymentAttemptWebhookLifecycleService
                 OrderStatus::CANCELLED
         ) {
             return
-                $authorizedSiblingCount === 0 &&
-                $succeededSiblingCount === 0;
+                $authorizedAttemptCount === 0 &&
+                $succeededAttemptCount === 0;
         }
 
         return false;
