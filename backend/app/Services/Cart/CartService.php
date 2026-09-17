@@ -29,6 +29,7 @@ final class CartService
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly InventoryReservationService $reservations,
+        private readonly CartLifecycleService $lifecycle,
     ) {}
 
     public function create(
@@ -175,7 +176,10 @@ final class CartService
             throw new CartNotAccessibleException;
         }
 
-        return $cart;
+        return $this->lifecycle
+            ->expireIfDue(
+                $cart
+            );
     }
 
     public function addItem(
