@@ -12,16 +12,13 @@ use App\Services\Inventory\InventoryReservationService;
 use App\Support\Cart\CartStatus;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
 
 final class CartCheckoutReservationService
 {
-    public const DEFAULT_TTL_MINUTES = 15;
-
-    public const MAX_TTL_MINUTES = 30;
-
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly InventoryReservationService $reservations,
@@ -29,23 +26,32 @@ final class CartCheckoutReservationService
 
     public function begin(
         Cart $cart,
-        int $ttlMinutes = self::DEFAULT_TTL_MINUTES,
+        DateTimeInterface $requestedExpiresAt,
     ): Cart {
         $this->tenantContext->requireId();
 
-        if (
-            $ttlMinutes < 1 ||
-            $ttlMinutes > self::MAX_TTL_MINUTES
-        ) {
+        $requestedExpiresAt =
+            CarbonImmutable::instance(
+                $requestedExpiresAt
+            );
+
+        /*
+         * Every checkout request must carry a valid
+         * application-selected future deadline.
+         *
+         * This remains true even when begin() is a replay
+         * of an already active reservation window.
+         */
+        if (! $requestedExpiresAt->isFuture()) {
             throw new InvalidArgumentException(
-                'Checkout reservation TTL is outside the allowed range.'
+                'Checkout reservation expiration must be in the future.'
             );
         }
 
         return DB::transaction(
             function () use (
                 $cart,
-                $ttlMinutes,
+                $requestedExpiresAt,
             ): Cart {
                 $lockedCart =
                     $this->lockMutableCart(
@@ -53,21 +59,29 @@ final class CartCheckoutReservationService
                     );
 
                 /*
-                 * An active reservation window is never
-                 * extended by replaying begin().
+                 * An already active reservation window is
+                 * authoritative for retries.
                  *
-                 * This prevents clients from holding stock
-                 * indefinitely by repeatedly restarting
-                 * checkout.
+                 * The caller may supply a later policy
+                 * deadline on replay, but a replay must
+                 * never extend an existing stock hold.
                  */
-                $candidateExpiresAt =
+                if (
                     $lockedCart->inventory_reserved_until !== null &&
                     $lockedCart->inventory_reserved_until->isFuture()
-                        ? $lockedCart->inventory_reserved_until
-                        : CarbonImmutable::now()
-                            ->addMinutes(
-                                $ttlMinutes
-                            );
+                ) {
+                    $candidateExpiresAt =
+                        $lockedCart
+                            ->inventory_reserved_until;
+                } else {
+                    /*
+                     * Checkout policy belongs to the
+                     * application layer. The domain receives
+                     * an already validated absolute deadline.
+                     */
+                    $candidateExpiresAt =
+                        $requestedExpiresAt;
+                }
 
                 /*
                  * Inventory must never remain reserved

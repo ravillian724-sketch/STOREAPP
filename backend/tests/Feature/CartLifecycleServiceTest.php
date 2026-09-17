@@ -222,7 +222,8 @@ class CartLifecycleServiceTest extends TestCase
                 app(
                     CartCheckoutReservationService::class
                 )->begin(
-                    $cart
+                    $cart,
+                    now()->addMinutes(15)
                 );
 
                 $this->assertSame(
@@ -424,7 +425,8 @@ class CartLifecycleServiceTest extends TestCase
                 app(
                     CartCheckoutReservationService::class
                 )->begin(
-                    $cart
+                    $cart,
+                    now()->addMinutes(15)
                 );
 
                 $past =

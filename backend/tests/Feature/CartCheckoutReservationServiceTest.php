@@ -209,7 +209,8 @@ class CartCheckoutReservationServiceTest extends TestCase
                     app(
                         CartCheckoutReservationService::class
                     )->begin(
-                        $cart
+                        $cart,
+                        now()->addMinutes(15)
                     );
 
                 $this->assertNotNull(
@@ -305,7 +306,8 @@ class CartCheckoutReservationServiceTest extends TestCase
                     app(
                         CartCheckoutReservationService::class
                     )->begin(
-                        $cart
+                        $cart,
+                        now()->addMinutes(15)
                     );
 
                     $this->fail(
@@ -370,7 +372,8 @@ class CartCheckoutReservationServiceTest extends TestCase
                 app(
                     CartCheckoutReservationService::class
                 )->begin(
-                    $cart
+                    $cart,
+                    now()->addMinutes(15)
                 );
 
                 $cartService->setQuantity(
@@ -447,7 +450,8 @@ class CartCheckoutReservationServiceTest extends TestCase
                 app(
                     CartCheckoutReservationService::class
                 )->begin(
-                    $cart
+                    $cart,
+                    now()->addMinutes(15)
                 );
 
                 try {
@@ -533,7 +537,8 @@ class CartCheckoutReservationServiceTest extends TestCase
                 app(
                     CartCheckoutReservationService::class
                 )->begin(
-                    $cart
+                    $cart,
+                    now()->addMinutes(15)
                 );
 
                 $newItem =
@@ -600,7 +605,8 @@ class CartCheckoutReservationServiceTest extends TestCase
                 app(
                     CartCheckoutReservationService::class
                 )->begin(
-                    $cart
+                    $cart,
+                    now()->addMinutes(15)
                 );
 
                 $cartService->removeItem(
@@ -672,7 +678,8 @@ class CartCheckoutReservationServiceTest extends TestCase
                     );
 
                 $checkout->begin(
-                    $cart
+                    $cart,
+                    now()->addMinutes(15)
                 );
 
                 $releasedCart =
@@ -698,7 +705,7 @@ class CartCheckoutReservationServiceTest extends TestCase
         );
     }
 
-    public function test_invalid_ttl_and_empty_cart_are_rejected(): void
+    public function test_nonfuture_expiration_and_empty_cart_are_rejected(): void
     {
         $tenant =
             $this->tenant();
@@ -717,11 +724,11 @@ class CartCheckoutReservationServiceTest extends TestCase
                 try {
                     $service->begin(
                         $cart,
-                        31,
+                        now()->subSecond(),
                     );
 
                     $this->fail(
-                        'Expected invalid TTL.'
+                        'Expected nonfuture expiration rejection.'
                     );
                 } catch (
                     InvalidArgumentException
@@ -734,7 +741,8 @@ class CartCheckoutReservationServiceTest extends TestCase
                 );
 
                 $service->begin(
-                    $cart
+                    $cart,
+                    now()->addMinutes(15),
                 );
             },
         );
@@ -787,7 +795,9 @@ class CartCheckoutReservationServiceTest extends TestCase
 
                     $first =
                         $checkout->begin(
-                            $cart
+                            $cart,
+                            CarbonImmutable::now()
+                                ->addMinutes(15),
                         );
 
                     $firstExpiry =
@@ -801,7 +811,9 @@ class CartCheckoutReservationServiceTest extends TestCase
 
                     $second =
                         $checkout->begin(
-                            $cart
+                            $cart,
+                            CarbonImmutable::now()
+                                ->addMinutes(30),
                         );
 
                     $reservation =
@@ -832,6 +844,97 @@ class CartCheckoutReservationServiceTest extends TestCase
                 } finally {
                     CarbonImmutable::setTestNow();
                 }
+            },
+        );
+    }
+
+    public function test_active_window_still_rejects_nonfuture_requested_expiration(): void
+    {
+        $tenant =
+            $this->tenant();
+
+        $cart =
+            $this->cart($tenant);
+
+        [
+            $sku,
+            $location,
+        ] = $this->inventory(
+            $tenant,
+            'SKU-A',
+            10,
+        );
+
+        $this->inTenant(
+            $tenant,
+            function () use (
+                $cart,
+                $sku,
+                $location,
+            ): void {
+                $item =
+                    app(CartService::class)
+                        ->addItem(
+                            $cart,
+                            $sku,
+                            $location,
+                            2,
+                        );
+
+                $checkout =
+                    app(
+                        CartCheckoutReservationService::class
+                    );
+
+                $reserved =
+                    $checkout->begin(
+                        $cart,
+                        now()->addMinutes(15),
+                    );
+
+                $originalExpiry =
+                    $reserved
+                        ->inventory_reserved_until
+                        ->getTimestamp();
+
+                try {
+                    $checkout->begin(
+                        $cart,
+                        now()->subSecond(),
+                    );
+
+                    $this->fail(
+                        'Expected nonfuture expiration rejection on replay.'
+                    );
+                } catch (
+                    InvalidArgumentException
+                ) {
+                    //
+                }
+
+                $this->assertSame(
+                    $originalExpiry,
+                    $cart
+                        ->refresh()
+                        ->inventory_reserved_until
+                        ->getTimestamp(),
+                );
+
+                $this->assertSame(
+                    $originalExpiry,
+                    InventoryReservation::query()
+                        ->where(
+                            'reference_id',
+                            $item->public_id,
+                        )
+                        ->where(
+                            'status',
+                            InventoryReservationStatus::ACTIVE,
+                        )
+                        ->firstOrFail()
+                        ->expires_at
+                        ->getTimestamp(),
+                );
             },
         );
     }
@@ -877,7 +980,8 @@ class CartCheckoutReservationServiceTest extends TestCase
                     );
 
                 $checkout->begin(
-                    $cart
+                    $cart,
+                    now()->addMinutes(15)
                 );
 
                 $sku->update([
@@ -966,7 +1070,7 @@ class CartCheckoutReservationServiceTest extends TestCase
                         CartCheckoutReservationService::class
                     )->begin(
                         $cart,
-                        15,
+                        now()->addMinutes(15),
                     );
 
                 $reservation =

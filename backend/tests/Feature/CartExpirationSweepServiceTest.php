@@ -359,7 +359,8 @@ class CartExpirationSweepServiceTest extends TestCase
                     app(
                         CartCheckoutReservationService::class
                     )->begin(
-                        $cart
+                        $cart,
+                        now()->addMinutes(15)
                     );
 
                     return $item;
