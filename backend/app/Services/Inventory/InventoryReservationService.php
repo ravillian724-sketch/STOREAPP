@@ -199,6 +199,312 @@ final class InventoryReservationService
         );
     }
 
+    public function synchronizeReference(
+        Sku $sku,
+        InventoryLocation $location,
+        int $quantity,
+        string $referenceType,
+        string $referenceId,
+        DateTimeInterface $expiresAt,
+    ): InventoryReservation {
+        $tenantId =
+            $this->tenantContext->requireId();
+
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException(
+                'Reservation quantity must be positive.'
+            );
+        }
+
+        $referenceType =
+            trim($referenceType);
+
+        $referenceId =
+            trim($referenceId);
+
+        if (
+            $referenceType === '' ||
+            mb_strlen($referenceType) > 100
+        ) {
+            throw new InvalidArgumentException(
+                'Invalid reservation reference type.'
+            );
+        }
+
+        if (
+            $referenceId === '' ||
+            mb_strlen($referenceId) > 120
+        ) {
+            throw new InvalidArgumentException(
+                'Invalid reservation reference id.'
+            );
+        }
+
+        if (
+            (int) $sku->tenant_id !== $tenantId ||
+            (int) $location->tenant_id !== $tenantId
+        ) {
+            throw new LogicException(
+                'Reservation references must belong to the active tenant.'
+            );
+        }
+
+        $normalizedExpiresAt =
+            CarbonImmutable::instance(
+                $expiresAt
+            );
+
+        if (
+            $normalizedExpiresAt->getTimestamp()
+            <= now()->getTimestamp()
+        ) {
+            throw new InvalidArgumentException(
+                'Reservation expiration must be in the future.'
+            );
+        }
+
+        return DB::transaction(
+            function () use (
+                $sku,
+                $location,
+                $quantity,
+                $referenceType,
+                $referenceId,
+                $normalizedExpiresAt,
+            ): InventoryReservation {
+                $this->availability
+                    ->lockPosition(
+                        $sku,
+                        $location,
+                    );
+
+                $sku->refresh();
+                $location->refresh();
+
+                if (
+                    ! $sku->track_inventory ||
+                    ! $sku->is_active ||
+                    ! $location->is_active
+                ) {
+                    throw new LogicException(
+                        'Inventory is not reservable.'
+                    );
+                }
+
+                $reservations =
+                    InventoryReservation::query()
+                        ->where(
+                            'reference_type',
+                            $referenceType,
+                        )
+                        ->where(
+                            'reference_id',
+                            $referenceId,
+                        )
+                        ->where(
+                            'status',
+                            InventoryReservationStatus::ACTIVE,
+                        )
+                        ->lockForUpdate()
+                        ->get();
+
+                if ($reservations->count() > 1) {
+                    throw new LogicException(
+                        'Multiple active reservations exist for the same reference.'
+                    );
+                }
+
+                $existing =
+                    $reservations->first();
+
+                if ($existing !== null) {
+                    if (
+                        (int) $existing->sku_id !==
+                            (int) $sku->id ||
+                        (int) $existing->location_id !==
+                            (int) $location->id
+                    ) {
+                        throw new LogicException(
+                            'Reservation reference is already bound to different inventory.'
+                        );
+                    }
+
+                    $isCurrentlyCounted =
+                        $existing->expires_at === null ||
+                        $existing->expires_at->isFuture();
+
+                    $available =
+                        $this->availability
+                            ->availableToSell(
+                                $sku,
+                                $location,
+                            );
+
+                    $capacity =
+                        $available +
+                        (
+                            $isCurrentlyCounted
+                                ? (int) $existing->quantity
+                                : 0
+                        );
+
+                    if ($quantity > $capacity) {
+                        throw new InsufficientAvailableStockException(
+                            requestedQuantity: $quantity,
+                            availableQuantity: $capacity,
+                        );
+                    }
+
+                    $existing->quantity =
+                        $quantity;
+
+                    $existing->expires_at =
+                        $normalizedExpiresAt;
+
+                    $existing->save();
+
+                    return $existing->refresh();
+                }
+
+                $available =
+                    $this->availability
+                        ->availableToSell(
+                            $sku,
+                            $location,
+                        );
+
+                if ($quantity > $available) {
+                    throw new InsufficientAvailableStockException(
+                        requestedQuantity: $quantity,
+                        availableQuantity: $available,
+                    );
+                }
+
+                return InventoryReservation::query()
+                    ->create([
+                        'sku_id' => $sku->id,
+
+                        'location_id' => $location->id,
+
+                        'quantity' => $quantity,
+
+                        'status' => InventoryReservationStatus::ACTIVE,
+
+                        'idempotency_key' => 'ref-'.
+                            bin2hex(
+                                random_bytes(24)
+                            ),
+
+                        'reference_type' => $referenceType,
+
+                        'reference_id' => $referenceId,
+
+                        'expires_at' => $normalizedExpiresAt,
+                    ]);
+            }
+        );
+    }
+
+    public function releaseReference(
+        Sku $sku,
+        InventoryLocation $location,
+        string $referenceType,
+        string $referenceId,
+    ): ?InventoryReservation {
+        $tenantId =
+            $this->tenantContext->requireId();
+
+        $referenceType =
+            trim($referenceType);
+
+        $referenceId =
+            trim($referenceId);
+
+        if (
+            $referenceType === '' ||
+            $referenceId === ''
+        ) {
+            throw new InvalidArgumentException(
+                'Reservation reference is required.'
+            );
+        }
+
+        if (
+            (int) $sku->tenant_id !== $tenantId ||
+            (int) $location->tenant_id !== $tenantId
+        ) {
+            throw new LogicException(
+                'Reservation references must belong to the active tenant.'
+            );
+        }
+
+        return DB::transaction(
+            function () use (
+                $sku,
+                $location,
+                $referenceType,
+                $referenceId,
+            ): ?InventoryReservation {
+                $this->availability
+                    ->lockPosition(
+                        $sku,
+                        $location,
+                    );
+
+                $reservations =
+                    InventoryReservation::query()
+                        ->where(
+                            'reference_type',
+                            $referenceType,
+                        )
+                        ->where(
+                            'reference_id',
+                            $referenceId,
+                        )
+                        ->where(
+                            'status',
+                            InventoryReservationStatus::ACTIVE,
+                        )
+                        ->lockForUpdate()
+                        ->get();
+
+                if ($reservations->count() > 1) {
+                    throw new LogicException(
+                        'Multiple active reservations exist for the same reference.'
+                    );
+                }
+
+                $reservation =
+                    $reservations->first();
+
+                if ($reservation === null) {
+                    return null;
+                }
+
+                if (
+                    (int) $reservation->sku_id !==
+                        (int) $sku->id ||
+                    (int) $reservation->location_id !==
+                        (int) $location->id
+                ) {
+                    throw new LogicException(
+                        'Reservation reference is bound to different inventory.'
+                    );
+                }
+
+                $reservation->status =
+                    InventoryReservationStatus::RELEASED;
+
+                $reservation->released_at =
+                    now();
+
+                $reservation->save();
+
+                return $reservation->refresh();
+            }
+        );
+    }
+
     private function resolveReplay(
         InventoryReservation $reservation,
         Sku $sku,
