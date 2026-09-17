@@ -23,6 +23,7 @@ class PaymentWebhookReceipt extends Model
         'occurred_at',
         'received_at',
         'processed_at',
+        'processing_outcome',
     ];
 
     protected function casts(): array

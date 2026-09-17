@@ -13,6 +13,8 @@ use App\Support\Inventory\InventoryReservationStatus;
 use App\Support\Order\OrderStatus;
 use App\Support\Payment\PaymentAttemptStatus;
 use App\Support\Payment\PaymentStatus;
+use App\Support\Payment\PaymentWebhookEventType;
+use App\Support\Payment\PaymentWebhookProcessingOutcome;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -54,7 +56,7 @@ final class PaymentSuccessService
 
         if (
             $receipt->event_type !==
-            'payment.succeeded'
+            PaymentWebhookEventType::SUCCEEDED
         ) {
             throw new LogicException(
                 'Webhook receipt is not a canonical payment success event.'
@@ -311,6 +313,25 @@ final class PaymentSuccessService
                 }
 
                 if (
+                    $receipt->processing_outcome !== null &&
+                    $receipt->processed_at === null
+                ) {
+                    throw new LogicException(
+                        'Webhook processing outcome exists without processed timestamp.'
+                    );
+                }
+
+                if (
+                    $receipt->processing_outcome !== null &&
+                    $receipt->processing_outcome !==
+                        PaymentWebhookProcessingOutcome::APPLIED
+                ) {
+                    throw new LogicException(
+                        'Payment success webhook has an incompatible processing outcome.'
+                    );
+                }
+
+                if (
                     $partiallySettled &&
                     ! $alreadySettled
                 ) {
@@ -366,6 +387,25 @@ final class PaymentSuccessService
                     ) {
                         $receipt->processed_at =
                             $instant;
+
+                        $receipt->processing_outcome =
+                            PaymentWebhookProcessingOutcome::APPLIED;
+
+                        $receipt->save();
+                    } elseif (
+                        $receipt->processing_outcome ===
+                        null
+                    ) {
+                        /*
+                         * Safe legacy repair:
+                         *
+                         * before processing_outcome existed,
+                         * successful receipts only received
+                         * processed_at after the aggregate
+                         * was coherently settled.
+                         */
+                        $receipt->processing_outcome =
+                            PaymentWebhookProcessingOutcome::APPLIED;
 
                         $receipt->save();
                     }
@@ -440,6 +480,9 @@ final class PaymentSuccessService
                 $receipt->processed_at =
                     $instant;
 
+                $receipt->processing_outcome =
+                    PaymentWebhookProcessingOutcome::APPLIED;
+
                 $receipt->save();
 
                 return $payment->refresh();
@@ -466,7 +509,7 @@ final class PaymentSuccessService
 
         if (
             $receipt->event_type !==
-            'payment.succeeded'
+            PaymentWebhookEventType::SUCCEEDED
         ) {
             throw new LogicException(
                 'Webhook is not a payment success event.'

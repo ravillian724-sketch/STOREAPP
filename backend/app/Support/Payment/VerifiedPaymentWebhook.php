@@ -53,10 +53,8 @@ final readonly class VerifiedPaymentWebhook
             );
 
         $this->eventType =
-            self::normalizeCode(
-                $eventType,
-                'event type',
-                100,
+            self::normalizeEventType(
+                $eventType
             );
 
         $this->occurredAt =
@@ -104,6 +102,31 @@ final readonly class VerifiedPaymentWebhook
 
         $this->currencyCode =
             $currencyCode;
+    }
+
+    private static function normalizeEventType(
+        string $value,
+    ): string {
+        $value =
+            mb_strtolower(
+                trim(
+                    $value
+                )
+            );
+
+        if (
+            ! in_array(
+                $value,
+                PaymentWebhookEventType::all(),
+                true,
+            )
+        ) {
+            throw new InvalidArgumentException(
+                'Payment webhook event type must already be normalized to a canonical lifecycle event.'
+            );
+        }
+
+        return $value;
     }
 
     private static function normalizeCode(

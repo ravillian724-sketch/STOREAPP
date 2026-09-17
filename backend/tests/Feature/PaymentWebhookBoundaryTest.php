@@ -25,6 +25,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use LogicException;
 use Tests\TestCase;
 
@@ -187,6 +188,27 @@ class PaymentWebhookBoundaryTest extends TestCase
             amountMinor: $amountMinor,
 
             currencyCode: $currencyCode,
+        );
+    }
+
+    public function test_verified_webhook_rejects_noncanonical_lifecycle_event_type(): void
+    {
+        $this->expectException(
+            InvalidArgumentException::class
+        );
+
+        new VerifiedPaymentWebhook(
+            providerCode: 'gateway_card',
+
+            providerEventId: 'event-provider-specific',
+
+            providerReference: 'provider-ref-specific',
+
+            eventType: 'charge.captured',
+
+            occurredAt: CarbonImmutable::parse(
+                '2026-09-17T16:00:00+00:00'
+            ),
         );
     }
 

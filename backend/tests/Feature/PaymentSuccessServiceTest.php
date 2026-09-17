@@ -25,6 +25,7 @@ use App\Support\Inventory\InventoryReservationStatus;
 use App\Support\Order\OrderStatus;
 use App\Support\Payment\PaymentAttemptStatus;
 use App\Support\Payment\PaymentStatus;
+use App\Support\Payment\PaymentWebhookProcessingOutcome;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -392,6 +393,11 @@ class PaymentSuccessServiceTest extends TestCase
 
                 $this->assertNotNull(
                     $receipt->processed_at
+                );
+
+                $this->assertSame(
+                    PaymentWebhookProcessingOutcome::APPLIED,
+                    $receipt->processing_outcome,
                 );
             },
         );
