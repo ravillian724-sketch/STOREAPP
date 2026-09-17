@@ -9,6 +9,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\InventoryLocation;
 use App\Models\Sku;
+use App\Services\Inventory\InventoryReservationService;
 use App\Support\Cart\CartStatus;
 use App\Support\Cart\CreatedCart;
 use App\Support\Tenancy\TenantContext;
@@ -25,6 +26,7 @@ final class CartService
 
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly InventoryReservationService $reservations,
     ) {}
 
     public function create(
@@ -239,10 +241,17 @@ final class CartService
 
                     $existing->save();
 
+                    $this->synchronizeReservationIfActive(
+                        $lockedCart,
+                        $existing,
+                        $freshSku,
+                        $freshLocation,
+                    );
+
                     return $existing->refresh();
                 }
 
-                return CartItem::query()->create([
+                $item = CartItem::query()->create([
                     'cart_id' => $lockedCart->id,
 
                     'sku_id' => $freshSku->id,
@@ -253,6 +262,15 @@ final class CartService
 
                     'quantity' => $quantity,
                 ]);
+
+                $this->synchronizeReservationIfActive(
+                    $lockedCart,
+                    $item,
+                    $freshSku,
+                    $freshLocation,
+                );
+
+                return $item;
             }
         );
     }
@@ -302,6 +320,36 @@ final class CartService
 
                 $lockedItem->save();
 
+                $sku =
+                    Sku::query()
+                        ->whereKey(
+                            $lockedItem->sku_id
+                        )
+                        ->first();
+
+                $location =
+                    InventoryLocation::query()
+                        ->whereKey(
+                            $lockedItem->location_id
+                        )
+                        ->first();
+
+                if (
+                    $sku === null ||
+                    $location === null
+                ) {
+                    throw new LogicException(
+                        'Cart inventory reference is unavailable.'
+                    );
+                }
+
+                $this->synchronizeReservationIfActive(
+                    $lockedCart,
+                    $lockedItem,
+                    $sku,
+                    $location,
+                );
+
                 return $lockedItem->refresh();
             }
         );
@@ -338,6 +386,11 @@ final class CartService
                         'Cart item does not belong to the cart.'
                     );
                 }
+
+                $this->releaseReservationIfActive(
+                    $lockedCart,
+                    $lockedItem,
+                );
 
                 $lockedItem->delete();
             }
@@ -435,6 +488,73 @@ final class CartService
             $freshSku,
             $freshLocation,
         ];
+    }
+
+    private function synchronizeReservationIfActive(
+        Cart $cart,
+        CartItem $item,
+        Sku $sku,
+        InventoryLocation $location,
+    ): void {
+        if (
+            $cart->inventory_reserved_until === null ||
+            ! $cart->inventory_reserved_until->isFuture()
+        ) {
+            return;
+        }
+
+        $this->reservations
+            ->synchronizeReference(
+                $sku,
+                $location,
+                (int) $item->quantity,
+                'cart_item',
+                $item->public_id,
+                $cart->inventory_reserved_until,
+            );
+    }
+
+    private function releaseReservationIfActive(
+        Cart $cart,
+        CartItem $item,
+    ): void {
+        if (
+            $cart->inventory_reserved_until === null ||
+            ! $cart->inventory_reserved_until->isFuture()
+        ) {
+            return;
+        }
+
+        $sku =
+            Sku::query()
+                ->whereKey(
+                    $item->sku_id
+                )
+                ->first();
+
+        $location =
+            InventoryLocation::query()
+                ->whereKey(
+                    $item->location_id
+                )
+                ->first();
+
+        if (
+            $sku === null ||
+            $location === null
+        ) {
+            throw new LogicException(
+                'Cart inventory reference is unavailable.'
+            );
+        }
+
+        $this->reservations
+            ->releaseReference(
+                $sku,
+                $location,
+                'cart_item',
+                $item->public_id,
+            );
     }
 
     private function hashToken(

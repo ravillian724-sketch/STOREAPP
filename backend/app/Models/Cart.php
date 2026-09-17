@@ -30,6 +30,7 @@ class Cart extends Model
     {
         return [
             'expires_at' => 'immutable_datetime',
+            'inventory_reserved_until' => 'immutable_datetime',
             'converted_at' => 'immutable_datetime',
             'abandoned_at' => 'immutable_datetime',
             'expired_at' => 'immutable_datetime',
