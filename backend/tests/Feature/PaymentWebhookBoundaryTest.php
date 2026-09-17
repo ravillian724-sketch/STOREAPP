@@ -736,6 +736,60 @@ class PaymentWebhookBoundaryTest extends TestCase
         );
     }
 
+    public function test_postgres_rejects_currency_without_webhook_amount(): void
+    {
+        if (
+            DB::connection()->getDriverName()
+            !== 'pgsql'
+        ) {
+            $this->markTestSkipped(
+                'PostgreSQL-specific webhook money constraint proof.'
+            );
+        }
+
+        $tenant =
+            $this->tenant();
+
+        $this->expectException(
+            QueryException::class
+        );
+
+        $this->inTenant(
+            $tenant,
+            fn () => PaymentWebhookReceipt::query()
+                ->create([
+                    'payment_attempt_id' => null,
+
+                    'public_id' => (string) Str::uuid(),
+
+                    'provider_code' => 'gateway_card',
+
+                    'provider_event_id' => 'currency-without-amount',
+
+                    'provider_reference' => 'currency-without-amount-ref',
+
+                    'event_type' => 'payment.succeeded',
+
+                    'amount_minor' => null,
+
+                    'currency_code' => 'SAR',
+
+                    'payload_sha256' => hash(
+                        'sha256',
+                        'currency-without-amount'
+                    ),
+
+                    'occurred_at' => CarbonImmutable::parse(
+                        '2026-09-17T16:00:00+00:00'
+                    ),
+
+                    'received_at' => CarbonImmutable::parse(
+                        '2026-09-17T16:00:01+00:00'
+                    ),
+                ]),
+        );
+    }
+
     public function test_postgres_webhook_receipts_have_forced_rls(): void
     {
         if (
