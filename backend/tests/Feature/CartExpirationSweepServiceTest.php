@@ -97,15 +97,30 @@ class CartExpirationSweepServiceTest extends TestCase
         $this->inTenant(
             $tenant,
             function () use ($cart): void {
-                $cart->expires_at =
+                /*
+                 * Checkout reservation synchronization may
+                 * update a separately locked Cart instance.
+                 *
+                 * Refresh first so this fixture does not
+                 * accidentally violate the real PostgreSQL
+                 * invariant:
+                 *
+                 * inventory_reserved_until <= expires_at
+                 */
+                $cart->refresh();
+
+                $past =
                     now()->subMinute();
+
+                $cart->expires_at =
+                    $past;
 
                 if (
                     $cart->inventory_reserved_until
                     !== null
                 ) {
                     $cart->inventory_reserved_until =
-                        now()->subMinute();
+                        $past;
                 }
 
                 $cart->save();
