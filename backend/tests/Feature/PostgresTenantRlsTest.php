@@ -91,6 +91,8 @@ class PostgresTenantRlsTest extends TestCase
                     'inventory_reservations',
                     'order_items',
                     'orders',
+                    'payment_attempts',
+                    'payments',
                     'sku_prices',
                     'stock_ledger_entries'
                 )
@@ -111,6 +113,8 @@ class PostgresTenantRlsTest extends TestCase
                 'inventory_reservations',
                 'order_items',
                 'orders',
+                'payment_attempts',
+                'payments',
                 'products',
                 'role_user',
                 'roles',
