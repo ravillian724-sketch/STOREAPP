@@ -314,8 +314,22 @@ class OrderFoundationTest extends TestCase
             },
         );
 
-        $order->refresh();
-        $item->refresh();
+        /*
+         * Orders and order items are tenant-owned and
+         * PostgreSQL FORCE RLS must remain active even
+         * inside tests. Refresh historical snapshots only
+         * while the owning tenant context is installed.
+         */
+        $this->inTenant(
+            $tenant,
+            function () use (
+                $order,
+                $item,
+            ): void {
+                $order->refresh();
+                $item->refresh();
+            },
+        );
 
         $this->assertSame(
             'SAR',
