@@ -24,8 +24,6 @@ use LogicException;
 
 final class CartService
 {
-    private const DEFAULT_TTL_DAYS = 30;
-
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly InventoryReservationService $reservations,
@@ -34,7 +32,7 @@ final class CartService
 
     public function create(
         AppInstance $appInstance,
-        ?DateTimeInterface $expiresAt = null,
+        DateTimeInterface $expiresAt,
     ): CreatedCart {
         $tenantId =
             $this->tenantContext->requireId();
@@ -54,15 +52,16 @@ final class CartService
             );
         }
 
+        /*
+         * Cart lifetime is application policy.
+         *
+         * The domain receives an explicit absolute
+         * expiration and only enforces its invariants.
+         */
         $normalizedExpiresAt =
-            $expiresAt === null
-                ? CarbonImmutable::now()
-                    ->addDays(
-                        self::DEFAULT_TTL_DAYS
-                    )
-                : CarbonImmutable::instance(
-                    $expiresAt
-                );
+            CarbonImmutable::instance(
+                $expiresAt
+            );
 
         if (
             $normalizedExpiresAt->getTimestamp()
@@ -450,9 +449,17 @@ final class CartService
                     );
                 }
 
-                $this->releaseReservationIfActive(
-                    $lockedCart,
-                    $lockedItem,
+                /*
+                 * Deleting a cart line must close its
+                 * reservation reference even when the
+                 * reservation window has already elapsed.
+                 *
+                 * An expired reservation no longer reduces
+                 * ATS, but leaving it status=active would
+                 * preserve stale lifecycle state.
+                 */
+                $this->releaseReservationForItem(
+                    $lockedItem
                 );
 
                 $lockedItem->delete();
@@ -577,17 +584,9 @@ final class CartService
             );
     }
 
-    private function releaseReservationIfActive(
-        Cart $cart,
+    private function releaseReservationForItem(
         CartItem $item,
     ): void {
-        if (
-            $cart->inventory_reserved_until === null ||
-            ! $cart->inventory_reserved_until->isFuture()
-        ) {
-            return;
-        }
-
         $sku =
             Sku::query()
                 ->whereKey(

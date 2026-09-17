@@ -84,7 +84,8 @@ class CartExpirationSweepServiceTest extends TestCase
             $tenant,
             fn (): Cart => app(CartService::class)
                 ->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 )
                 ->cart,
         );

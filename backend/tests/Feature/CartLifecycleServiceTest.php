@@ -90,7 +90,8 @@ class CartLifecycleServiceTest extends TestCase
                 $tenant,
                 fn () => app(CartService::class)
                     ->create(
-                        $instance
+                        $instance,
+                        now()->addDays(30),
                     ),
             );
 

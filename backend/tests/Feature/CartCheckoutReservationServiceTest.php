@@ -149,7 +149,8 @@ class CartCheckoutReservationServiceTest extends TestCase
             $tenant,
             fn (): Cart => app(CartService::class)
                 ->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 )
                 ->cart,
         );
@@ -937,6 +938,117 @@ class CartCheckoutReservationServiceTest extends TestCase
                 );
             },
         );
+    }
+
+    public function test_remove_after_hold_expiry_releases_stale_active_reservation(): void
+    {
+        CarbonImmutable::setTestNow(
+            '2026-09-17 10:00:00'
+        );
+
+        try {
+            $tenant =
+                $this->tenant();
+
+            $cart =
+                $this->cart(
+                    $tenant
+                );
+
+            [
+                $sku,
+                $location,
+            ] = $this->inventory(
+                $tenant,
+                'SKU-EXPIRED-HOLD',
+                10,
+            );
+
+            $this->inTenant(
+                $tenant,
+                function () use (
+                    $cart,
+                    $sku,
+                    $location,
+                ): void {
+                    $cartService =
+                        app(
+                            CartService::class
+                        );
+
+                    $item =
+                        $cartService->addItem(
+                            $cart,
+                            $sku,
+                            $location,
+                            3,
+                        );
+
+                    app(
+                        CartCheckoutReservationService::class
+                    )->begin(
+                        $cart,
+                        CarbonImmutable::now()
+                            ->addMinute(),
+                    );
+
+                    $reservation =
+                        InventoryReservation::query()
+                            ->where(
+                                'reference_type',
+                                'cart_item',
+                            )
+                            ->where(
+                                'reference_id',
+                                $item->public_id,
+                            )
+                            ->firstOrFail();
+
+                    $this->assertSame(
+                        InventoryReservationStatus::ACTIVE,
+                        $reservation->status,
+                    );
+
+                    CarbonImmutable::setTestNow(
+                        '2026-09-17 10:02:00'
+                    );
+
+                    /*
+                     * The hold has expired, therefore it no
+                     * longer reduces ATS. The line deletion
+                     * must still close the stale active
+                     * reservation lifecycle.
+                     */
+                    $cartService->removeItem(
+                        $cart,
+                        $item,
+                    );
+
+                    $reservation->refresh();
+
+                    $this->assertSame(
+                        InventoryReservationStatus::RELEASED,
+                        $reservation->status,
+                    );
+
+                    $this->assertNotNull(
+                        $reservation->released_at
+                    );
+
+                    $this->assertSame(
+                        10,
+                        app(
+                            InventoryAvailabilityService::class
+                        )->availableToSell(
+                            $sku,
+                            $location,
+                        ),
+                    );
+                },
+            );
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
     }
 
     public function test_release_succeeds_after_inventory_is_deactivated(): void

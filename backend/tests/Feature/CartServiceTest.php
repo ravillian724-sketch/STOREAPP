@@ -158,7 +158,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -188,6 +189,29 @@ class CartServiceTest extends TestCase
         );
     }
 
+    public function test_create_requires_future_application_expiration(): void
+    {
+        $tenant =
+            $this->tenant('Tenant A');
+
+        $instance =
+            $this->appInstance(
+                $tenant
+            );
+
+        $this->expectException(
+            InvalidArgumentException::class
+        );
+
+        $this->inTenant(
+            $tenant,
+            fn () => $this->service->create(
+                $instance,
+                now()->subSecond(),
+            ),
+        );
+    }
+
     public function test_resolve_requires_correct_cart_token(): void
     {
         $tenant =
@@ -200,7 +224,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -251,7 +276,8 @@ class CartServiceTest extends TestCase
         $this->inTenant(
             $tenantA,
             fn () => $this->service->create(
-                $foreign
+                $foreign,
+                now()->addDays(30),
             ),
         );
     }
@@ -280,7 +306,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -351,7 +378,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -406,7 +434,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -464,7 +493,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -509,7 +539,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -555,7 +586,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenantA,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -598,7 +630,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -654,7 +687,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -662,7 +696,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -709,7 +744,8 @@ class CartServiceTest extends TestCase
         $this->inTenant(
             $tenant,
             fn () => $this->service->create(
-                $instance
+                $instance,
+                now()->addDays(30),
             ),
         );
     }
@@ -740,7 +776,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -784,7 +821,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -827,7 +865,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenant,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
@@ -872,7 +911,8 @@ class CartServiceTest extends TestCase
             $this->inTenant(
                 $tenantA,
                 fn () => $this->service->create(
-                    $instance
+                    $instance,
+                    now()->addDays(30),
                 ),
             );
 
