@@ -78,6 +78,8 @@ class PostgresTenantRlsTest extends TestCase
                 WHERE c.relname IN (
                     'audit_logs',
                     'branches',
+                    'cart_items',
+                    'carts',
                     'users',
                     'roles',
                     'role_user',
@@ -97,6 +99,8 @@ class PostgresTenantRlsTest extends TestCase
             [
                 'audit_logs',
                 'branches',
+                'cart_items',
+                'carts',
                 'inventory_locations',
                 'inventory_positions',
                 'inventory_reservations',
