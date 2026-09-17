@@ -405,6 +405,284 @@ final class InventoryReservationService
         );
     }
 
+    public function transferReferenceOwnership(
+        Sku $sku,
+        InventoryLocation $location,
+        int $expectedQuantity,
+        string $sourceReferenceType,
+        string $sourceReferenceId,
+        string $targetReferenceType,
+        string $targetReferenceId,
+        DateTimeInterface $at,
+    ): InventoryReservation {
+        $tenantId =
+            $this->tenantContext->requireId();
+
+        if ($expectedQuantity <= 0) {
+            throw new InvalidArgumentException(
+                'Expected reservation quantity must be positive.'
+            );
+        }
+
+        $sourceReferenceType =
+            trim($sourceReferenceType);
+
+        $sourceReferenceId =
+            trim($sourceReferenceId);
+
+        $targetReferenceType =
+            trim($targetReferenceType);
+
+        $targetReferenceId =
+            trim($targetReferenceId);
+
+        if (
+            $sourceReferenceType === '' ||
+            $targetReferenceType === '' ||
+            mb_strlen($sourceReferenceType) > 100 ||
+            mb_strlen($targetReferenceType) > 100
+        ) {
+            throw new InvalidArgumentException(
+                'Invalid reservation reference type.'
+            );
+        }
+
+        if (
+            $sourceReferenceId === '' ||
+            $targetReferenceId === '' ||
+            mb_strlen($sourceReferenceId) > 120 ||
+            mb_strlen($targetReferenceId) > 120
+        ) {
+            throw new InvalidArgumentException(
+                'Invalid reservation reference id.'
+            );
+        }
+
+        if (
+            $sourceReferenceType ===
+                $targetReferenceType &&
+            $sourceReferenceId ===
+                $targetReferenceId
+        ) {
+            throw new InvalidArgumentException(
+                'Reservation ownership transfer requires different references.'
+            );
+        }
+
+        if (
+            (int) $sku->tenant_id !==
+                $tenantId ||
+            (int) $location->tenant_id !==
+                $tenantId
+        ) {
+            throw new LogicException(
+                'Reservation references must belong to the active tenant.'
+            );
+        }
+
+        /*
+         * The caller supplies the conversion instant.
+         *
+         * There is no hidden wall-clock decision in this
+         * operation. The transfer must prove that the
+         * source reservation still owns stock at this
+         * exact instant.
+         */
+        $instant =
+            CarbonImmutable::instance(
+                $at
+            );
+
+        return DB::transaction(
+            function () use (
+                $sku,
+                $location,
+                $expectedQuantity,
+                $sourceReferenceType,
+                $sourceReferenceId,
+                $targetReferenceType,
+                $targetReferenceId,
+                $instant,
+            ): InventoryReservation {
+                /*
+                 * Preserve the inventory lock hierarchy:
+                 *
+                 * Cart / CartItem locks are acquired by
+                 * the future conversion transaction first.
+                 *
+                 * Reservation ownership then serializes on
+                 * InventoryPosition before touching active
+                 * reservation rows.
+                 */
+                $this->availability
+                    ->lockPosition(
+                        $sku,
+                        $location,
+                    );
+
+                /*
+                 * Lock both identities.
+                 *
+                 * The target lookup makes replay explicit:
+                 * once ownership has moved, retrying the
+                 * same transfer returns the same row rather
+                 * than creating or consuming anything.
+                 */
+                $targetReservations =
+                    InventoryReservation::query()
+                        ->where(
+                            'reference_type',
+                            $targetReferenceType,
+                        )
+                        ->where(
+                            'reference_id',
+                            $targetReferenceId,
+                        )
+                        ->where(
+                            'status',
+                            InventoryReservationStatus::ACTIVE,
+                        )
+                        ->lockForUpdate()
+                        ->get();
+
+                $sourceReservations =
+                    InventoryReservation::query()
+                        ->where(
+                            'reference_type',
+                            $sourceReferenceType,
+                        )
+                        ->where(
+                            'reference_id',
+                            $sourceReferenceId,
+                        )
+                        ->where(
+                            'status',
+                            InventoryReservationStatus::ACTIVE,
+                        )
+                        ->lockForUpdate()
+                        ->get();
+
+                if (
+                    $targetReservations->count() > 1 ||
+                    $sourceReservations->count() > 1
+                ) {
+                    throw new LogicException(
+                        'Multiple active reservations exist for a transfer reference.'
+                    );
+                }
+
+                $target =
+                    $targetReservations->first();
+
+                $source =
+                    $sourceReservations->first();
+
+                if ($target !== null) {
+                    /*
+                     * Both identities existing at once means
+                     * the target is owned by another active
+                     * reservation. Never silently merge.
+                     */
+                    if ($source !== null) {
+                        throw new LogicException(
+                            'Target reservation reference is already active.'
+                        );
+                    }
+
+                    if (
+                        (int) $target->sku_id !==
+                            (int) $sku->id ||
+                        (int) $target->location_id !==
+                            (int) $location->id ||
+                        (int) $target->quantity !==
+                            $expectedQuantity
+                    ) {
+                        throw new LogicException(
+                            'Transferred reservation does not match expected inventory.'
+                        );
+                    }
+
+                    if (
+                        $target->expires_at !== null &&
+                        ! $target->expires_at
+                            ->greaterThan(
+                                $instant
+                            )
+                    ) {
+                        throw new LogicException(
+                            'Transferred reservation is expired.'
+                        );
+                    }
+
+                    return $target;
+                }
+
+                if ($source === null) {
+                    throw new LogicException(
+                        'Source reservation reference is not active.'
+                    );
+                }
+
+                if (
+                    (int) $source->sku_id !==
+                        (int) $sku->id ||
+                    (int) $source->location_id !==
+                        (int) $location->id
+                ) {
+                    throw new LogicException(
+                        'Source reservation is bound to different inventory.'
+                    );
+                }
+
+                if (
+                    (int) $source->quantity !==
+                    $expectedQuantity
+                ) {
+                    throw new LogicException(
+                        'Source reservation quantity does not match the expected quantity.'
+                    );
+                }
+
+                /*
+                 * An ACTIVE row with an elapsed expires_at
+                 * no longer reduces ATS. It therefore
+                 * cannot be promoted into Order ownership.
+                 */
+                if (
+                    $source->expires_at !== null &&
+                    ! $source->expires_at
+                        ->greaterThan(
+                            $instant
+                        )
+                ) {
+                    throw new LogicException(
+                        'Source reservation is expired.'
+                    );
+                }
+
+                /*
+                 * Critical invariant:
+                 *
+                 * This is ownership transfer, NOT stock
+                 * consumption and NOT release.
+                 *
+                 * status, quantity and expires_at remain
+                 * unchanged. Therefore ATS remains exactly
+                 * unchanged across Cart -> Order ownership.
+                 */
+                $source->reference_type =
+                    $targetReferenceType;
+
+                $source->reference_id =
+                    $targetReferenceId;
+
+                $source->save();
+
+                return $source->refresh();
+            }
+        );
+    }
+
     public function releaseReference(
         Sku $sku,
         InventoryLocation $location,
