@@ -1,0 +1,162 @@
+[
+    {
+        "code":  "DEMO-WEB-001",
+        "name_en":  "Panadol Extra Tablet 24 pcs",
+        "name_ar":  "بانادول اكسترا 24 قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/100015980_a198bf84f6e3fdc30_56714.png",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-extra-tablet-24-pcs/pdp/100015980",
+        "test_price_minor":  1295
+    },
+    {
+        "code":  "DEMO-WEB-002",
+        "name_en":  "Panadol Advance Paracetamol  500 mg -  24 Tablets",
+        "name_ar":  "بانادول أدفانس - باراسيتامول - 500 مجم - 24 قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/100726280_a2ae2563085863c0a_6333.png",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-advance-500-tablets-24/pdp/100726280",
+        "test_price_minor":  1795
+    },
+    {
+        "code":  "DEMO-WEB-003",
+        "name_en":  "Panadol 24 Tablets",
+        "name_ar":  "بانادول 500 مجم 24 قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/100015947_a50e65db4293b592a_40224.png",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-paracetamol-500-mg-24-caplets/pdp/100015947",
+        "test_price_minor":  2395
+    },
+    {
+        "code":  "DEMO-WEB-004",
+        "name_en":  "Panadol Day Non-Drowsy Sinus Pain Relief 24 Caplets",
+        "name_ar":  "بانادول داي  لتخفيف آلام الجيوب الأنفية بدون نعاس ٢٤ قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/100017281_ab51b636fa7dd3bd3_41421.png",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-sinus-caplet-24pcs/pdp/100017281",
+        "test_price_minor":  2995
+    },
+    {
+        "code":  "DEMO-WEB-005",
+        "name_en":  "Panadol Cold \u0026 Flu Night Time 24 Caplets",
+        "name_ar":  "بانادول كولد \u0026 فلو الفترة المسائية ٢٤ قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/100014160_a3701b7826cdce8e8_62356.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-cold-flu-caplet-24pcs/pdp/100014160",
+        "test_price_minor":  3495
+    },
+    {
+        "code":  "DEMO-WEB-006",
+        "name_en":  "Panadol Night 20 Caplets",
+        "name_ar":  "بانادول نايت 20 قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/100016253_ac3ed9d658b1cdc8a_64204.png",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-night-caplet-20pcs/pdp/100016253",
+        "test_price_minor":  4495
+    },
+    {
+        "code":  "DEMO-WEB-007",
+        "name_en":  "Panadol Actifast 20 Tablets",
+        "name_ar":  "بانادول اكتيفاست 500 مجم 20 قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/100011680_a202bae4154c71da2_29592.png",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-actifast-500-mg-tablet-20pcs/pdp/100011680",
+        "test_price_minor":  5495
+    },
+    {
+        "code":  "DEMO-WEB-008",
+        "name_en":  "Panadol Cold \u0026 Flu All In One 24S",
+        "name_ar":  "بانادول كولد اند فلو أول إن وان 24 قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/u/a/uae_enbase_image101534511_4.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-cold-flu-all-in-one-24s/pdp/101534511",
+        "test_price_minor":  6495
+    },
+    {
+        "code":  "DEMO-WEB-009",
+        "name_en":  "Panadol Extend 24 Tablets",
+        "name_ar":  "بانادول إكستند باراسيتامول 665 مجم  24 قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/102371620_a9c8cab10bd62ee07_93124.png",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-extend-paracetamol-665-mg-24-tablets/pdp/102371620",
+        "test_price_minor":  7495
+    },
+    {
+        "code":  "DEMO-WEB-010",
+        "name_en":  "Panadol Baby \u0026 Infant Paracetamol 120 mg/5 ml – 100 ml Suspension",
+        "name_ar":  "بانادول بيبي \u0026 إنفانت باراسيتامول 120 مجم/5 مل – 100 مل معلق",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/100620004_aacf3d901d2a9913f_26890.png",
+        "source_url":  "https://www.nahdionline.com/en-sa/panadol-baby-infant-suspension-100ml/pdp/100620004",
+        "test_price_minor":  8495
+    },
+    {
+        "code":  "DEMO-WEB-011",
+        "name_en":  "CeraVe Foaming Cleanser for Normal to Oily Skin 236ml",
+        "name_ar":  "سيرافي غسول رغوي للبشرة العادية إلى الدهنية 236 مل",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/101892677_a1949ea858355665d_91204.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/cerave-foaming-cleanser-for-normal-to-oily-skin-with-hyaluronic-acid-236-ml/pdp/101892677",
+        "test_price_minor":  1595
+    },
+    {
+        "code":  "DEMO-WEB-012",
+        "name_en":  "CeraVe Moisturising Cream for Dry to Very Dry Skin 454g",
+        "name_ar":  "سيرافي كريم مرطب للبشرة الجافة مع 3 سيراميدات أساسية 454 غ",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/101892642_ad37bdf6a1d4b540e_4726.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/cerave-moisturizing-cream-for-dry-skin-with-hyaluronic-acid-454-gm/pdp/101892642",
+        "test_price_minor":  2195
+    },
+    {
+        "code":  "DEMO-WEB-013",
+        "name_en":  "CeraVe Hydrating Cleanser for Normal to Dry Skin with 236ml",
+        "name_ar":  "سيرافي غسول مرطّب للبشرة العادية إلى الجافة 236 مل",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/101892618_a196a2e1547619a63_68690.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/cerave-hydrating-cleanser-for-normal-to-dry-skin-with-hyaluronic-acid-236ml/pdp/101892618",
+        "test_price_minor":  2795
+    },
+    {
+        "code":  "DEMO-WEB-014",
+        "name_en":  "Cetaphil Gentle Skin Cleanser For Dry to Normal Skin 500 ml",
+        "name_ar":  "سيتافيل غسول منظف لطيف للبشرة الجافة إلي العادية 500 مل",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/101152231_63997078114e20f10_12183.png",
+        "source_url":  "https://www.nahdionline.com/en-sa/cetaphil-gentle-skin-cleanser-for-dry-to-normal-skin-500-ml/pdp/101152231",
+        "test_price_minor":  3995
+    },
+    {
+        "code":  "DEMO-WEB-015",
+        "name_en":  "Cetaphil Moisturizing Cream For Dry to Very Dry Skin  - 100 gm",
+        "name_ar":  "سيتافيل كريم مرطب للبشرة الجافة إلي الجافة جدا 100 جم",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/101075386_a18a1298de1c588b4_30882.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/cetaphil-moisturizing-cream-for-dry-to-very-dry-100-gm/pdp/101075386",
+        "test_price_minor":  4995
+    },
+    {
+        "code":  "DEMO-WEB-016",
+        "name_en":  "Cetaphil Moisturizing Cream 566gm - Twin Pack",
+        "name_ar":  "Cetaphil Moisturizing Cream 566gm - Twin Pack",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/104208615_a34ba701fdc909b93_86631.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/cetaphil-moisturizing-cream-566-gm-x2-bundle/pdp/104208615",
+        "test_price_minor":  5995
+    },
+    {
+        "code":  "DEMO-WEB-017",
+        "name_en":  "Cetaphil Moisturizing Lotion For Dry to Normal Skin - 118 ml",
+        "name_ar":  "سيتافيل لوشن مرطب للبشرة  الجافة إلي العادية 118 مل",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/1/0/101152193_a732a43ea9946a676_16373.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/cetaphil-moisturizing-lotion-for-dry-to-normal-skin-118-ml/pdp/101152193",
+        "test_price_minor":  6995
+    },
+    {
+        "code":  "DEMO-WEB-018",
+        "name_en":  "Strepsils Intensive 16 Lozengens",
+        "name_ar":  "ستربسلز انتينسف 16 قرص استحلاب",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/u/a/uae_enbase_image101572542_4.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/strepsils-intensive-16-lozengens/pdp/101572542",
+        "test_price_minor":  1895
+    },
+    {
+        "code":  "DEMO-WEB-019",
+        "name_en":  "Strepsils Lozenge 16pcs Lemon Sugar Free",
+        "name_ar":  "ستربسلز ليمون خالى من السكر 16 قرص استحلاب",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/s/t/strepsils-lozenge-16pcs-lemon-sugar-free-1-_1.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/strepsils-lozenge-16pcs-lemon-sugar-free/pdp/100017601",
+        "test_price_minor":  2595
+    },
+    {
+        "code":  "DEMO-WEB-020",
+        "name_en":  "Strepsils Lozenges Extra - Blackcurrant 36 Pcs",
+        "name_ar":  "ستربسلز اكسترا استحلاب بالكشمش 36 قرص",
+        "image_url":  "https://ecombe.nahdionline.com/media/catalog/product/s/t/strepsils-lozenges-extra-blackcurrant-36-pcs-1_1.jpg",
+        "source_url":  "https://www.nahdionline.com/en-sa/strepsils-lozenges-extra-blackcurrant-36-pcs/pdp/101183168",
+        "test_price_minor":  3295
+    }
+]

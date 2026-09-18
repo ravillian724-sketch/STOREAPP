@@ -123,6 +123,7 @@ class StorefrontCatalogApiTest extends TestCase
                     'name_en' => 'Product '.$code,
                     'description_ar' => 'وصف '.$code,
                     'description_en' => 'Description '.$code,
+                    'image_url' => 'https://cdn.example.test/products/'.$code.'.png',
                     'is_active' => true,
                 ]);
 
@@ -191,6 +192,10 @@ class StorefrontCatalogApiTest extends TestCase
             ->assertJsonPath('data.items.0.sku_id', (string) $sku->id)
             ->assertJsonPath('data.items.0.price.amount_minor', 2575)
             ->assertJsonPath('data.items.0.price.currency_code', 'SAR')
+            ->assertJsonPath(
+                'data.items.0.image_url',
+                'https://cdn.example.test/products/1001.png',
+            )
             ->assertJsonPath('data.items.0.availability.tracked', true)
             ->assertJsonPath('data.items.0.availability.available_to_sell', 7)
             ->assertJsonPath('data.items.0.availability.in_stock', true);

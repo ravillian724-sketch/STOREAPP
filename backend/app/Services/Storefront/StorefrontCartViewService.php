@@ -262,7 +262,7 @@ final class StorefrontCartViewService
 
                 'description_en' => $product->description_en,
 
-                'image_url' => null,
+                'image_url' => $product->image_url,
 
                 'quantity' => (int) $item->quantity,
 

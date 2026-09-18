@@ -81,6 +81,12 @@ class CatalogAdminController extends Controller
                 'string',
             ],
 
+            'image_url' => [
+                'nullable',
+                'url:http,https',
+                'max:2048',
+            ],
+
             'is_active' => [
                 'sometimes',
                 'boolean',
@@ -110,6 +116,9 @@ class CatalogAdminController extends Controller
                             ?? null,
 
                     'description_en' => $data['description_en']
+                            ?? null,
+
+                    'image_url' => $data['image_url']
                             ?? null,
 
                     'is_active' => $data['is_active']
@@ -186,6 +195,13 @@ class CatalogAdminController extends Controller
                 'string',
             ],
 
+            'image_url' => [
+                'sometimes',
+                'nullable',
+                'url:http,https',
+                'max:2048',
+            ],
+
             'is_active' => [
                 'sometimes',
                 'boolean',
@@ -214,6 +230,7 @@ class CatalogAdminController extends Controller
                         'name_en',
                         'description_ar',
                         'description_en',
+                        'image_url',
                         'is_active',
                     ] as $field
                 ) {
@@ -466,6 +483,7 @@ class CatalogAdminController extends Controller
         return [
             'name_ar' => $product->name_ar,
             'name_en' => $product->name_en,
+            'image_url' => $product->image_url,
             'is_active' => (bool) $product->is_active,
         ];
     }
@@ -609,6 +627,8 @@ class CatalogAdminController extends Controller
             'description_ar' => $product->description_ar,
 
             'description_en' => $product->description_en,
+
+            'image_url' => $product->image_url,
 
             'is_active' => $product->is_active,
 

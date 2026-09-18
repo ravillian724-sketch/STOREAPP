@@ -198,6 +198,8 @@ class CatalogAdminApiTest extends TestCase
                     'name_ar' => 'منتج أ',
 
                     'name_en' => 'Product A',
+
+                    'image_url' => 'https://cdn.example.test/products/product-a.png',
                 ],
             );
 
@@ -206,6 +208,10 @@ class CatalogAdminApiTest extends TestCase
             ->assertJsonPath(
                 'data.product.name_en',
                 'Product A',
+            )
+            ->assertJsonPath(
+                'data.product.image_url',
+                'https://cdn.example.test/products/product-a.png',
             );
 
         $productId =
@@ -600,6 +606,8 @@ class CatalogAdminApiTest extends TestCase
                 [
                     'name_en' => 'Updated Product',
 
+                    'image_url' => 'https://cdn.example.test/products/updated.png',
+
                     'is_active' => false,
                 ],
             )
@@ -635,6 +643,15 @@ class CatalogAdminApiTest extends TestCase
                 $this->assertSame(
                     'Updated Product',
                     $log->after_values['name_en'],
+                );
+
+                $this->assertNull(
+                    $log->before_values['image_url']
+                );
+
+                $this->assertSame(
+                    'https://cdn.example.test/products/updated.png',
+                    $log->after_values['image_url'],
                 );
 
                 $this->assertTrue(

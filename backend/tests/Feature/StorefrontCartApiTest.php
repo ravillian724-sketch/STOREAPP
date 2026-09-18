@@ -153,6 +153,7 @@ final class StorefrontCartApiTest extends TestCase
                     'name_en' => 'Product '.$skuCode,
                     'description_ar' => 'وصف',
                     'description_en' => 'Description',
+                    'image_url' => 'https://cdn.example.test/products/'.$skuCode.'.png',
                     'is_active' => true,
                 ]);
 
@@ -320,6 +321,10 @@ final class StorefrontCartApiTest extends TestCase
             ->assertJsonPath(
                 'data.items.0.quantity',
                 2,
+            )
+            ->assertJsonPath(
+                'data.items.0.image_url',
+                'https://cdn.example.test/products/SKU-1001.png',
             )
             ->assertJsonPath(
                 'data.items.0.pricing.display_unit_amount_minor',
@@ -1428,16 +1433,14 @@ final class StorefrontCartApiTest extends TestCase
                 $cartId.
                 '/checkout/order',
                 [
-                    'customer_name' =>
-                        'Sandbox Buyer',
+                    'customer_name' => 'Sandbox Buyer',
                 ],
             )
             ->assertCreated();
 
         $attemptHeaders = [
             ...$headers,
-            'Idempotency-Key' =>
-                'sandbox-attempt-1',
+            'Idempotency-Key' => 'sandbox-attempt-1',
         ];
 
         $first = $this
@@ -1449,10 +1452,8 @@ final class StorefrontCartApiTest extends TestCase
                 $cartId.
                 '/checkout/payment-attempts',
                 [
-                    'provider_code' =>
-                        'sandbox',
-                    'method_code' =>
-                        'card',
+                    'provider_code' => 'sandbox',
+                    'method_code' => 'card',
 
                     /*
                      * Client financial evidence is forged
@@ -1515,10 +1516,8 @@ final class StorefrontCartApiTest extends TestCase
                 $cartId.
                 '/checkout/payment-attempts',
                 [
-                    'provider_code' =>
-                        'SANDBOX',
-                    'method_code' =>
-                        'CARD',
+                    'provider_code' => 'SANDBOX',
+                    'method_code' => 'CARD',
                 ],
             )
             ->assertCreated()
@@ -1599,8 +1598,7 @@ final class StorefrontCartApiTest extends TestCase
 
         $this->withHeaders([
             ...$headers,
-            'Idempotency-Key' =>
-                'payment-conflict-add',
+            'Idempotency-Key' => 'payment-conflict-add',
         ])
             ->postJson(
                 '/api/v1/storefront/carts/'.
@@ -1631,8 +1629,7 @@ final class StorefrontCartApiTest extends TestCase
 
         $attemptHeaders = [
             ...$headers,
-            'Idempotency-Key' =>
-                'same-payment-key',
+            'Idempotency-Key' => 'same-payment-key',
         ];
 
         $this->withHeaders(
@@ -1643,10 +1640,8 @@ final class StorefrontCartApiTest extends TestCase
                 $cartId.
                 '/checkout/payment-attempts',
                 [
-                    'provider_code' =>
-                        'sandbox',
-                    'method_code' =>
-                        'card',
+                    'provider_code' => 'sandbox',
+                    'method_code' => 'card',
                 ],
             )
             ->assertCreated();
@@ -1659,10 +1654,8 @@ final class StorefrontCartApiTest extends TestCase
                 $cartId.
                 '/checkout/payment-attempts',
                 [
-                    'provider_code' =>
-                        'sandbox',
-                    'method_code' =>
-                        'mada',
+                    'provider_code' => 'sandbox',
+                    'method_code' => 'mada',
                 ],
             )
             ->assertConflict()
@@ -1713,18 +1706,15 @@ final class StorefrontCartApiTest extends TestCase
                 $branch,
                 $cartToken,
             ),
-            'Idempotency-Key' =>
-                'no-order-payment',
+            'Idempotency-Key' => 'no-order-payment',
         ])
             ->postJson(
                 '/api/v1/storefront/carts/'.
                 $cartId.
                 '/checkout/payment-attempts',
                 [
-                    'provider_code' =>
-                        'sandbox',
-                    'method_code' =>
-                        'card',
+                    'provider_code' => 'sandbox',
+                    'method_code' => 'card',
                 ],
             )
             ->assertConflict()
@@ -1735,22 +1725,17 @@ final class StorefrontCartApiTest extends TestCase
 
         $this->withHeaders([
             'X-App-Instance-Key' => $appToken,
-            'X-Branch-Id' =>
-                (string) $branch->id,
-            'X-Cart-Token' =>
-                str_repeat('x', 64),
-            'Idempotency-Key' =>
-                'wrong-token-payment',
+            'X-Branch-Id' => (string) $branch->id,
+            'X-Cart-Token' => str_repeat('x', 64),
+            'Idempotency-Key' => 'wrong-token-payment',
         ])
             ->postJson(
                 '/api/v1/storefront/carts/'.
                 $cartId.
                 '/checkout/payment-attempts',
                 [
-                    'provider_code' =>
-                        'sandbox',
-                    'method_code' =>
-                        'card',
+                    'provider_code' => 'sandbox',
+                    'method_code' => 'card',
                 ],
             )
             ->assertNotFound()
@@ -1800,8 +1785,7 @@ final class StorefrontCartApiTest extends TestCase
 
         $this->withHeaders([
             ...$headers,
-            'Idempotency-Key' =>
-                'sandbox-success-add',
+            'Idempotency-Key' => 'sandbox-success-add',
         ])
             ->postJson(
                 '/api/v1/storefront/carts/'.
@@ -1840,8 +1824,7 @@ final class StorefrontCartApiTest extends TestCase
 
         $attempt = $this->withHeaders([
             ...$headers,
-            'Idempotency-Key' =>
-                'sandbox-success-attempt',
+            'Idempotency-Key' => 'sandbox-success-attempt',
         ])
             ->postJson(
                 '/api/v1/storefront/carts/'.
@@ -1977,8 +1960,7 @@ final class StorefrontCartApiTest extends TestCase
 
         $this->withHeaders([
             ...$headers,
-            'Idempotency-Key' =>
-                'sandbox-retry-add',
+            'Idempotency-Key' => 'sandbox-retry-add',
         ])
             ->postJson(
                 '/api/v1/storefront/carts/'.
@@ -2009,8 +1991,7 @@ final class StorefrontCartApiTest extends TestCase
 
         $declined = $this->withHeaders([
             ...$headers,
-            'Idempotency-Key' =>
-                'sandbox-decline-attempt',
+            'Idempotency-Key' => 'sandbox-decline-attempt',
         ])
             ->postJson(
                 '/api/v1/storefront/carts/'.
@@ -2053,8 +2034,7 @@ final class StorefrontCartApiTest extends TestCase
 
         $retry = $this->withHeaders([
             ...$headers,
-            'Idempotency-Key' =>
-                'sandbox-retry-attempt',
+            'Idempotency-Key' => 'sandbox-retry-attempt',
         ])
             ->postJson(
                 '/api/v1/storefront/carts/'.

@@ -324,7 +324,7 @@ final class StorefrontCatalogService
             'variant_name_en' => $sku->name_en,
             'description_ar' => $product->description_ar,
             'description_en' => $product->description_en,
-            'image_url' => null,
+            'image_url' => $product->image_url,
             'price' => [
                 'amount_minor' => (int) $price->amount_minor,
                 'currency_code' => $price->currency_code,

@@ -16,6 +16,7 @@ class Product extends Model
         'name_en',
         'description_ar',
         'description_en',
+        'image_url',
         'is_active',
     ];
 
