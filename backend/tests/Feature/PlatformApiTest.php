@@ -109,6 +109,9 @@ class PlatformApiTest extends TestCase
             ->assertJsonPath('data.store.tenant_id', (string) $tenant->id)
             ->assertJsonPath('data.store.name_en', 'Test Store')
             ->assertJsonPath('data.default_branch_id', (string) $branch->id);
+
+        $payload = json_decode($response->getContent());
+        $this->assertIsObject($payload->data->store->features);
     }
 
     public function test_bootstrap_ignores_inactive_branch_when_selecting_default(): void

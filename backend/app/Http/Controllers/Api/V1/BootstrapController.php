@@ -34,7 +34,7 @@ class BootstrapController extends Controller
                 'country_code' => $tenant->country_code,
                 'currency_code' => $tenant->currency_code,
                 'vat_rate' => (float) $tenant->vat_rate,
-                'features' => [],
+                'features' => (object) [],
             ],
             'default_branch_id' => $defaultBranch === null
                 ? null

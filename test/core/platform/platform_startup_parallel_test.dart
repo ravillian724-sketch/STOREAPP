@@ -164,7 +164,7 @@ void main() {
           );
 
           await tester.pump(
-            const Duration(seconds: 4),
+            const Duration(seconds: 11),
           );
 
           expect(

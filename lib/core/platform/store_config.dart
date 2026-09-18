@@ -37,7 +37,14 @@ class StoreConfig {
   factory StoreConfig.fromJson(
     Map<String, dynamic> json,
   ) {
-    final rawFeatures = json['features'] as Map? ?? const {};
+    final rawFeatures = json['features'];
+    final featureMap = switch (rawFeatures) {
+      null => const <dynamic, dynamic>{},
+      Map<dynamic, dynamic>() => rawFeatures,
+      _ => throw const FormatException(
+          'Store features must be a JSON object.',
+        ),
+    };
 
     return StoreConfig(
       tenantId: json['tenant_id']?.toString() ?? '',
@@ -55,7 +62,7 @@ class StoreConfig {
           ) ??
           15,
       features: FeatureFlags(
-        flags: rawFeatures.map(
+        flags: featureMap.map(
           (key, value) => MapEntry(
             key.toString(),
             value == true || value.toString() == '1',

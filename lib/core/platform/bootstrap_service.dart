@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../logging/app_logger.dart';
 import '../network/api_exception.dart';
 import 'app_instance_config.dart';
 import 'bootstrap_result.dart';
@@ -13,10 +14,11 @@ import 'startup_performance_policy.dart';
 class BootstrapService {
   BootstrapService({
     http.Client? client,
-    this.timeout = StartupPerformancePolicy.bootstrapNetworkTimeout,
+    Duration? timeout,
     String? appInstanceKey,
     String? apiBaseUrl,
   })  : _client = client ?? http.Client(),
+        timeout = timeout ?? StartupPerformancePolicy.bootstrapNetworkTimeout,
         _appInstanceKey = appInstanceKey ?? AppInstanceConfig.instanceKey,
         _apiBaseUrl = apiBaseUrl;
 
@@ -42,6 +44,8 @@ class BootstrapService {
       fragment: null,
     );
 
+    final stopwatch = Stopwatch()..start();
+
     try {
       final response = await _client
           .post(
@@ -56,6 +60,11 @@ class BootstrapService {
             }),
           )
           .timeout(timeout);
+
+      appDebugLog(
+        'Bootstrap HTTP completed: status=${response.statusCode} '
+        'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      );
 
       dynamic decoded;
 
@@ -104,11 +113,32 @@ class BootstrapService {
         );
       }
     } on TimeoutException {
+      appDebugLog(
+        'Bootstrap HTTP timeout: elapsedMs=${stopwatch.elapsedMilliseconds}',
+      );
       throw const ApiTimeoutException();
-    } on ApiException {
+    } on ApiException catch (error) {
+      appDebugLog(
+        'Bootstrap API error: status=${error.statusCode} '
+        'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      );
       rethrow;
-    } catch (_) {
+    } on http.ClientException catch (error, stackTrace) {
+      appDebugLog(
+        'Bootstrap network error: elapsedMs=${stopwatch.elapsedMilliseconds} '
+        'error=$error',
+      );
+      appDebugLog(stackTrace);
       throw const ApiNetworkException();
+    } catch (error, stackTrace) {
+      appDebugLog(
+        'Bootstrap unexpected error: type=${error.runtimeType} '
+        'elapsedMs=${stopwatch.elapsedMilliseconds} error=$error',
+      );
+      appDebugLog(stackTrace);
+      throw const ApiException(
+        'Unexpected bootstrap processing failure.',
+      );
     }
   }
 
