@@ -55,7 +55,28 @@ class ApiClient {
     }
 
     if (extraHeaders != null) {
-      headers.addAll(extraHeaders);
+      const protectedHeaders = <String>{
+        'accept',
+        'content-type',
+        'authorization',
+        'x-tenant-id',
+        'x-app-instance-key',
+        'x-channel',
+        'x-brand-id',
+        'x-branch-id',
+      };
+
+      for (final entry in extraHeaders.entries) {
+        final normalizedName = entry.key.trim().toLowerCase();
+
+        if (protectedHeaders.contains(normalizedName)) {
+          throw ArgumentError(
+            'Request-scoped headers cannot override protected platform headers.',
+          );
+        }
+
+        headers[entry.key] = entry.value;
+      }
     }
 
     return headers;
@@ -89,6 +110,7 @@ class ApiClient {
     String path, {
     Map<String, String>? queryParameters,
     String? accessToken,
+    Map<String, String>? extraHeaders,
   }) {
     return _send(
       method: 'GET',
@@ -97,6 +119,7 @@ class ApiClient {
         queryParameters: queryParameters,
       ),
       accessToken: accessToken,
+      extraHeaders: extraHeaders,
     );
   }
 
@@ -104,12 +127,14 @@ class ApiClient {
     String path, {
     Object? body,
     String? accessToken,
+    Map<String, String>? extraHeaders,
   }) {
     return _send(
       method: 'POST',
       uri: _resolve(path),
       body: body,
       accessToken: accessToken,
+      extraHeaders: extraHeaders,
     );
   }
 
@@ -117,12 +142,29 @@ class ApiClient {
     String path, {
     Object? body,
     String? accessToken,
+    Map<String, String>? extraHeaders,
   }) {
     return _send(
       method: 'PUT',
       uri: _resolve(path),
       body: body,
       accessToken: accessToken,
+      extraHeaders: extraHeaders,
+    );
+  }
+
+  Future<ApiResponse> patch(
+    String path, {
+    Object? body,
+    String? accessToken,
+    Map<String, String>? extraHeaders,
+  }) {
+    return _send(
+      method: 'PATCH',
+      uri: _resolve(path),
+      body: body,
+      accessToken: accessToken,
+      extraHeaders: extraHeaders,
     );
   }
 
@@ -130,12 +172,14 @@ class ApiClient {
     String path, {
     Object? body,
     String? accessToken,
+    Map<String, String>? extraHeaders,
   }) {
     return _send(
       method: 'DELETE',
       uri: _resolve(path),
       body: body,
       accessToken: accessToken,
+      extraHeaders: extraHeaders,
     );
   }
 
@@ -144,6 +188,7 @@ class ApiClient {
     required Uri uri,
     Object? body,
     String? accessToken,
+    Map<String, String>? extraHeaders,
   }) async {
     try {
       final request = http.Request(
@@ -154,6 +199,7 @@ class ApiClient {
       request.headers.addAll(
         _buildHeaders(
           accessToken: accessToken,
+          extraHeaders: extraHeaders,
         ),
       );
 
@@ -197,6 +243,8 @@ class ApiClient {
     } on http.ClientException {
       throw const ApiNetworkException();
     } on ApiException {
+      rethrow;
+    } on ArgumentError {
       rethrow;
     } catch (_) {
       throw const ApiNetworkException();

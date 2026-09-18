@@ -63,6 +63,7 @@ dependencies:
   #Local Data Cache
   sqflite: ^2.0.2
   shared_preferences: ^2.0.15
+  flutter_secure_storage: ^10.3.4
   path: ^1.8.0
   #Google Auth
   google_sign_in: ^6.2.2

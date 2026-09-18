@@ -1,26 +1,25 @@
+import 'package:ecommerce_app/core/constant/color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../controller/cart_controller.dart';
-import '../../../core/constant/color.dart';
 import 'buttonorder.dart';
-import 'custombuttoncoupon.dart';
 
-class BottomNavigationBarCart extends GetView<CartController> {
-  final String price;
+class BottomNavigationBarCart extends StatelessWidget {
+  final String subtotal;
   final String discount;
-  final String totalprice;
-  final double shipping;
-  final TextEditingController controllercoupon;
-  final void Function()? onApplyCoupon;
+  final String tax;
+  final String shipping;
+  final String total;
+  final VoidCallback? onCheckout;
+
   const BottomNavigationBarCart({
     super.key,
-    required this.price,
+    required this.subtotal,
     required this.discount,
-    required this.totalprice,
-    required this.controllercoupon,
-    required this.onApplyCoupon,
+    required this.tax,
     required this.shipping,
+    required this.total,
+    required this.onCheckout,
   });
 
   @override
@@ -41,86 +40,26 @@ class BottomNavigationBarCart extends GetView<CartController> {
           ),
         ],
       ),
-      padding: const EdgeInsets.only(top: 15, bottom: 20),
+      padding: const EdgeInsets.only(
+        top: 12,
+        bottom: 18,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GetBuilder<CartController>(
-            builder: (controller) => controller.couponname == null
-                ? Container(
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: TextFormField(
-                            controller: controllercoupon,
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 8, horizontal: 10),
-                              hintText: "83".tr, //Enter Coupon Code
-                              hintStyle: TextStyle(color: Colors.grey.shade500),
-                              prefixIcon: const Icon(Icons.discount_outlined,
-                                  color: AppColor.primaryColor),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          flex: 1,
-                          child: CustomButtonCoupon(
-                            textButton: "84".tr, //Apply
-                            onPressed: onApplyCoupon,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Container(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 15, vertical: 10),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 15, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColor.primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                      border:
-                          Border.all(color: AppColor.primaryColor, width: 1),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle,
-                            color: AppColor.primaryColor),
-                        const SizedBox(width: 10),
-                        Text(
-                          "${"85".tr}${controller.couponname!}",
-                          style: const TextStyle(
-                            color: AppColor.primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
           Container(
             padding: const EdgeInsets.all(15),
-            margin: const EdgeInsets.all(15),
+            margin: const EdgeInsets.fromLTRB(
+              15,
+              0,
+              15,
+              12,
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(
-                  color: AppColor.primaryColor.withValues(alpha: 0.3),
-                  width: 1),
+                color: AppColor.primaryColor.withValues(alpha: 0.3),
+              ),
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
@@ -133,35 +72,95 @@ class BottomNavigationBarCart extends GetView<CartController> {
             ),
             child: Column(
               children: [
-                _buildPriceRow("86".tr, "$price\$", false), //Price
-                const SizedBox(height: 6),
-                _buildPriceRow("87".tr, discount, false), //discount
-                const SizedBox(height: 6),
-                _buildPriceRow("88".tr, "$shipping\$", false), //Shipping
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                  child: Divider(color: Colors.grey.shade300, thickness: 1),
+                _buildPriceRow(
+                  '86'.tr,
+                  subtotal,
+                  false,
                 ),
-                _buildPriceRow("89".tr, "$totalprice\$", true),
+                const SizedBox(height: 6),
+                _buildPriceRow(
+                  _label(
+                    ar: 'الخصم',
+                    en: 'Discount',
+                  ),
+                  discount,
+                  false,
+                ),
+                const SizedBox(height: 6),
+                _buildPriceRow(
+                  _label(
+                    ar: 'الضريبة',
+                    en: 'VAT',
+                  ),
+                  tax,
+                  false,
+                ),
+                const SizedBox(height: 6),
+                _buildPriceRow(
+                  '88'.tr,
+                  shipping,
+                  false,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
+                  child: Divider(
+                    color: Colors.grey.shade300,
+                    thickness: 1,
+                  ),
+                ),
+                _buildPriceRow(
+                  '89'.tr,
+                  total,
+                  true,
+                ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: CoustombuttonCart(
-              textButton: "90".tr, //order
-              onPressed: () {
-                controller.goToPageCheckout();
-              },
+            padding: const EdgeInsets.symmetric(
+              horizontal: 15,
             ),
-          )
+            child: Opacity(
+              opacity: onCheckout == null ? 0.55 : 1,
+              child: CoustombuttonCart(
+                textButton: '90'.tr,
+                onPressed: onCheckout,
+              ),
+            ),
+          ),
+          if (onCheckout == null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                8,
+                20,
+                0,
+              ),
+              child: Text(
+                _label(
+                  ar: 'يتم الآن ربط الدفع الآمن بالمنصة الجديدة.',
+                  en: 'Secure checkout is being connected to the new platform.',
+                ),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildPriceRow(String title, String value, bool isTotal) {
+  Widget _buildPriceRow(
+    String title,
+    String value,
+    bool isTotal,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -183,5 +182,12 @@ class BottomNavigationBarCart extends GetView<CartController> {
         ),
       ],
     );
+  }
+
+  String _label({
+    required String ar,
+    required String en,
+  }) {
+    return Get.locale?.languageCode == 'ar' ? ar : en;
   }
 }

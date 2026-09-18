@@ -9,23 +9,29 @@ class PriceAndCountItems extends GetView<ItemsControllerImp> {
   final void Function()? onAdd;
   final void Function()? onRemove;
   final String price;
+  final String? originalPrice;
   final String count;
-  const PriceAndCountItems(
-      {super.key,
-      required this.price,
-      required this.count,
-      required this.onAdd,
-      required this.onRemove});
+
+  const PriceAndCountItems({
+    super.key,
+    required this.price,
+    required this.count,
+    required this.onAdd,
+    required this.onRemove,
+    this.originalPrice,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hasOriginalPrice =
+        originalPrice?.trim().isNotEmpty == true && originalPrice != price;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // مربع الكمية مع أزرار الزيادة والنقصان
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
@@ -38,7 +44,9 @@ class PriceAndCountItems extends GetView<ItemsControllerImp> {
                     spreadRadius: 1,
                   ),
                 ],
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(
+                  color: Colors.grey.shade200,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -52,26 +60,35 @@ class PriceAndCountItems extends GetView<ItemsControllerImp> {
                     ),
                     child: IconButton(
                       onPressed: onAdd,
-                      icon:
-                          const Icon(Icons.add, color: Colors.white, size: 16),
+                      icon: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
                   ),
                   Container(
                     alignment: Alignment.center,
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(
+                        color: Colors.grey.shade300,
+                      ),
                     ),
                     child: Text(
                       count,
                       style: const TextStyle(
-                        fontFamily: "sans",
+                        fontFamily: 'sans',
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -86,8 +103,11 @@ class PriceAndCountItems extends GetView<ItemsControllerImp> {
                     ),
                     child: IconButton(
                       onPressed: onRemove,
-                      icon: const Icon(Icons.remove,
-                          color: Colors.white, size: 16),
+                      icon: const Icon(
+                        Icons.remove,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -95,13 +115,17 @@ class PriceAndCountItems extends GetView<ItemsControllerImp> {
                 ],
               ),
             ),
-
-            // مربع السعر
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue.shade50, Colors.white],
+                  colors: [
+                    Colors.blue.shade50,
+                    Colors.white,
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -113,7 +137,9 @@ class PriceAndCountItems extends GetView<ItemsControllerImp> {
                     spreadRadius: 1,
                   ),
                 ],
-                border: Border.all(color: Colors.blue.shade100, width: 1),
+                border: Border.all(
+                  color: Colors.blue.shade100,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -121,11 +147,17 @@ class PriceAndCountItems extends GetView<ItemsControllerImp> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.price_change_outlined,
-                          color: AppColor.primaryColor, size: 16),
+                      const Icon(
+                        Icons.price_change_outlined,
+                        color: AppColor.primaryColor,
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Text(
-                        translateDatabase("السعر", "Price"),
+                        translateDatabase(
+                          'السعر',
+                          'Price',
+                        ),
                         style: const TextStyle(
                           color: AppColor.black,
                           fontSize: 14,
@@ -138,17 +170,21 @@ class PriceAndCountItems extends GetView<ItemsControllerImp> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (price.contains(" ")) ...[
+                      if (hasOriginalPrice) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red.shade50,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.red.shade100),
+                            border: Border.all(
+                              color: Colors.red.shade100,
+                            ),
                           ),
                           child: Text(
-                            price.split(" ")[0],
+                            originalPrice!,
                             style: TextStyle(
                               decoration: TextDecoration.lineThrough,
                               color: Colors.red.shade400,
@@ -158,23 +194,15 @@ class PriceAndCountItems extends GetView<ItemsControllerImp> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          price.split(" ")[1],
-                          style: const TextStyle(
-                            color: AppColor.primaryColor,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      ],
+                      Text(
+                        price,
+                        style: const TextStyle(
+                          color: AppColor.primaryColor,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ] else
-                        Text(
-                          "$price\$",
-                          style: const TextStyle(
-                            color: AppColor.primaryColor,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      ),
                     ],
                   ),
                 ],

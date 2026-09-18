@@ -5,6 +5,7 @@ import 'package:ecommerce_app/core/constant/routes.dart';
 import 'package:ecommerce_app/view/widget/productdetails/priceandcount.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../core/functions/storefront_display.dart';
 import '../../core/functions/translatedatabase.dart';
 import '../widget/expandable_text_widget.dart';
 import '../widget/dialogwarning.dart';
@@ -92,12 +93,22 @@ class ProductDetails extends StatelessWidget {
                       const SizedBox(height: 20),
                       PriceAndCountItems(
                         count: "${controller.countitems}",
-                        price: controller.itemsModel.itemsDiscount! > 0
-                            ? controller.itemsModel.itemspricediscount != null
-                                ? "${controller.itemsModel.itemsPrice!.toStringAsFixed(2)} ${controller.itemsModel.itemspricediscount!.toStringAsFixed(2)}\$"
-                                : "${controller.itemsModel.itemsPrice!.toStringAsFixed(2)}\$ ${controller.itemsModel.itemspricediscount}"
-                            : "${controller.itemsModel.itemsPrice}\$",
-                        onAdd: () {
+                        price: formatStoreMoney(
+                          controller.itemsModel.itemsDiscount == 0
+                              ? controller.itemsModel.itemsPrice
+                              : controller.itemsModel.itemspricediscount ??
+                                  controller.itemsModel.itemsPrice,
+                          controller.itemsModel.currencyCode,
+                          isArabic: Get.locale?.languageCode == 'ar',
+                        ),
+                        originalPrice: controller.itemsModel.itemsDiscount == 0
+                            ? null
+                            : formatStoreMoney(
+                                controller.itemsModel.itemsPrice,
+                                controller.itemsModel.currencyCode,
+                                isArabic: Get.locale?.languageCode == 'ar',
+                              ),
+                        onAdd: () async {
                           if (controller.itemsModel.itemsPrescription == 1) {
                             DialogWarning(
                               title: "71".tr,
@@ -108,9 +119,9 @@ class ProductDetails extends StatelessWidget {
                             ).showWarningDialog();
                             return;
                           }
-                          controller.add();
+                          await controller.add();
                         },
-                        onRemove: () {
+                        onRemove: () async {
                           if (controller.itemsModel.itemsPrescription == 1) {
                             DialogWarning(
                               title: "71".tr,
@@ -122,7 +133,7 @@ class ProductDetails extends StatelessWidget {
                             ).showWarningDialog();
                             return;
                           }
-                          controller.remove();
+                          await controller.remove();
                         },
                       ),
                       const SizedBox(height: 20),

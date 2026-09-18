@@ -1,31 +1,38 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:ecommerce_app/linkapi.dart';
+import 'package:ecommerce_app/core/constant/color.dart';
+import 'package:ecommerce_app/core/functions/storefront_display.dart';
 import 'package:flutter/material.dart';
-
-import '../../../core/constant/color.dart';
 
 class CustomItemsCartList extends StatelessWidget {
   final String name;
-  final String price;
+  final String lineTotal;
   final String count;
-  final String imagename;
+  final String? imageUrl;
   final void Function()? onAdd;
   final void Function()? onRemove;
+
   const CustomItemsCartList({
     super.key,
     required this.name,
-    required this.price,
+    required this.lineTotal,
     required this.count,
-    required this.imagename,
+    required this.imageUrl,
     required this.onAdd,
     required this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
+    final resolvedImage = resolveProductImageUrl(
+      imageUrl,
+    );
+
     return Card(
       elevation: 3,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 8,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
@@ -46,20 +53,27 @@ class CustomItemsCartList extends StatelessWidget {
               padding: const EdgeInsets.all(5),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: "${AppLink.imageItems}/$imagename",
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColor.primaryColor,
-                      strokeWidth: 2,
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => const Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey,
-                  ),
-                ),
+                child: resolvedImage == null
+                    ? Icon(
+                        Icons.medication_outlined,
+                        color: Colors.blueGrey[300],
+                        size: 48,
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: resolvedImage,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColor.primaryColor,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Icon(
+                          Icons.medication_outlined,
+                          color: Colors.blueGrey[300],
+                          size: 48,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 12),
@@ -75,19 +89,17 @@ class CustomItemsCartList extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Text(
-                        "${(double.parse(price) * int.parse(count)).toStringAsFixed(2)}\$",
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: AppColor.primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    lineTotal,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: AppColor.primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -97,7 +109,10 @@ class CustomItemsCartList extends StatelessWidget {
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(10),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 3),
+              padding: const EdgeInsets.symmetric(
+                vertical: 5,
+                horizontal: 3,
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -117,11 +132,13 @@ class CustomItemsCartList extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                    ),
                     child: Text(
                       count,
                       style: const TextStyle(
-                        fontFamily: "sans",
+                        fontFamily: 'sans',
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),

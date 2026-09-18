@@ -1,192 +1,232 @@
-import 'package:ecommerce_app/data/model/cartmodel.dart';
-import 'package:ecommerce_app/data/datasource/remote/cart_data.dart';
-import 'package:ecommerce_app/data/model/couponmodel.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:ecommerce_app/core/class/statusrequest.dart';
+import 'package:ecommerce_app/core/network/api_exception.dart';
+import 'package:ecommerce_app/core/network/status_request_mapper.dart';
+import 'package:ecommerce_app/core/services/notification_service.dart';
+import 'package:ecommerce_app/data/datasource/remote/storefront_cart_data.dart';
+import 'package:ecommerce_app/data/model/storefront_cart_model.dart';
 import 'package:get/get.dart';
-import '../core/class/statusrequest.dart';
-import '../core/constant/routes.dart';
-import '../core/functions/handlingdatacontroller.dart';
-import '../core/services/notification_service.dart';
-import '../core/services/services.dart';
-import 'package:ecommerce_app/core/functions/session_guard.dart';
-
-import 'package:ecommerce_app/core/logging/app_logger.dart';
 
 class CartController extends GetxController {
-  TextEditingController? controllercoupon;
+  CartController({
+    StorefrontCartData? cartData,
+  }) : cartData = cartData ?? StorefrontCartData();
 
-  NotificationService notificationService = Get.find<NotificationService>();
+  final StorefrontCartData cartData;
 
-  CartData cartData = CartData(Get.find());
+  NotificationService get notificationService =>
+      Get.find<NotificationService>();
 
   StatusRequest statusRequest = StatusRequest.none;
 
-  CouponModel? couponModel;
+  StorefrontCartSnapshot? snapshot;
 
-  int discountcoupon = 0;
+  List<StorefrontCartItem> get data =>
+      snapshot?.items ?? const <StorefrontCartItem>[];
 
-  String? couponname;
-  String? couponid;
+  int get totalcountitems => snapshot?.totalQuantity ?? 0;
 
-  MyServices myServices = Get.find();
+  String get currencyCode => snapshot?.currencyCode ?? 'SAR';
 
-  List<CartModel> data = [];
+  int get subtotalMinor => snapshot?.totals.subtotalMinor ?? 0;
 
-  double priceorders = 0.0;
+  int get discountMinor => snapshot?.totals.discountMinor ?? 0;
 
-  int totalcountitems = 0;
+  int get taxMinor => snapshot?.totals.taxMinor ?? 0;
 
-  add(String itemsid) async {
-    final userId = await requireUserId(myServices);
-    if (userId == null) {
-      return;
-    }
-    update();
-    statusRequest = StatusRequest.loading;
-    var response = await cartData.addCart(userId, itemsid);
-    appDebugLog(
-        "========================================Controller  $response");
-    statusRequest = handlingData(response);
-    // Start Backend
-    if (StatusRequest.success == statusRequest) {
-      if (response['status'] == "success") {
-        notificationService.showSuccessNotification(
-            title: "71".tr,
-            message: "73".tr); // warning , done adding product to cart
-        // data.addAll(response['data']);
-      } else {
-        statusRequest = StatusRequest.failure;
-      }
-    }
-    update();
-    //End
-  }
+  int get shippingMinor => snapshot?.totals.shippingMinor ?? 0;
 
-  delete(String itemsid) async {
-    final userId = await requireUserId(myServices);
-    if (userId == null) {
-      return;
-    }
-    update();
-    statusRequest = StatusRequest.loading;
-    var response = await cartData.deleteCart(userId, itemsid);
-    appDebugLog(
-        "========================================Controller  $response");
-    statusRequest = handlingData(response);
-    // Start Backend
-    if (StatusRequest.success == statusRequest) {
-      if (response['status'] == "success") {
-        notificationService.showErrorNotification(
-            title: "71".tr,
-            message: "74".tr); //warning , done deleting product from cart
-        // data.addAll(response['data']);
-      } else {
-        statusRequest = StatusRequest.failure;
-      }
-    }
-    update();
-    //End
-  }
+  int get totalMinor => snapshot?.totals.totalMinor ?? 0;
 
-  resetVarCart() {
-    totalcountitems = 0;
-    priceorders = 0.0;
-    data.clear();
-  }
-
-  refreshPage() {
-    resetVarCart();
-    view();
-    update();
-  }
-
-  view() async {
-    final userId = await requireUserId(myServices);
-    if (userId == null) {
-      return;
-    }
+  Future<void> view() async {
     statusRequest = StatusRequest.loading;
     update();
-    var response = await cartData.viewCart(userId);
-    appDebugLog(
-        "========================================Controller  $response");
-    statusRequest = handlingData(response);
-    // Start Backend
-    if (StatusRequest.success == statusRequest) {
-      if (response['status'] == "success") {
-        if (response["datacart"]['status'] == 'success') {
-          List dataresponse = response["datacart"]['data'];
-          Map dataresponsecountprice = response['countprice'];
-          data.clear();
-          data.addAll(dataresponse.map((e) => CartModel.fromJson(e)));
-          totalcountitems =
-              int.parse(dataresponsecountprice['totalcount'].toString());
 
-          var totalPrice = dataresponsecountprice[
-              'totalprice']; // معالجة السعر الإجمالي بغض النظر عن نوع البيانات
-          priceorders = totalPrice is double
-              ? totalPrice
-              : double.parse(totalPrice.toString());
-        }
-      } else {
-        statusRequest = StatusRequest.failure;
-      }
+    try {
+      _applySnapshot(
+        await cartData.load(),
+      );
+      statusRequest = StatusRequest.success;
+    } catch (error) {
+      statusRequest = statusRequestForError(error);
     }
+
     update();
   }
 
-  goToPageCheckout() {
-    if (data.isEmpty) {
-      notificationService.showErrorNotification(
-        title: "71".tr,
-        message: "91".tr,
+  Future<void> increment(
+    StorefrontCartItem item,
+  ) async {
+    if (item.quantity >= item.maxQuantity) {
+      _showCartError(
+        _localized(
+          ar: 'الكمية المتاحة في المخزون لا تسمح بالمزيد.',
+          en: 'No more stock is currently available.',
+        ),
       );
       return;
     }
 
-    Get.toNamed(AppRoute.checkout, arguments: {
-      "couponid": couponid ?? "0",
-      "priceorders": priceorders.toString(),
-      "discountcoupon": discountcoupon.toString(),
-    });
+    await _mutate(
+      () => cartData.incrementSku(
+        item.skuId,
+      ),
+      successMessage: _localized(
+        ar: 'تم تحديث السلة.',
+        en: 'Cart updated.',
+      ),
+    );
   }
 
-  getTotalPrice() {
-    return ((priceorders - priceorders * discountcoupon / 100) + 10000);
+  Future<void> decrement(
+    StorefrontCartItem item,
+  ) async {
+    await _mutate(
+      () => cartData.decrementSku(
+        item.skuId,
+      ),
+      successMessage: _localized(
+        ar: 'تم تحديث السلة.',
+        en: 'Cart updated.',
+      ),
+    );
   }
 
-  checkCoupon() async {
-    update();
+  Future<void> remove(
+    StorefrontCartItem item,
+  ) async {
+    await _mutate(
+      () => cartData.removeItem(
+        cartItemId: item.cartItemId,
+      ),
+      successMessage: _localized(
+        ar: 'تم حذف المنتج من السلة.',
+        en: 'Item removed from cart.',
+      ),
+    );
+  }
+
+  Future<void> _mutate(
+    Future<StorefrontCartSnapshot> Function() action, {
+    required String successMessage,
+  }) async {
     statusRequest = StatusRequest.loading;
-    var response = await cartData.checkCoupon(controllercoupon!.text);
-    appDebugLog(
-        "========================================Controller  $response");
-    statusRequest = handlingData(response);
-    // Start Backend
-    if (StatusRequest.success == statusRequest) {
-      if (response['status'] == "success") {
-        Map<String, dynamic> datacoupon = response['data'];
-        couponModel = CouponModel.fromJson(datacoupon);
-        discountcoupon = int.parse(couponModel!.couponDiscount!.toString());
-        couponname = couponModel!.couponName;
-        couponid = couponModel!.couponId.toString();
-      } else {
-        discountcoupon = 0;
-        couponname = null;
-        couponid = null;
-        notificationService.showErrorNotification(
-            title: "93".tr, message: "92".tr); //Warning , coupon not found
+    update();
+
+    try {
+      _applySnapshot(
+        await action(),
+      );
+      statusRequest = StatusRequest.success;
+
+      notificationService.showSuccessNotification(
+        title: '71'.tr,
+        message: successMessage,
+      );
+    } catch (error) {
+      statusRequest = statusRequestForError(error);
+
+      _showCartError(
+        _messageForError(error),
+      );
+    }
+
+    update();
+  }
+
+  void _applySnapshot(
+    StorefrontCartSnapshot value,
+  ) {
+    snapshot = value;
+  }
+
+  String _messageForError(Object error) {
+    if (error is ApiNetworkException) {
+      return _localized(
+        ar: 'تعذر الاتصال بالخدمة. تحقق من اتصال الإنترنت.',
+        en: 'Unable to reach the service. Check your internet connection.',
+      );
+    }
+
+    if (error is ApiException) {
+      final code = _apiErrorCode(error);
+
+      if (code == 'INSUFFICIENT_STOCK') {
+        return _localized(
+          ar: 'الكمية المطلوبة غير متاحة حاليًا.',
+          en: 'The requested quantity is not currently available.',
+        );
+      }
+
+      if (code == 'CART_REVIEW_REQUIRED') {
+        return _localized(
+          ar: 'تغيرت بيانات السلة وتحتاج إلى مراجعة قبل المتابعة.',
+          en: 'The cart changed and must be reviewed before continuing.',
+        );
+      }
+
+      if (code == 'CART_NOT_MUTABLE') {
+        return _localized(
+          ar: 'لا يمكن تعديل هذه السلة الآن.',
+          en: 'This cart can no longer be modified.',
+        );
       }
     }
-    update();
-    //End
+
+    return _localized(
+      ar: 'تعذر تحديث السلة. حاول مرة أخرى.',
+      en: 'Unable to update the cart. Please try again.',
+    );
+  }
+
+  String? _apiErrorCode(ApiException error) {
+    final raw = error.data;
+
+    if (raw is! Map) {
+      return null;
+    }
+
+    final errorPayload = raw['error'];
+
+    if (errorPayload is! Map) {
+      return null;
+    }
+
+    return errorPayload['code']?.toString();
+  }
+
+  void _showCartError(String message) {
+    notificationService.showErrorNotification(
+      title: '71'.tr,
+      message: message,
+    );
+  }
+
+  String _localized({
+    required String ar,
+    required String en,
+  }) {
+    return Get.locale?.languageCode == 'ar' ? ar : en;
+  }
+
+  void goToPageCheckout() {
+    if (data.isEmpty) {
+      _showCartError(
+        '91'.tr,
+      );
+      return;
+    }
+
+    _showCartError(
+      _localized(
+        ar: 'الدفع الجديد قيد الربط مع منصة الطلبات الآمنة.',
+        en: 'Secure platform checkout is being connected.',
+      ),
+    );
   }
 
   @override
   void onInit() {
-    controllercoupon = TextEditingController();
     view();
-    update();
     super.onInit();
   }
 }

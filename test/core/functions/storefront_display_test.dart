@@ -25,4 +25,19 @@ void main() {
       '10.00 AED',
     );
   });
+
+  test('formats minor-unit money without floating-point conversion', () {
+    expect(
+      formatStoreMinorMoney(2575, 'SAR', isArabic: false),
+      '25.75 SAR',
+    );
+    expect(
+      formatStoreMinorMoney(5, 'SAR', isArabic: true),
+      '0.05 ر.س',
+    );
+    expect(
+      formatStoreMinorMoney(-123, 'AED', isArabic: false),
+      '-1.23 AED',
+    );
+  });
 }
