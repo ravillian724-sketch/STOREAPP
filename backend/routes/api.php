@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Staff\AuthController;
+use App\Http\Controllers\Api\V1\StorefrontCartController;
 use App\Http\Controllers\Api\V1\StorefrontCatalogController;
 use App\Support\Authorization\PermissionCatalog;
 use App\Support\Authorization\StaffLoginRateLimit;
@@ -40,6 +41,31 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/storefront/products',
             [StorefrontCatalogController::class, 'index'],
+        );
+
+        Route::post(
+            '/storefront/carts',
+            [StorefrontCartController::class, 'store'],
+        );
+
+        Route::get(
+            '/storefront/carts/{cartPublicId}',
+            [StorefrontCartController::class, 'show'],
+        );
+
+        Route::post(
+            '/storefront/carts/{cartPublicId}/items',
+            [StorefrontCartController::class, 'storeItem'],
+        );
+
+        Route::patch(
+            '/storefront/carts/{cartPublicId}/items/{itemPublicId}',
+            [StorefrontCartController::class, 'updateItem'],
+        );
+
+        Route::delete(
+            '/storefront/carts/{cartPublicId}/items/{itemPublicId}',
+            [StorefrontCartController::class, 'destroyItem'],
         );
 
         Route::prefix('staff/auth')
