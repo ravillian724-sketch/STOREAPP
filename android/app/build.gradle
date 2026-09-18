@@ -29,7 +29,7 @@ def isReleaseTask = gradle.startParameter.taskNames.any {
 
 android {
     namespace = "com.Abdulah.ecommerce_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
