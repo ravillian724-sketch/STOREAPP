@@ -245,30 +245,38 @@ lib/
    # Place GoogleService-Info.plist in ios/Runner/
    ```
 
-4. **Configure API endpoints**
-   ```dart
-   // Update lib/linkapi.dart with your server URL
-   Configure API_BASE_URL explicitly for each environment; no network fallback is embedded in the app.
-   ```
+4. **Configure the platform runtime**
+
+   Every platform-backed build must provide both `API_BASE_URL` and
+   `APP_INSTANCE_KEY` explicitly. No network URL or app-instance credential is
+   embedded as a fallback, and the app-instance key must never be committed.
 
 5. **Run the application**
    ```bash
-   flutter run
+   export API_BASE_URL="http://10.0.2.2:8000"
+   export APP_INSTANCE_KEY="<development-app-instance-key>"
+   flutter run \
+     --dart-define=API_BASE_URL="$API_BASE_URL" \
+     --dart-define=APP_INSTANCE_KEY="$APP_INSTANCE_KEY"
    ```
 
 ### **Build Commands**
 ```bash
-# Android Debug
-flutter build apk --debug
+# Android Debug: validates analyze/tests first and requires both runtime values.
+./tools/build_apk.sh
 
-# Android Release
-flutter build apk --release
+# Direct builds must pass the same platform runtime contract.
+flutter build apk --release \
+  --dart-define=API_BASE_URL="$API_BASE_URL" \
+  --dart-define=APP_INSTANCE_KEY="$APP_INSTANCE_KEY"
 
-# iOS
-flutter build ios --release
+flutter build ios --release \
+  --dart-define=API_BASE_URL="$API_BASE_URL" \
+  --dart-define=APP_INSTANCE_KEY="$APP_INSTANCE_KEY"
 
-# Web
-flutter build web --release
+flutter build web --release \
+  --dart-define=API_BASE_URL="$API_BASE_URL" \
+  --dart-define=APP_INSTANCE_KEY="$APP_INSTANCE_KEY"
 ```
 
 ---
