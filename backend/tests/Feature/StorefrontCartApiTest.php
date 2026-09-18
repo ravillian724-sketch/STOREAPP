@@ -1280,6 +1280,20 @@ final class StorefrontCartApiTest extends TestCase
                 );
             },
         );
+
+        $this
+            ->withHeaders(
+                $headers
+            )
+            ->getJson(
+                '/api/v1/storefront/carts/'.
+                $cartId
+            )
+            ->assertConflict()
+            ->assertJsonPath(
+                'error.code',
+                'CART_NOT_MUTABLE',
+            );
     }
 
     public function test_checkout_order_requires_active_checkout_reservation(): void

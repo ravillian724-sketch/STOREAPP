@@ -12,10 +12,19 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 class _MemoryStorage implements CartSecureStorage {
+  _MemoryStorage({
+    this.throwOnDelete = false,
+  });
+
   final Map<String, String> values = {};
+  final bool throwOnDelete;
 
   @override
   Future<void> delete(String key) async {
+    if (throwOnDelete) {
+      throw StateError('simulated secure storage delete failure');
+    }
+
     values.remove(key);
   }
 
@@ -93,32 +102,44 @@ Map<String, dynamic> _attempt() => {
       },
     };
 
-Map<String, dynamic> _settlement() => {
-      'data': {
-        'scenario': 'success',
-        'order': {
-          'id': 'order-1',
-          'status': 'confirmed',
-          'currency_code': 'SAR',
-          'total_minor': 2575,
-        },
-        'payment': {
-          'id': 'payment-1',
-          'status': 'paid',
-          'currency_code': 'SAR',
-          'amount_minor': 2575,
-        },
-        'attempt': {
-          'id': 'attempt-1',
-          'status': 'succeeded',
-          'provider_code': 'sandbox',
-          'method_code': 'card',
-          'currency_code': 'SAR',
-          'amount_minor': 2575,
-          'provider_reference': 'sandbox-attempt-1',
-        },
+Map<String, dynamic> _settlement({
+  String scenario = 'success',
+}) {
+  final succeeded = scenario == 'success';
+  final attemptStatus = switch (scenario) {
+    'success' => 'succeeded',
+    'decline' => 'failed',
+    'cancel' => 'cancelled',
+    _ => 'created',
+  };
+
+  return {
+    'data': {
+      'scenario': scenario,
+      'order': {
+        'id': 'order-1',
+        'status': succeeded ? 'confirmed' : 'pending',
+        'currency_code': 'SAR',
+        'total_minor': 2575,
       },
-    };
+      'payment': {
+        'id': 'payment-1',
+        'status': succeeded ? 'paid' : 'pending',
+        'currency_code': 'SAR',
+        'amount_minor': 2575,
+      },
+      'attempt': {
+        'id': 'attempt-1',
+        'status': attemptStatus,
+        'provider_code': 'sandbox',
+        'method_code': 'card',
+        'currency_code': 'SAR',
+        'amount_minor': 2575,
+        'provider_reference': 'sandbox-attempt-1',
+      },
+    },
+  };
+}
 
 Future<StorefrontCheckoutData> _data(
   http.Client client, {
@@ -296,6 +317,83 @@ void main() {
     expect(body.containsKey('amount_minor'), isFalse);
     expect(body.containsKey('currency_code'), isFalse);
     expect(body.containsKey('card_number'), isFalse);
+
+    final session = await CartSessionStore(
+      storage: storage,
+      random: Random(40),
+    ).readSession(_context);
+
+    expect(session, isNull);
+  });
+
+  test('successful settlement remains successful if session cleanup fails',
+      () async {
+    final mock = MockClient((request) async {
+      return http.Response(
+        jsonEncode(_settlement()),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+
+    final storage = _MemoryStorage(
+      throwOnDelete: true,
+    );
+    final data = await _data(
+      mock,
+      storage: storage,
+      seed: 43,
+    );
+
+    final result = await data.settleSandboxPayment(
+      attemptId: 'attempt-1',
+      scenario: 'success',
+    );
+
+    expect(result.succeeded, isTrue);
+
+    final session = await CartSessionStore(
+      storage: storage,
+      random: Random(44),
+    ).readSession(_context);
+
+    expect(session?.cartId, 'cart-1');
+  });
+
+  test('declined sandbox settlement keeps cart session for retry', () async {
+    final mock = MockClient((request) async {
+      return http.Response(
+        jsonEncode(
+          _settlement(
+            scenario: 'decline',
+          ),
+        ),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+
+    final storage = _MemoryStorage();
+    final data = await _data(
+      mock,
+      storage: storage,
+      seed: 41,
+    );
+
+    final result = await data.settleSandboxPayment(
+      attemptId: 'attempt-1',
+      scenario: 'decline',
+    );
+
+    expect(result.declined, isTrue);
+
+    final session = await CartSessionStore(
+      storage: storage,
+      random: Random(42),
+    ).readSession(_context);
+
+    expect(session?.cartId, 'cart-1');
+    expect(session?.token, 'cart-token-1');
   });
 
   test('sandbox settlement rejects unsupported scenario before network',

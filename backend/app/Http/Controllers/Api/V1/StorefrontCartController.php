@@ -120,6 +120,10 @@ class StorefrontCartController extends Controller
                     $branch,
                 ),
             );
+        } catch (CartNotMutableException) {
+            return $this->notMutable(
+                $request
+            );
         } catch (LogicException) {
             return $this->reviewRequired(
                 $request

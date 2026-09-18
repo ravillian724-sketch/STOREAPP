@@ -2,6 +2,7 @@
 
 namespace App\Services\Storefront;
 
+use App\Exceptions\Cart\CartNotMutableException;
 use App\Models\Branch;
 use App\Models\Cart;
 use App\Models\CartItem;
@@ -127,9 +128,7 @@ final class StorefrontCartViewService
             $freshCart->status !==
             CartStatus::ACTIVE
         ) {
-            throw new LogicException(
-                'Only an active cart can be priced.'
-            );
+            throw new CartNotMutableException;
         }
 
         $quotedAt =

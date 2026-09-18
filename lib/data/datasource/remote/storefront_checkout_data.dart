@@ -165,9 +165,23 @@ class StorefrontCheckoutData {
       },
     );
 
-    return StorefrontSandboxSettlement.fromJson(
+    final result = StorefrontSandboxSettlement.fromJson(
       _data(response.data),
     );
+
+    if (result.succeeded) {
+      try {
+        await _sessions.clearSession(
+          _context,
+        );
+      } catch (_) {
+        // The remote payment result is authoritative. A local secure-storage
+        // cleanup failure must not turn a confirmed purchase into a failure.
+        // StorefrontCartData can recover the stale converted cart later.
+      }
+    }
+
+    return result;
   }
 
   Future<CartSession> _requiredSession() async {

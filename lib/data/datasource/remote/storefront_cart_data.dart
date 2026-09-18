@@ -64,7 +64,7 @@ class StorefrontCartData {
     try {
       return await _show(session);
     } on ApiException catch (error) {
-      if (_errorCode(error) != 'CART_NOT_FOUND') {
+      if (!_isRecoverableStaleCartError(error)) {
         rethrow;
       }
 
@@ -124,7 +124,7 @@ class StorefrontCartData {
 
       return snapshot;
     } on ApiException catch (error) {
-      if (_errorCode(error) != 'CART_NOT_FOUND') {
+      if (!_isRecoverableStaleCartError(error)) {
         rethrow;
       }
 
@@ -387,6 +387,15 @@ class StorefrontCartData {
 
     return Map<String, dynamic>.from(
       data,
+    );
+  }
+
+  bool _isRecoverableStaleCartError(ApiException error) {
+    return const <String>{
+      'CART_NOT_FOUND',
+      'CART_NOT_MUTABLE',
+    }.contains(
+      _errorCode(error),
     );
   }
 

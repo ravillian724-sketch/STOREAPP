@@ -276,7 +276,7 @@ void main() {
     expect(addKeys.last, addKeys.first);
   });
 
-  test('stale cart session is replaced only for CART_NOT_FOUND', () async {
+  test('stale cart session is replaced for CART_NOT_FOUND', () async {
     var createdCount = 0;
 
     final mock = MockClient((request) async {
@@ -355,5 +355,87 @@ void main() {
 
     expect(session?.cartId, 'cart-2');
     expect(session?.token, 'cart-token-2');
+  });
+
+  test('converted cart session is replaced for CART_NOT_MUTABLE', () async {
+    var createdCount = 0;
+
+    final mock = MockClient((request) async {
+      if (request.method == 'GET' &&
+          request.url.path == '/api/v1/storefront/carts/converted-cart') {
+        return http.Response(
+          jsonEncode({
+            'error': {
+              'code': 'CART_NOT_MUTABLE',
+              'message': 'Cart cannot be modified.',
+            }
+          }),
+          409,
+          headers: {
+            'content-type': 'application/json',
+          },
+        );
+      }
+
+      if (request.method == 'POST' &&
+          request.url.path == '/api/v1/storefront/carts') {
+        createdCount += 1;
+
+        return http.Response(
+          jsonEncode(
+            _cartPayload(
+              cartId: 'cart-3',
+              cartToken: 'cart-token-3',
+            ),
+          ),
+          201,
+          headers: {
+            'content-type': 'application/json',
+          },
+        );
+      }
+
+      return http.Response('not found', 404);
+    });
+
+    final api = _api(mock);
+    addTearDown(api.close);
+
+    final storage = _MemoryStorage();
+    final sessions = CartSessionStore(
+      storage: storage,
+      random: Random(4),
+    );
+
+    const context = TenantContext(
+      tenantId: 'tenant-1',
+      branchId: '10',
+    );
+
+    await sessions.saveSession(
+      context,
+      const CartSession(
+        cartId: 'converted-cart',
+        token: 'converted-token',
+      ),
+    );
+
+    final data = StorefrontCartData(
+      apiClient: api,
+      tenantContext: context,
+      sessionStore: sessions,
+    );
+
+    final recovered = await data.load();
+
+    expect(recovered.cartId, 'cart-3');
+    expect(createdCount, 1);
+
+    final session = await sessions.readSession(
+      context,
+    );
+
+    expect(session?.cartId, 'cart-3');
+    expect(session?.token, 'cart-token-3');
   });
 }
