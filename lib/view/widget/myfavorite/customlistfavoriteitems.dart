@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerce_app/controller/myfavorite_controller.dart';
+import 'package:ecommerce_app/core/functions/storefront_display.dart';
 import 'package:ecommerce_app/data/model/myfavorite.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -7,7 +8,6 @@ import 'package:get/get.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/functions/responsivehelper.dart';
 import '../../../core/functions/translatedatabase.dart';
-import '../../../linkapi.dart';
 
 class CustomListFavoriteItems extends GetView<MyFavoriteController> {
   final MyFavoriteModel itemsModel;
@@ -19,6 +19,8 @@ class CustomListFavoriteItems extends GetView<MyFavoriteController> {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = resolveProductImageUrl(itemsModel.itemsImage);
+
     return InkWell(
       child: Card(
         child: Padding(
@@ -29,11 +31,32 @@ class CustomListFavoriteItems extends GetView<MyFavoriteController> {
             children: [
               Hero(
                 tag: "${itemsModel.itemsId}",
-                child: CachedNetworkImage(
-                  imageUrl: "${AppLink.imageItems}/${itemsModel.itemsImage!}",
-                  height: Responsive.h(180),
-                  fit: BoxFit.fill,
-                ),
+                child: imageUrl == null
+                    ? Container(
+                        height: Responsive.h(180),
+                        color: Colors.grey[100],
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.medication_outlined,
+                          color: Colors.blueGrey[300],
+                          size: Responsive.icon(64),
+                        ),
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        height: Responsive.h(180),
+                        fit: BoxFit.fill,
+                        errorWidget: (context, url, error) => Container(
+                          height: Responsive.h(180),
+                          color: Colors.grey[100],
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.medication_outlined,
+                            color: Colors.blueGrey[300],
+                            size: Responsive.icon(64),
+                          ),
+                        ),
+                      ),
               ),
               SizedBox(
                 height: Responsive.h(10),

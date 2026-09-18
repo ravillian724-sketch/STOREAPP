@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerce_app/controller/favorite_controller.dart';
 import 'package:ecommerce_app/controller/items_controller.dart';
 import 'package:ecommerce_app/core/constant/imageasset.dart';
+import 'package:ecommerce_app/core/functions/storefront_display.dart';
 import 'package:ecommerce_app/data/model/itemsmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,7 +10,6 @@ import 'package:get/get.dart';
 import '../../../core/constant/color.dart';
 import '../../../core/functions/responsivehelper.dart';
 import '../../../core/functions/translatedatabase.dart';
-import '../../../linkapi.dart';
 
 class CustomListItemsOffers extends GetView<ItemsControllerImp> {
   final ItemsModel itemsModel;
@@ -19,6 +19,8 @@ class CustomListItemsOffers extends GetView<ItemsControllerImp> {
   });
   @override
   Widget build(BuildContext context) {
+    final imageUrl = resolveProductImageUrl(itemsModel.itemsImage);
+
     return InkWell(
       onTap: () {
         controller.goToPageProductDetails(itemsModel);
@@ -63,12 +65,31 @@ class CustomListItemsOffers extends GetView<ItemsControllerImp> {
                                 topRight:
                                     Radius.circular(Responsive.radius(30)),
                               ),
-                              child: CachedNetworkImage(
-                                imageUrl:
-                                    "${AppLink.imageItems}/${itemsModel.itemsImage!}",
-                                fit: BoxFit.contain,
-                                width: double.infinity,
-                              ),
+                              child: imageUrl == null
+                                  ? Container(
+                                      color: Colors.grey[100],
+                                      alignment: Alignment.center,
+                                      child: Icon(
+                                        Icons.medication_outlined,
+                                        color: Colors.blueGrey[300],
+                                        size: Responsive.icon(64),
+                                      ),
+                                    )
+                                  : CachedNetworkImage(
+                                      imageUrl: imageUrl,
+                                      fit: BoxFit.contain,
+                                      width: double.infinity,
+                                      errorWidget: (context, url, error) =>
+                                          Container(
+                                        color: Colors.grey[100],
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          Icons.medication_outlined,
+                                          color: Colors.blueGrey[300],
+                                          size: Responsive.icon(64),
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
