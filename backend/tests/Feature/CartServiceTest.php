@@ -189,6 +189,75 @@ class CartServiceTest extends TestCase
         );
     }
 
+    public function test_create_accepts_server_supplied_token_without_persisting_plaintext(): void
+    {
+        $tenant =
+            $this->tenant('Tenant A');
+
+        $instance =
+            $this->appInstance(
+                $tenant
+            );
+
+        $token =
+            str_repeat(
+                'a',
+                64,
+            );
+
+        $created =
+            $this->inTenant(
+                $tenant,
+                fn () => $this->service->create(
+                    $instance,
+                    now()->addDays(30),
+                    $token,
+                ),
+            );
+
+        $this->assertSame(
+            $token,
+            $created->token,
+        );
+
+        $this->assertSame(
+            hash(
+                'sha256',
+                $token,
+            ),
+            $created->cart->token_hash,
+        );
+
+        $this->assertArrayNotHasKey(
+            'token_hash',
+            $created->cart->toArray(),
+        );
+    }
+
+    public function test_create_rejects_invalid_server_supplied_token(): void
+    {
+        $tenant =
+            $this->tenant('Tenant A');
+
+        $instance =
+            $this->appInstance(
+                $tenant
+            );
+
+        $this->expectException(
+            InvalidArgumentException::class
+        );
+
+        $this->inTenant(
+            $tenant,
+            fn () => $this->service->create(
+                $instance,
+                now()->addDays(30),
+                'not-a-valid-cart-token',
+            ),
+        );
+    }
+
     public function test_create_requires_future_application_expiration(): void
     {
         $tenant =

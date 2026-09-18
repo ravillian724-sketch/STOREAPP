@@ -33,6 +33,7 @@ final class CartService
     public function create(
         AppInstance $appInstance,
         DateTimeInterface $expiresAt,
+        ?string $rawToken = null,
     ): CreatedCart {
         $tenantId =
             $this->tenantContext->requireId();
@@ -73,8 +74,8 @@ final class CartService
         }
 
         $rawToken =
-            bin2hex(
-                random_bytes(32)
+            $this->normalizeCreationToken(
+                $rawToken
             );
 
         $tokenHash =
@@ -729,6 +730,33 @@ final class CartService
         }
 
         return $item;
+    }
+
+    private function normalizeCreationToken(
+        ?string $token,
+    ): string {
+        if ($token === null) {
+            return bin2hex(
+                random_bytes(32)
+            );
+        }
+
+        $token = strtolower(
+            trim($token)
+        );
+
+        if (
+            preg_match(
+                '/^[0-9a-f]{64}$/',
+                $token,
+            ) !== 1
+        ) {
+            throw new InvalidArgumentException(
+                'Cart token must contain exactly 64 hexadecimal characters.'
+            );
+        }
+
+        return $token;
     }
 
     private function hashToken(
