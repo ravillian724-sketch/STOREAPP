@@ -556,6 +556,59 @@ class StorefrontCartController extends Controller
         }
     }
 
+    public function settleSandboxPayment(
+        Request $request,
+        string $cartPublicId,
+        string $attemptPublicId,
+    ): JsonResponse {
+        $validated =
+            $request->validate([
+                'scenario' => [
+                    'required',
+                    'string',
+                    'in:success,decline,cancel',
+                ],
+            ]);
+
+        $resolved =
+            $this->resolveCart(
+                $request,
+                $cartPublicId,
+            );
+
+        if ($resolved instanceof JsonResponse) {
+            return $resolved;
+        }
+
+        [$cart] = $resolved;
+
+        try {
+            return ApiResponse::success(
+                $request,
+                $this->checkout
+                    ->settleSandboxPayment(
+                        $cart,
+                        $attemptPublicId,
+                        (string) $validated['scenario'],
+                    ),
+            );
+        } catch (InvalidArgumentException) {
+            return ApiResponse::error(
+                $request,
+                'INVALID_SANDBOX_PAYMENT_REQUEST',
+                'Sandbox payment request is invalid.',
+                422,
+            );
+        } catch (LogicException) {
+            return ApiResponse::error(
+                $request,
+                'SANDBOX_PAYMENT_NOT_AVAILABLE',
+                'Sandbox payment is not available.',
+                409,
+            );
+        }
+    }
+
     /**
      * @return array{Cart, Branch}|JsonResponse
      */

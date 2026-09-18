@@ -6,18 +6,25 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
+use App\Models\PaymentWebhookReceipt;
 use App\Models\Tenant;
 use App\Services\Cart\CartCheckoutReservationService;
 use App\Services\Order\OrderConversionService;
+use App\Services\Payment\PaymentAttemptWebhookLifecycleService;
+use App\Services\Payment\PaymentProviderReferenceService;
 use App\Services\Payment\PaymentService;
+use App\Services\Payment\PaymentSuccessService;
 use App\Services\Pricing\CartQuoteService;
 use App\Support\Order\OrderCheckoutSnapshot;
+use App\Support\Payment\PaymentWebhookEventType;
 use App\Support\Pricing\CheckoutQuote;
 use App\Support\Pricing\ShippingQuote;
 use App\Support\Pricing\TaxBreakdown;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
 use LogicException;
 use RuntimeException;
 
@@ -29,6 +36,9 @@ final class StorefrontCheckoutService
         private readonly CartQuoteService $quotes,
         private readonly OrderConversionService $orders,
         private readonly PaymentService $payments,
+        private readonly PaymentProviderReferenceService $providerReferences,
+        private readonly PaymentSuccessService $paymentSuccess,
+        private readonly PaymentAttemptWebhookLifecycleService $attemptLifecycle,
     ) {}
 
     /**
@@ -337,6 +347,212 @@ final class StorefrontCheckoutService
             $payment,
             $attempt,
         );
+    }
+
+    /**
+     * Settle a sandbox-only payment attempt through the same
+     * payment lifecycle services used by provider webhooks.
+     *
+     * The client supplies only a test scenario. It never sends
+     * a PAN, amount, currency, tax value, or provider reference.
+     *
+     * @return array<string, mixed>
+     */
+    public function settleSandboxPayment(
+        Cart $cart,
+        string $attemptPublicId,
+        string $scenario,
+    ): array {
+        if (! (bool) config(
+            'platform.storefront_sandbox_payments_enabled',
+            false,
+        )) {
+            throw new LogicException(
+                'Sandbox payments are disabled.'
+            );
+        }
+
+        $scenario =
+            mb_strtolower(
+                trim($scenario)
+            );
+
+        if (! in_array(
+            $scenario,
+            ['success', 'decline', 'cancel'],
+            true,
+        )) {
+            throw new InvalidArgumentException(
+                'Invalid sandbox payment scenario.'
+            );
+        }
+
+        $tenantId =
+            $this->tenantContext->requireId();
+
+        if (
+            (int) $cart->tenant_id !==
+            $tenantId
+        ) {
+            throw new LogicException(
+                'Cart must belong to the active tenant.'
+            );
+        }
+
+        $order =
+            Order::query()
+                ->where(
+                    'cart_id',
+                    $cart->id,
+                )
+                ->first();
+
+        if (
+            $order === null ||
+            (int) $order->app_instance_id !==
+            (int) $cart->app_instance_id
+        ) {
+            throw new LogicException(
+                'Checkout order is unavailable for this cart.'
+            );
+        }
+
+        $payment =
+            Payment::query()
+                ->where(
+                    'order_id',
+                    $order->id,
+                )
+                ->first();
+
+        if ($payment === null) {
+            throw new LogicException(
+                'Payment is unavailable for this order.'
+            );
+        }
+
+        $attempt =
+            PaymentAttempt::query()
+                ->where(
+                    'payment_id',
+                    $payment->id,
+                )
+                ->where(
+                    'public_id',
+                    trim($attemptPublicId),
+                )
+                ->first();
+
+        if (
+            $attempt === null ||
+            $attempt->provider_code !==
+                'sandbox'
+        ) {
+            throw new LogicException(
+                'Sandbox payment attempt is unavailable.'
+            );
+        }
+
+        $instant =
+            CarbonImmutable::instance(
+                now()
+            )->setMicrosecond(0);
+
+        $providerReference =
+            'sandbox-'.$attempt->public_id;
+
+        $attempt =
+            $this->providerReferences->bind(
+                $attempt,
+                $providerReference,
+            );
+
+        $eventType =
+            match ($scenario) {
+                'success' =>
+                    PaymentWebhookEventType::SUCCEEDED,
+                'decline' =>
+                    PaymentWebhookEventType::FAILED,
+                'cancel' =>
+                    PaymentWebhookEventType::CANCELLED,
+            };
+
+        $providerEventId =
+            'sandbox-'.$scenario.'-'.
+            $attempt->public_id;
+
+        $receipt =
+            PaymentWebhookReceipt::query()
+                ->where(
+                    'provider_code',
+                    'sandbox',
+                )
+                ->where(
+                    'provider_event_id',
+                    $providerEventId,
+                )
+                ->first();
+
+        if ($receipt === null) {
+            $receipt =
+                PaymentWebhookReceipt::query()
+                    ->create([
+                        'payment_attempt_id' =>
+                            $attempt->id,
+                        'public_id' =>
+                            (string) Str::uuid(),
+                        'provider_code' =>
+                            'sandbox',
+                        'provider_event_id' =>
+                            $providerEventId,
+                        'provider_reference' =>
+                            $providerReference,
+                        'event_type' =>
+                            $eventType,
+                        'amount_minor' =>
+                            (int) $attempt->amount_minor,
+                        'currency_code' =>
+                            $attempt->currency_code,
+                        'payload_sha256' =>
+                            hash(
+                                'sha256',
+                                $providerEventId.'|'.
+                                $providerReference.'|'.
+                                $eventType.'|'.
+                                $attempt->amount_minor.'|'.
+                                $attempt->currency_code,
+                            ),
+                        'occurred_at' =>
+                            $instant,
+                        'received_at' =>
+                            $instant,
+                    ]);
+        }
+
+        if ($scenario === 'success') {
+            $this->paymentSuccess->confirm(
+                $receipt,
+                $instant,
+            );
+        } else {
+            $this->attemptLifecycle->process(
+                $receipt,
+                $instant,
+            );
+        }
+
+        $order = $order->refresh();
+        $payment = $payment->refresh();
+        $attempt = $attempt->refresh();
+
+        return [
+            'scenario' => $scenario,
+            ...$this->presentOrder($order),
+            ...$this->presentPaymentAttempt(
+                $payment,
+                $attempt,
+            ),
+        ];
     }
 
     /**

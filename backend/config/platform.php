@@ -19,4 +19,16 @@ return [
         'STOREFRONT_CART_MAX_LINE_QUANTITY',
         999,
     ),
+
+    'storefront_sandbox_payments_enabled' => filter_var(
+        env(
+            'STOREFRONT_SANDBOX_PAYMENTS_ENABLED',
+            in_array(
+                env('APP_ENV', 'production'),
+                ['local', 'development', 'testing'],
+                true,
+            ),
+        ),
+        FILTER_VALIDATE_BOOL,
+    ),
 ];

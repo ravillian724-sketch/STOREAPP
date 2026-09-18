@@ -1760,6 +1760,376 @@ final class StorefrontCartApiTest extends TestCase
             );
     }
 
+    public function test_sandbox_payment_success_confirms_order_and_replays(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Sandbox Success'
+        );
+
+        [
+            $branch,
+            ,
+            ,
+            $sku,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-SANDBOX-SUCCESS',
+            stock: 10,
+            priceMinor: 2575,
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $headers =
+            $this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            );
+
+        $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' =>
+                'sandbox-success-add',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/items',
+                [
+                    'sku_id' => $sku->id,
+                    'quantity' => 2,
+                ],
+            )
+            ->assertOk();
+
+        $this->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote'
+            )
+            ->assertOk();
+
+        $order = $this->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order'
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.order.status',
+                'pending',
+            )
+            ->assertJsonPath(
+                'data.order.total_minor',
+                5150,
+            );
+
+        $attempt = $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' =>
+                'sandbox-success-attempt',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts',
+                [
+                    'provider_code' => 'sandbox',
+                    'method_code' => 'card',
+                ],
+            )
+            ->assertCreated();
+
+        $attemptId =
+            (string) $attempt->json(
+                'data.attempt.id'
+            );
+
+        $settleUrl =
+            '/api/v1/storefront/carts/'.
+            $cartId.
+            '/checkout/payment-attempts/'.
+            $attemptId.
+            '/sandbox/settle';
+
+        $first = $this->withHeaders($headers)
+            ->postJson(
+                $settleUrl,
+                ['scenario' => 'success'],
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.scenario',
+                'success',
+            )
+            ->assertJsonPath(
+                'data.order.status',
+                'confirmed',
+            )
+            ->assertJsonPath(
+                'data.payment.status',
+                'paid',
+            )
+            ->assertJsonPath(
+                'data.attempt.status',
+                'succeeded',
+            )
+            ->assertJsonPath(
+                'data.payment.amount_minor',
+                5150,
+            );
+
+        $this->assertSame(
+            $order->json('data.order.id'),
+            $first->json('data.order.id'),
+        );
+
+        /*
+         * Replay the same sandbox provider event. The payment
+         * aggregate must remain exactly settled once.
+         */
+        $this->withHeaders($headers)
+            ->postJson(
+                $settleUrl,
+                ['scenario' => 'success'],
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.order.status',
+                'confirmed',
+            )
+            ->assertJsonPath(
+                'data.payment.status',
+                'paid',
+            )
+            ->assertJsonPath(
+                'data.attempt.status',
+                'succeeded',
+            );
+
+        $this->inTenant(
+            $tenant,
+            function (): void {
+                $this->assertSame(
+                    1,
+                    Payment::query()->count(),
+                );
+
+                $this->assertSame(
+                    1,
+                    PaymentAttempt::query()->count(),
+                );
+            },
+        );
+    }
+
+    public function test_sandbox_decline_allows_fresh_attempt_then_success(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Sandbox Retry'
+        );
+
+        [
+            $branch,
+            ,
+            ,
+            $sku,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-SANDBOX-RETRY',
+            stock: 10,
+            priceMinor: 4500,
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $headers =
+            $this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            );
+
+        $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' =>
+                'sandbox-retry-add',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/items',
+                [
+                    'sku_id' => $sku->id,
+                    'quantity' => 1,
+                ],
+            )
+            ->assertOk();
+
+        $this->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote'
+            )
+            ->assertOk();
+
+        $this->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order'
+            )
+            ->assertCreated();
+
+        $declined = $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' =>
+                'sandbox-decline-attempt',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts',
+                [
+                    'provider_code' => 'sandbox',
+                    'method_code' => 'card',
+                ],
+            )
+            ->assertCreated();
+
+        $declinedId =
+            (string) $declined->json(
+                'data.attempt.id'
+            );
+
+        $this->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts/'.
+                $declinedId.
+                '/sandbox/settle',
+                ['scenario' => 'decline'],
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.order.status',
+                'pending',
+            )
+            ->assertJsonPath(
+                'data.payment.status',
+                'pending',
+            )
+            ->assertJsonPath(
+                'data.attempt.status',
+                'failed',
+            );
+
+        $retry = $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' =>
+                'sandbox-retry-attempt',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts',
+                [
+                    'provider_code' => 'sandbox',
+                    'method_code' => 'mada',
+                ],
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.attempt.status',
+                'created',
+            );
+
+        $retryId =
+            (string) $retry->json(
+                'data.attempt.id'
+            );
+
+        $this->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts/'.
+                $retryId.
+                '/sandbox/settle',
+                ['scenario' => 'success'],
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.order.status',
+                'confirmed',
+            )
+            ->assertJsonPath(
+                'data.payment.status',
+                'paid',
+            )
+            ->assertJsonPath(
+                'data.attempt.status',
+                'succeeded',
+            );
+
+        $this->inTenant(
+            $tenant,
+            function (): void {
+                $this->assertSame(
+                    2,
+                    PaymentAttempt::query()->count(),
+                );
+
+                $this->assertSame(
+                    1,
+                    PaymentAttempt::query()
+                        ->where(
+                            'status',
+                            'failed',
+                        )
+                        ->count(),
+                );
+
+                $this->assertSame(
+                    1,
+                    PaymentAttempt::query()
+                        ->where(
+                            'status',
+                            'succeeded',
+                        )
+                        ->count(),
+                );
+            },
+        );
+    }
+
     public function test_cart_request_validation_and_missing_item_are_safe(): void
     {
         [
