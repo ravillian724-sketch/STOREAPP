@@ -4,9 +4,12 @@ namespace App\Services\Storefront;
 
 use App\Models\Cart;
 use App\Models\Order;
+use App\Models\Payment;
+use App\Models\PaymentAttempt;
 use App\Models\Tenant;
 use App\Services\Cart\CartCheckoutReservationService;
 use App\Services\Order\OrderConversionService;
+use App\Services\Payment\PaymentService;
 use App\Services\Pricing\CartQuoteService;
 use App\Support\Order\OrderCheckoutSnapshot;
 use App\Support\Pricing\CheckoutQuote;
@@ -25,6 +28,7 @@ final class StorefrontCheckoutService
         private readonly CartCheckoutReservationService $reservations,
         private readonly CartQuoteService $quotes,
         private readonly OrderConversionService $orders,
+        private readonly PaymentService $payments,
     ) {}
 
     /**
@@ -267,6 +271,105 @@ final class StorefrontCheckoutService
         return $this->presentOrder(
             $order
         );
+    }
+
+    /**
+     * Create or replay the authoritative provider attempt for
+     * the order already converted from this cart.
+     *
+     * @return array<string, mixed>
+     */
+    public function createPaymentAttempt(
+        Cart $cart,
+        string $idempotencyKey,
+        string $providerCode,
+        string $methodCode,
+    ): array {
+        $tenantId =
+            $this->tenantContext->requireId();
+
+        if (
+            (int) $cart->tenant_id !==
+            $tenantId
+        ) {
+            throw new LogicException(
+                'Cart must belong to the active tenant.'
+            );
+        }
+
+        $order =
+            Order::query()
+                ->where(
+                    'cart_id',
+                    $cart->id,
+                )
+                ->first();
+
+        if ($order === null) {
+            throw new LogicException(
+                'Checkout order is unavailable for this cart.'
+            );
+        }
+
+        if (
+            (int) $order->app_instance_id !==
+            (int) $cart->app_instance_id
+        ) {
+            throw new LogicException(
+                'Checkout order does not match cart app instance.'
+            );
+        }
+
+        $payment =
+            $this->payments->forOrder(
+                $order
+            );
+
+        $attempt =
+            $this->payments->createAttempt(
+                $payment,
+                $idempotencyKey,
+                $providerCode,
+                $methodCode,
+            );
+
+        return $this->presentPaymentAttempt(
+            $payment,
+            $attempt,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentPaymentAttempt(
+        Payment $payment,
+        PaymentAttempt $attempt,
+    ): array {
+        return [
+            'payment' => [
+                'id' => $payment->public_id,
+                'status' => $payment->status,
+                'currency_code' =>
+                    $payment->currency_code,
+                'amount_minor' =>
+                    (int) $payment->amount_minor,
+            ],
+            'attempt' => [
+                'id' => $attempt->public_id,
+                'status' => $attempt->status,
+                'provider_code' =>
+                    $attempt->provider_code,
+                'method_code' =>
+                    $attempt->method_code,
+                'currency_code' =>
+                    $attempt->currency_code,
+                'amount_minor' =>
+                    (int) $attempt->amount_minor,
+                'provider_reference' =>
+                    $attempt->provider_reference,
+            ],
+        ];
     }
 
     /**

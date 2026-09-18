@@ -7,6 +7,8 @@ use App\Models\Branch;
 use App\Models\Cart;
 use App\Models\InventoryLocation;
 use App\Models\Order;
+use App\Models\Payment;
+use App\Models\PaymentAttempt;
 use App\Models\Product;
 use App\Models\Sku;
 use App\Models\Tenant;
@@ -1353,6 +1355,409 @@ final class StorefrontCartApiTest extends TestCase
                 );
             },
         );
+    }
+
+    public function test_payment_attempt_uses_authoritative_order_money_and_replays(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Payment Checkout'
+        );
+
+        [
+            $branch,
+            ,
+            ,
+            $sku,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-PAYMENT-1',
+            stock: 10,
+            priceMinor: 2575,
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $headers =
+            $this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            );
+
+        $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' => 'payment-add-1',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/items',
+                [
+                    'sku_id' => $sku->id,
+                    'quantity' => 2,
+                ],
+            )
+            ->assertOk();
+
+        $this->withHeaders(
+            $headers
+        )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote'
+            )
+            ->assertOk();
+
+        $this->withHeaders(
+            $headers
+        )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order',
+                [
+                    'customer_name' =>
+                        'Sandbox Buyer',
+                ],
+            )
+            ->assertCreated();
+
+        $attemptHeaders = [
+            ...$headers,
+            'Idempotency-Key' =>
+                'sandbox-attempt-1',
+        ];
+
+        $first = $this
+            ->withHeaders(
+                $attemptHeaders
+            )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts',
+                [
+                    'provider_code' =>
+                        'sandbox',
+                    'method_code' =>
+                        'card',
+
+                    /*
+                     * Client financial evidence is forged
+                     * deliberately. It must not participate
+                     * in Payment or Attempt materialization.
+                     */
+                    'currency_code' => 'USD',
+                    'amount_minor' => 1,
+                ],
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.payment.status',
+                'pending',
+            )
+            ->assertJsonPath(
+                'data.payment.currency_code',
+                'SAR',
+            )
+            ->assertJsonPath(
+                'data.payment.amount_minor',
+                5150,
+            )
+            ->assertJsonPath(
+                'data.attempt.status',
+                'created',
+            )
+            ->assertJsonPath(
+                'data.attempt.provider_code',
+                'sandbox',
+            )
+            ->assertJsonPath(
+                'data.attempt.method_code',
+                'card',
+            )
+            ->assertJsonPath(
+                'data.attempt.currency_code',
+                'SAR',
+            )
+            ->assertJsonPath(
+                'data.attempt.amount_minor',
+                5150,
+            );
+
+        $attemptId =
+            (string) $first->json(
+                'data.attempt.id'
+            );
+
+        $paymentId =
+            (string) $first->json(
+                'data.payment.id'
+            );
+
+        $this->withHeaders(
+            $attemptHeaders
+        )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts',
+                [
+                    'provider_code' =>
+                        'SANDBOX',
+                    'method_code' =>
+                        'CARD',
+                ],
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.payment.id',
+                $paymentId,
+            )
+            ->assertJsonPath(
+                'data.attempt.id',
+                $attemptId,
+            );
+
+        $this->inTenant(
+            $tenant,
+            function () use (
+                $paymentId,
+                $attemptId,
+            ): void {
+                $this->assertSame(
+                    1,
+                    Payment::query()
+                        ->where(
+                            'public_id',
+                            $paymentId,
+                        )
+                        ->count(),
+                );
+
+                $this->assertSame(
+                    1,
+                    PaymentAttempt::query()
+                        ->where(
+                            'public_id',
+                            $attemptId,
+                        )
+                        ->count(),
+                );
+            },
+        );
+    }
+
+    public function test_payment_attempt_rejects_idempotency_semantic_change(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Payment Conflict'
+        );
+
+        [
+            $branch,
+            ,
+            ,
+            $sku,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-PAYMENT-CONFLICT',
+            stock: 10,
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $headers =
+            $this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            );
+
+        $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' =>
+                'payment-conflict-add',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/items',
+                [
+                    'sku_id' => $sku->id,
+                    'quantity' => 1,
+                ],
+            )
+            ->assertOk();
+
+        $this->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote'
+            )
+            ->assertOk();
+
+        $this->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order'
+            )
+            ->assertCreated();
+
+        $attemptHeaders = [
+            ...$headers,
+            'Idempotency-Key' =>
+                'same-payment-key',
+        ];
+
+        $this->withHeaders(
+            $attemptHeaders
+        )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts',
+                [
+                    'provider_code' =>
+                        'sandbox',
+                    'method_code' =>
+                        'card',
+                ],
+            )
+            ->assertCreated();
+
+        $this->withHeaders(
+            $attemptHeaders
+        )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts',
+                [
+                    'provider_code' =>
+                        'sandbox',
+                    'method_code' =>
+                        'mada',
+                ],
+            )
+            ->assertConflict()
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_IDEMPOTENCY_CONFLICT',
+            );
+
+        $this->inTenant(
+            $tenant,
+            function (): void {
+                $this->assertSame(
+                    1,
+                    PaymentAttempt::query()
+                        ->count(),
+                );
+            },
+        );
+    }
+
+    public function test_payment_attempt_requires_checkout_order_and_guest_credential(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Payment Guard'
+        );
+
+        [$branch] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-PAYMENT-GUARD',
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $this->withHeaders([
+            ...$this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            ),
+            'Idempotency-Key' =>
+                'no-order-payment',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts',
+                [
+                    'provider_code' =>
+                        'sandbox',
+                    'method_code' =>
+                        'card',
+                ],
+            )
+            ->assertConflict()
+            ->assertJsonPath(
+                'error.code',
+                'PAYMENT_NOT_AVAILABLE',
+            );
+
+        $this->withHeaders([
+            'X-App-Instance-Key' => $appToken,
+            'X-Branch-Id' =>
+                (string) $branch->id,
+            'X-Cart-Token' =>
+                str_repeat('x', 64),
+            'Idempotency-Key' =>
+                'wrong-token-payment',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/payment-attempts',
+                [
+                    'provider_code' =>
+                        'sandbox',
+                    'method_code' =>
+                        'card',
+                ],
+            )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'CART_NOT_FOUND',
+            );
     }
 
     public function test_cart_request_validation_and_missing_item_are_safe(): void

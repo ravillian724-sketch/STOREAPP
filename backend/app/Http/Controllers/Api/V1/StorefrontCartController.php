@@ -9,6 +9,7 @@ use App\Exceptions\Cart\CartNotAccessibleException;
 use App\Exceptions\Cart\CartNotMutableException;
 use App\Exceptions\Cart\CartSkuUnavailableException;
 use App\Exceptions\Inventory\InsufficientAvailableStockException;
+use App\Exceptions\Payment\PaymentIdempotencyConflictException;
 use App\Http\Controllers\Controller;
 use App\Models\AppInstance;
 use App\Models\Branch;
@@ -461,6 +462,95 @@ class StorefrontCartController extends Controller
                 $request,
                 'CHECKOUT_REVIEW_REQUIRED',
                 'Cart must be reviewed before checkout.',
+                409,
+            );
+        }
+    }
+
+    public function createPaymentAttempt(
+        Request $request,
+        string $cartPublicId,
+    ): JsonResponse {
+        $validated =
+            $request->validate([
+                'provider_code' => [
+                    'required',
+                    'string',
+                    'max:64',
+                ],
+                'method_code' => [
+                    'required',
+                    'string',
+                    'max:64',
+                ],
+            ]);
+
+        $key =
+            $this->idempotencyKey(
+                $request
+            );
+
+        if ($key === null) {
+            return $this->idempotencyRequired(
+                $request
+            );
+        }
+
+        $resolved =
+            $this->resolveCart(
+                $request,
+                $cartPublicId,
+            );
+
+        if ($resolved instanceof JsonResponse) {
+            return $resolved;
+        }
+
+        [$cart] = $resolved;
+
+        try {
+            return ApiResponse::success(
+                $request,
+                $this->checkout
+                    ->createPaymentAttempt(
+                        $cart,
+                        $key,
+                        (string)
+                            $validated[
+                                'provider_code'
+                            ],
+                        (string)
+                            $validated[
+                                'method_code'
+                            ],
+                    ),
+                201,
+            );
+        } catch (
+            PaymentIdempotencyConflictException
+        ) {
+            return ApiResponse::error(
+                $request,
+                'PAYMENT_IDEMPOTENCY_CONFLICT',
+                'Payment idempotency key was already used for a different request.',
+                409,
+            );
+        } catch (
+            InvalidArgumentException
+        ) {
+            return ApiResponse::error(
+                $request,
+                'INVALID_PAYMENT_REQUEST',
+                'Payment request is invalid.',
+                422,
+            );
+        } catch (
+            LogicException
+        ) {
+            return ApiResponse::error(
+                $request,
+                'PAYMENT_NOT_AVAILABLE',
+                'Payment is not available for this cart.',
                 409,
             );
         }
