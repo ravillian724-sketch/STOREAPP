@@ -1,4 +1,5 @@
 import 'package:ecommerce_app/core/class/statusrequest.dart';
+import 'package:ecommerce_app/core/constant/routes.dart';
 import 'package:ecommerce_app/core/network/api_exception.dart';
 import 'package:ecommerce_app/core/network/status_request_mapper.dart';
 import 'package:ecommerce_app/core/services/notification_service.dart';
@@ -216,11 +217,8 @@ class CartController extends GetxController {
       return;
     }
 
-    _showCartError(
-      _localized(
-        ar: 'الدفع الجديد قيد الربط مع منصة الطلبات الآمنة.',
-        en: 'Secure platform checkout is being connected.',
-      ),
+    Get.toNamed(
+      AppRoute.platformCheckout,
     );
   }
 

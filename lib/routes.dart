@@ -11,6 +11,7 @@ import 'package:ecommerce_app/view/screeen/auth/success_signup.dart';
 import 'package:ecommerce_app/view/screeen/auth/verfiycode_siginup.dart';
 import 'package:ecommerce_app/view/screeen/cart.dart';
 import 'package:ecommerce_app/view/screeen/checkout.dart';
+import 'package:ecommerce_app/view/screeen/platform_checkout.dart';
 import 'package:ecommerce_app/view/screeen/forgetpassword/forgetpassword.dart';
 import 'package:ecommerce_app/view/screeen/forgetpassword/resetpassword.dart';
 import 'package:ecommerce_app/view/screeen/forgetpassword/success_resetpassword.dart';
@@ -62,6 +63,10 @@ List<GetPage<dynamic>>? routes = [
 //Checkout + Orders
 
   GetPage(name: AppRoute.checkout, page: () => const Checkout()),
+  GetPage(
+    name: AppRoute.platformCheckout,
+    page: () => const PlatformCheckout(),
+  ),
   GetPage(name: AppRoute.orederspending, page: () => const OrdersPending()),
   GetPage(name: AppRoute.ordersdetails, page: () => const OrdersDetails()),
   GetPage(name: AppRoute.ordersarchive, page: () => const OrdersArchiveView()),

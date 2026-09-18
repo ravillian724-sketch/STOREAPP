@@ -55,7 +55,10 @@ class Cart extends StatelessWidget {
               controller.currencyCode,
               isArabic: isArabic,
             ),
-            onCheckout: null,
+            onCheckout: controller.data.isEmpty ||
+                    controller.statusRequest == StatusRequest.loading
+                ? null
+                : controller.goToPageCheckout,
           );
         },
       ),
