@@ -32,7 +32,7 @@ void main() {
         StartupPerformancePolicy.bootstrapNetworkTimeoutFor(
           AppEnvironment.development,
         ),
-        const Duration(seconds: 30),
+        const Duration(seconds: 60),
       );
       expect(
         StartupPerformancePolicy.criticalPreparationTimeoutFor(

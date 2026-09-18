@@ -1,12 +1,32 @@
 import 'dart:convert';
 
 import 'package:ecommerce_app/core/network/api_client.dart';
+import 'package:ecommerce_app/core/platform/environment_config.dart';
 import 'package:ecommerce_app/core/platform/tenant_context.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  test('keeps production and staging API timeout strict', () {
+    for (final environment in <AppEnvironment>[
+      AppEnvironment.production,
+      AppEnvironment.staging,
+    ]) {
+      expect(
+        ApiClient.defaultTimeoutFor(environment),
+        const Duration(seconds: 20),
+      );
+    }
+  });
+
+  test('allows development emulator request overhead', () {
+    expect(
+      ApiClient.defaultTimeoutFor(AppEnvironment.development),
+      const Duration(seconds: 60),
+    );
+  });
+
   test('sends app instance and tenant boundary headers on every request',
       () async {
     late http.Request captured;

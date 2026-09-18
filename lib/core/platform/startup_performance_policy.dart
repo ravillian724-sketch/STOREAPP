@@ -9,7 +9,7 @@ class StartupPerformancePolicy {
       Duration(seconds: 3);
 
   static const Duration developmentBootstrapNetworkTimeout =
-      Duration(seconds: 30);
+      Duration(seconds: 60);
   static const Duration developmentCriticalPreparationTimeout =
       Duration(seconds: 10);
 

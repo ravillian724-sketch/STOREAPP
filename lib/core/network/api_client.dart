@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ecommerce_app/core/platform/channel_context.dart';
+import 'package:ecommerce_app/core/platform/environment_config.dart';
 import 'package:ecommerce_app/core/platform/tenant_context.dart';
 import 'package:http/http.dart' as http;
 
@@ -9,7 +10,17 @@ import 'api_exception.dart';
 import 'api_response.dart';
 
 class ApiClient {
-  static const Duration defaultTimeout = Duration(seconds: 20);
+  static const Duration productionDefaultTimeout = Duration(seconds: 20);
+  static const Duration developmentDefaultTimeout = Duration(seconds: 60);
+
+  static Duration defaultTimeoutFor(AppEnvironment environment) {
+    return environment == AppEnvironment.development
+        ? developmentDefaultTimeout
+        : productionDefaultTimeout;
+  }
+
+  static Duration get defaultTimeout =>
+      defaultTimeoutFor(EnvironmentConfig.environment);
 
   final Uri baseUri;
   final TenantContext tenantContext;
@@ -22,9 +33,10 @@ class ApiClient {
     required this.tenantContext,
     required String appInstanceKey,
     http.Client? client,
-    this.timeout = defaultTimeout,
+    Duration? timeout,
   })  : appInstanceKey = appInstanceKey.trim(),
-        _client = client ?? http.Client() {
+        _client = client ?? http.Client(),
+        timeout = timeout ?? defaultTimeout {
     if (this.appInstanceKey.isEmpty) {
       throw StateError('APP_INSTANCE_KEY is not configured.');
     }
