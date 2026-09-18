@@ -253,17 +253,13 @@ final class StorefrontCheckoutService
 
         $checkout =
             new OrderCheckoutSnapshot(
-                customerName:
-                    $checkoutData['customer_name']
+                customerName: $checkoutData['customer_name']
                     ?? null,
-                customerPhone:
-                    $checkoutData['customer_phone']
+                customerPhone: $checkoutData['customer_phone']
                     ?? null,
-                customerEmail:
-                    $checkoutData['customer_email']
+                customerEmail: $checkoutData['customer_email']
                     ?? null,
-                shippingAddressSnapshot:
-                    $checkoutData['shipping_address']
+                shippingAddressSnapshot: $checkoutData['shipping_address']
                     ?? null,
             );
 
@@ -469,12 +465,9 @@ final class StorefrontCheckoutService
 
         $eventType =
             match ($scenario) {
-                'success' =>
-                    PaymentWebhookEventType::SUCCEEDED,
-                'decline' =>
-                    PaymentWebhookEventType::FAILED,
-                'cancel' =>
-                    PaymentWebhookEventType::CANCELLED,
+                'success' => PaymentWebhookEventType::SUCCEEDED,
+                'decline' => PaymentWebhookEventType::FAILED,
+                'cancel' => PaymentWebhookEventType::CANCELLED,
             };
 
         $providerEventId =
@@ -497,35 +490,24 @@ final class StorefrontCheckoutService
             $receipt =
                 PaymentWebhookReceipt::query()
                     ->create([
-                        'payment_attempt_id' =>
-                            $attempt->id,
-                        'public_id' =>
-                            (string) Str::uuid(),
-                        'provider_code' =>
-                            'sandbox',
-                        'provider_event_id' =>
-                            $providerEventId,
-                        'provider_reference' =>
-                            $providerReference,
-                        'event_type' =>
-                            $eventType,
-                        'amount_minor' =>
-                            (int) $attempt->amount_minor,
-                        'currency_code' =>
+                        'payment_attempt_id' => $attempt->id,
+                        'public_id' => (string) Str::uuid(),
+                        'provider_code' => 'sandbox',
+                        'provider_event_id' => $providerEventId,
+                        'provider_reference' => $providerReference,
+                        'event_type' => $eventType,
+                        'amount_minor' => (int) $attempt->amount_minor,
+                        'currency_code' => $attempt->currency_code,
+                        'payload_sha256' => hash(
+                            'sha256',
+                            $providerEventId.'|'.
+                            $providerReference.'|'.
+                            $eventType.'|'.
+                            $attempt->amount_minor.'|'.
                             $attempt->currency_code,
-                        'payload_sha256' =>
-                            hash(
-                                'sha256',
-                                $providerEventId.'|'.
-                                $providerReference.'|'.
-                                $eventType.'|'.
-                                $attempt->amount_minor.'|'.
-                                $attempt->currency_code,
-                            ),
-                        'occurred_at' =>
-                            $instant,
-                        'received_at' =>
-                            $instant,
+                        ),
+                        'occurred_at' => $instant,
+                        'received_at' => $instant,
                     ]);
         }
 
@@ -566,24 +548,17 @@ final class StorefrontCheckoutService
             'payment' => [
                 'id' => $payment->public_id,
                 'status' => $payment->status,
-                'currency_code' =>
-                    $payment->currency_code,
-                'amount_minor' =>
-                    (int) $payment->amount_minor,
+                'currency_code' => $payment->currency_code,
+                'amount_minor' => (int) $payment->amount_minor,
             ],
             'attempt' => [
                 'id' => $attempt->public_id,
                 'status' => $attempt->status,
-                'provider_code' =>
-                    $attempt->provider_code,
-                'method_code' =>
-                    $attempt->method_code,
-                'currency_code' =>
-                    $attempt->currency_code,
-                'amount_minor' =>
-                    (int) $attempt->amount_minor,
-                'provider_reference' =>
-                    $attempt->provider_reference,
+                'provider_code' => $attempt->provider_code,
+                'method_code' => $attempt->method_code,
+                'currency_code' => $attempt->currency_code,
+                'amount_minor' => (int) $attempt->amount_minor,
+                'provider_reference' => $attempt->provider_reference,
             ],
         ];
     }
@@ -602,56 +577,36 @@ final class StorefrontCheckoutService
             'order' => [
                 'id' => $order->public_id,
                 'status' => $order->status,
-                'currency_code' =>
-                    $order->currency_code,
-                'subtotal_minor' =>
-                    (int) $order->subtotal_minor,
-                'discount_minor' =>
-                    (int) $order->discount_minor,
-                'tax_minor' =>
-                    (int) $order->tax_minor,
-                'shipping_minor' =>
-                    (int) $order->shipping_minor,
-                'total_minor' =>
-                    (int) $order->total_minor,
-                'customer_name' =>
-                    $order->customer_name,
-                'customer_phone' =>
-                    $order->customer_phone,
-                'customer_email' =>
-                    $order->customer_email,
-                'shipping_address' =>
-                    $order
-                        ->shipping_address_snapshot,
+                'currency_code' => $order->currency_code,
+                'subtotal_minor' => (int) $order->subtotal_minor,
+                'discount_minor' => (int) $order->discount_minor,
+                'tax_minor' => (int) $order->tax_minor,
+                'shipping_minor' => (int) $order->shipping_minor,
+                'total_minor' => (int) $order->total_minor,
+                'customer_name' => $order->customer_name,
+                'customer_phone' => $order->customer_phone,
+                'customer_email' => $order->customer_email,
+                'shipping_address' => $order
+                    ->shipping_address_snapshot,
                 'items' => $order->items
                     ->map(
                         static fn ($item): array => [
-                            'id' =>
-                                $item->public_id,
-                            'sku_id' =>
-                                (string) $item->sku_id,
-                            'location_id' =>
-                                (string) $item
-                                    ->location_id,
-                            'sku_code' =>
-                                $item
-                                    ->sku_code_snapshot,
-                            'product_name_ar' =>
-                                $item
-                                    ->product_name_ar_snapshot,
-                            'product_name_en' =>
-                                $item
-                                    ->product_name_en_snapshot,
-                            'quantity' =>
-                                (int) $item->quantity,
-                            'unit_net_minor' =>
-                                (int) $item
-                                    ->unit_net_minor,
-                            'tax_minor' =>
-                                (int) $item->tax_minor,
-                            'line_total_minor' =>
-                                (int) $item
-                                    ->line_total_minor,
+                            'id' => $item->public_id,
+                            'sku_id' => (string) $item->sku_id,
+                            'location_id' => (string) $item
+                                ->location_id,
+                            'sku_code' => $item
+                                ->sku_code_snapshot,
+                            'product_name_ar' => $item
+                                ->product_name_ar_snapshot,
+                            'product_name_en' => $item
+                                ->product_name_en_snapshot,
+                            'quantity' => (int) $item->quantity,
+                            'unit_net_minor' => (int) $item
+                                ->unit_net_minor,
+                            'tax_minor' => (int) $item->tax_minor,
+                            'line_total_minor' => (int) $item
+                                ->line_total_minor,
                         ]
                     )
                     ->values()
@@ -684,47 +639,28 @@ final class StorefrontCheckoutService
         return [
             'cart_id' => $quote->cartPublicId,
             'currency_code' => $quote->currencyCode,
-            'inventory_reserved_until' =>
-                $reservedUntil->format(DATE_ATOM),
+            'inventory_reserved_until' => $reservedUntil->format(DATE_ATOM),
             'quote' => [
-                'quoted_at' =>
-                    $quote->quotedAt->format(DATE_ATOM),
-                'expires_at' =>
-                    $quote->expiresAt->format(DATE_ATOM),
-                'subtotal_minor' =>
-                    $quote->subtotalMinor,
-                'discount_minor' =>
-                    $quote->discountMinor,
-                'tax_minor' =>
-                    $quote->taxMinor,
-                'shipping_minor' =>
-                    $quote->shippingMinor,
-                'total_minor' =>
-                    $quote->totalMinor,
+                'quoted_at' => $quote->quotedAt->format(DATE_ATOM),
+                'expires_at' => $quote->expiresAt->format(DATE_ATOM),
+                'subtotal_minor' => $quote->subtotalMinor,
+                'discount_minor' => $quote->discountMinor,
+                'tax_minor' => $quote->taxMinor,
+                'shipping_minor' => $quote->shippingMinor,
+                'total_minor' => $quote->totalMinor,
                 'lines' => array_map(
                     static fn ($line): array => [
-                        'cart_item_id' =>
-                            $line->cartItemPublicId,
-                        'sku_id' =>
-                            (string) $line->skuId,
-                        'location_id' =>
-                            (string) $line->locationId,
-                        'sku_price_id' =>
-                            $line->skuPricePublicId,
-                        'quantity' =>
-                            $line->quantity,
-                        'unit_net_minor' =>
-                            $line->unitNetMinor,
-                        'line_subtotal_minor' =>
-                            $line->lineSubtotalMinor,
-                        'discount_minor' =>
-                            $line->discountMinor,
-                        'tax_rate_bps' =>
-                            $line->taxRateBps,
-                        'tax_minor' =>
-                            $line->taxMinor,
-                        'line_total_minor' =>
-                            $line->lineTotalMinor,
+                        'cart_item_id' => $line->cartItemPublicId,
+                        'sku_id' => (string) $line->skuId,
+                        'location_id' => (string) $line->locationId,
+                        'sku_price_id' => $line->skuPricePublicId,
+                        'quantity' => $line->quantity,
+                        'unit_net_minor' => $line->unitNetMinor,
+                        'line_subtotal_minor' => $line->lineSubtotalMinor,
+                        'discount_minor' => $line->discountMinor,
+                        'tax_rate_bps' => $line->taxRateBps,
+                        'tax_minor' => $line->taxMinor,
+                        'line_total_minor' => $line->lineTotalMinor,
                     ],
                     $quote->lines,
                 ),
