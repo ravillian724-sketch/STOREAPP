@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AppInstance;
 use App\Models\Branch;
+use App\Models\Cart;
 use App\Models\InventoryLocation;
 use App\Models\Product;
 use App\Models\Sku;
@@ -846,6 +847,238 @@ final class StorefrontCartApiTest extends TestCase
             ->assertJsonPath(
                 'error.code',
                 'SKU_NOT_FOUND',
+            );
+    }
+
+    public function test_checkout_quote_uses_trusted_server_money_and_reserves_inventory(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Checkout'
+        );
+
+        [
+            $branch,
+            ,
+            ,
+            $sku,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-CHECKOUT-1',
+            stock: 10,
+            priceMinor: 2575,
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $headers =
+            $this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            );
+
+        $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' => 'checkout-add-1',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/items',
+                [
+                    'sku_id' => $sku->id,
+                    'quantity' => 2,
+                ],
+            )
+            ->assertOk();
+
+        /*
+         * Client money is deliberately forged. The endpoint
+         * must ignore it and return the trusted server quote.
+         */
+        $quoted = $this
+            ->withHeaders(
+                $headers
+            )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote',
+                [
+                    'currency_code' => 'USD',
+                    'total_minor' => 1,
+                    'tax_minor' => 0,
+                ],
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.cart_id',
+                $cartId,
+            )
+            ->assertJsonPath(
+                'data.currency_code',
+                'SAR',
+            )
+            ->assertJsonPath(
+                'data.quote.total_minor',
+                5150,
+            )
+            ->assertJsonPath(
+                'data.quote.shipping_minor',
+                0,
+            )
+            ->assertJsonPath(
+                'data.quote.lines.0.quantity',
+                2,
+            );
+
+        $this->assertNotNull(
+            $quoted->json(
+                'data.inventory_reserved_until'
+            )
+        );
+
+        $this->assertSame(
+            $quoted->json(
+                'data.quote.expires_at'
+            ),
+            $quoted->json(
+                'data.inventory_reserved_until'
+            ),
+        );
+
+        $this->inTenant(
+            $tenant,
+            function () use ($cartId): void {
+                $cart = Cart::query()
+                    ->where(
+                        'public_id',
+                        $cartId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertNotNull(
+                    $cart->inventory_reserved_until
+                );
+
+                $this->assertTrue(
+                    $cart
+                        ->inventory_reserved_until
+                        ->isFuture()
+                );
+            },
+        );
+    }
+
+    public function test_checkout_quote_fails_closed_for_empty_cart_without_reservation(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Empty Checkout'
+        );
+
+        [$branch] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-CHECKOUT-EMPTY',
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $this->withHeaders(
+            $this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            )
+        )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote'
+            )
+            ->assertConflict()
+            ->assertJsonPath(
+                'error.code',
+                'CHECKOUT_REVIEW_REQUIRED',
+            );
+
+        $this->inTenant(
+            $tenant,
+            function () use ($cartId): void {
+                $cart = Cart::query()
+                    ->where(
+                        'public_id',
+                        $cartId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertNull(
+                    $cart->inventory_reserved_until
+                );
+            },
+        );
+    }
+
+    public function test_checkout_quote_hides_cart_from_wrong_guest_token(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Hidden Checkout'
+        );
+
+        [
+            $branch,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-CHECKOUT-HIDDEN',
+        );
+
+        [
+            $cartId,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $this->withHeaders([
+            'X-App-Instance-Key' => $appToken,
+            'X-Branch-Id' => (string) $branch->id,
+            'X-Cart-Token' => str_repeat('x', 64),
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote'
+            )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'CART_NOT_FOUND',
             );
     }
 

@@ -15,6 +15,7 @@ use App\Models\Branch;
 use App\Models\Cart;
 use App\Services\Storefront\StorefrontBranchResolver;
 use App\Services\Storefront\StorefrontCartService;
+use App\Services\Storefront\StorefrontCheckoutService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ class StorefrontCartController extends Controller
     public function __construct(
         private readonly StorefrontBranchResolver $branches,
         private readonly StorefrontCartService $carts,
+        private readonly StorefrontCheckoutService $checkout,
     ) {}
 
     public function store(
@@ -331,6 +333,62 @@ class StorefrontCartController extends Controller
         ) {
             return $this->reviewRequired(
                 $request
+            );
+        }
+    }
+
+    public function quoteCheckout(
+        Request $request,
+        string $cartPublicId,
+    ): JsonResponse {
+        $resolved =
+            $this->resolveCart(
+                $request,
+                $cartPublicId,
+            );
+
+        if ($resolved instanceof JsonResponse) {
+            return $resolved;
+        }
+
+        [$cart] = $resolved;
+
+        try {
+            return ApiResponse::success(
+                $request,
+                $this->checkout->quote(
+                    $cart
+                ),
+            );
+        } catch (
+            InsufficientAvailableStockException
+        ) {
+            return $this->insufficientStock(
+                $request
+            );
+        } catch (
+            CartNotMutableException
+        ) {
+            return $this->notMutable(
+                $request
+            );
+        } catch (
+            InvalidArgumentException
+        ) {
+            return ApiResponse::error(
+                $request,
+                'INVALID_CHECKOUT_REQUEST',
+                'Checkout request is invalid.',
+                422,
+            );
+        } catch (
+            LogicException
+        ) {
+            return ApiResponse::error(
+                $request,
+                'CHECKOUT_REVIEW_REQUIRED',
+                'Cart must be reviewed before checkout.',
+                409,
             );
         }
     }

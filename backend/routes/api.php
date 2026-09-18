@@ -54,6 +54,11 @@ Route::prefix('v1')->group(function () {
         );
 
         Route::post(
+            '/storefront/carts/{cartPublicId}/checkout/quote',
+            [StorefrontCartController::class, 'quoteCheckout'],
+        );
+
+        Route::post(
             '/storefront/carts/{cartPublicId}/items',
             [StorefrontCartController::class, 'storeItem'],
         );
