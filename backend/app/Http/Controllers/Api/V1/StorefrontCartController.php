@@ -393,6 +393,79 @@ class StorefrontCartController extends Controller
         }
     }
 
+    public function createCheckoutOrder(
+        Request $request,
+        string $cartPublicId,
+    ): JsonResponse {
+        $validated =
+            $request->validate([
+                'customer_name' => [
+                    'sometimes',
+                    'nullable',
+                    'string',
+                    'max:200',
+                ],
+                'customer_phone' => [
+                    'sometimes',
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
+                'customer_email' => [
+                    'sometimes',
+                    'nullable',
+                    'email',
+                    'max:254',
+                ],
+                'shipping_address' => [
+                    'sometimes',
+                    'nullable',
+                    'array',
+                ],
+            ]);
+
+        $resolved =
+            $this->resolveCart(
+                $request,
+                $cartPublicId,
+            );
+
+        if ($resolved instanceof JsonResponse) {
+            return $resolved;
+        }
+
+        [$cart] = $resolved;
+
+        try {
+            return ApiResponse::success(
+                $request,
+                $this->checkout->createOrder(
+                    $cart,
+                    $validated,
+                ),
+                201,
+            );
+        } catch (
+            InvalidArgumentException
+        ) {
+            return ApiResponse::error(
+                $request,
+                'INVALID_CHECKOUT_REQUEST',
+                'Checkout request is invalid.',
+                422,
+            );
+        } catch (
+            LogicException
+        ) {
+            return ApiResponse::error(
+                $request,
+                'CHECKOUT_REVIEW_REQUIRED',
+                'Cart must be reviewed before checkout.',
+                409,
+            );
+        }
+    }
+
     /**
      * @return array{Cart, Branch}|JsonResponse
      */

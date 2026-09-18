@@ -6,6 +6,7 @@ use App\Models\AppInstance;
 use App\Models\Branch;
 use App\Models\Cart;
 use App\Models\InventoryLocation;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Sku;
 use App\Models\Tenant;
@@ -1080,6 +1081,278 @@ final class StorefrontCartApiTest extends TestCase
                 'error.code',
                 'CART_NOT_FOUND',
             );
+    }
+
+    public function test_checkout_order_reprices_server_side_and_replays_same_order(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Order Checkout'
+        );
+
+        [
+            $branch,
+            ,
+            ,
+            $sku,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-ORDER-1',
+            stock: 10,
+            priceMinor: 2575,
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $headers =
+            $this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            );
+
+        $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' => 'order-add-1',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/items',
+                [
+                    'sku_id' => $sku->id,
+                    'quantity' => 2,
+                ],
+            )
+            ->assertOk();
+
+        $this->withHeaders(
+            $headers
+        )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote'
+            )
+            ->assertOk();
+
+        $first = $this
+            ->withHeaders(
+                $headers
+            )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order',
+                [
+                    'customer_name' => 'Test Customer',
+                    'customer_phone' => '+966500000000',
+                    'customer_email' => 'test@example.com',
+                    'shipping_address' => [
+                        'city' => 'Jeddah',
+                        'line1' => 'Sandbox Street',
+                    ],
+
+                    /*
+                     * These client values are intentionally
+                     * forged and must be ignored completely.
+                     */
+                    'currency_code' => 'USD',
+                    'total_minor' => 1,
+                ],
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.order.status',
+                'pending',
+            )
+            ->assertJsonPath(
+                'data.order.currency_code',
+                'SAR',
+            )
+            ->assertJsonPath(
+                'data.order.total_minor',
+                5150,
+            )
+            ->assertJsonPath(
+                'data.order.customer_name',
+                'Test Customer',
+            )
+            ->assertJsonPath(
+                'data.order.shipping_address.city',
+                'Jeddah',
+            )
+            ->assertJsonPath(
+                'data.order.items.0.quantity',
+                2,
+            );
+
+        $orderId =
+            (string) $first->json(
+                'data.order.id'
+            );
+
+        /*
+         * Replaying conversion with changed customer data
+         * must return the persisted first Order snapshot.
+         */
+        $second = $this
+            ->withHeaders(
+                $headers
+            )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order',
+                [
+                    'customer_name' => 'Changed Name',
+                ],
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.order.id',
+                $orderId,
+            )
+            ->assertJsonPath(
+                'data.order.customer_name',
+                'Test Customer',
+            )
+            ->assertJsonPath(
+                'data.order.total_minor',
+                5150,
+            );
+
+        $this->assertSame(
+            $orderId,
+            $second->json(
+                'data.order.id'
+            ),
+        );
+
+        $this->inTenant(
+            $tenant,
+            function () use (
+                $cartId,
+                $orderId,
+            ): void {
+                $this->assertSame(
+                    1,
+                    Order::query()
+                        ->where(
+                            'public_id',
+                            $orderId,
+                        )
+                        ->count(),
+                );
+
+                $cart = Cart::query()
+                    ->where(
+                        'public_id',
+                        $cartId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    'converted',
+                    $cart->status,
+                );
+
+                $this->assertNull(
+                    $cart
+                        ->inventory_reserved_until
+                );
+            },
+        );
+    }
+
+    public function test_checkout_order_requires_active_checkout_reservation(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Order Without Quote'
+        );
+
+        [
+            $branch,
+            ,
+            ,
+            $sku,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-ORDER-NO-QUOTE',
+            stock: 10,
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $headers =
+            $this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            );
+
+        $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' => 'no-quote-add',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/items',
+                [
+                    'sku_id' => $sku->id,
+                    'quantity' => 1,
+                ],
+            )
+            ->assertOk();
+
+        $this->withHeaders(
+            $headers
+        )
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order',
+                [
+                    'customer_name' => 'No Quote',
+                ],
+            )
+            ->assertConflict()
+            ->assertJsonPath(
+                'error.code',
+                'CHECKOUT_REVIEW_REQUIRED',
+            );
+
+        $this->inTenant(
+            $tenant,
+            function (): void {
+                $this->assertSame(
+                    0,
+                    Order::query()->count(),
+                );
+            },
+        );
     }
 
     public function test_cart_request_validation_and_missing_item_are_safe(): void

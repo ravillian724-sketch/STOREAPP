@@ -3,9 +3,12 @@
 namespace App\Services\Storefront;
 
 use App\Models\Cart;
+use App\Models\Order;
 use App\Models\Tenant;
 use App\Services\Cart\CartCheckoutReservationService;
+use App\Services\Order\OrderConversionService;
 use App\Services\Pricing\CartQuoteService;
+use App\Support\Order\OrderCheckoutSnapshot;
 use App\Support\Pricing\CheckoutQuote;
 use App\Support\Pricing\ShippingQuote;
 use App\Support\Pricing\TaxBreakdown;
@@ -21,6 +24,7 @@ final class StorefrontCheckoutService
         private readonly TenantContext $tenantContext,
         private readonly CartCheckoutReservationService $reservations,
         private readonly CartQuoteService $quotes,
+        private readonly OrderConversionService $orders,
     ) {}
 
     /**
@@ -149,6 +153,192 @@ final class StorefrontCheckoutService
                 );
             }
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $checkoutData
+     * @return array<string, mixed>
+     */
+    public function createOrder(
+        Cart $cart,
+        array $checkoutData,
+    ): array {
+        $tenantId =
+            $this->tenantContext->requireId();
+
+        if (
+            (int) $cart->tenant_id !==
+            $tenantId
+        ) {
+            throw new LogicException(
+                'Cart must belong to the active tenant.'
+            );
+        }
+
+        $instant =
+            CarbonImmutable::instance(
+                now()
+            );
+
+        $freshCart =
+            Cart::query()
+                ->whereKey(
+                    $cart->id
+                )
+                ->first();
+
+        if ($freshCart === null) {
+            throw new LogicException(
+                'Cart is unavailable.'
+            );
+        }
+
+        /*
+         * Active carts must have an unexpired checkout hold.
+         * Converted carts use an arbitrary future quote
+         * deadline only so OrderConversionService can replay
+         * the authoritative persisted order idempotently.
+         */
+        $requestedQuoteExpiry =
+            $freshCart->inventory_reserved_until !== null &&
+            $freshCart
+                ->inventory_reserved_until
+                ->greaterThan(
+                    $instant
+                )
+                ? CarbonImmutable::instance(
+                    $freshCart
+                        ->inventory_reserved_until
+                )
+                : $instant->addMinute();
+
+        $tenant =
+            Tenant::query()
+                ->whereKey(
+                    $tenantId
+                )
+                ->firstOrFail();
+
+        $currency =
+            strtoupper(
+                trim(
+                    (string) $tenant->currency_code
+                )
+            );
+
+        if (
+            preg_match(
+                '/^[A-Z]{3}$/',
+                $currency,
+            ) !== 1
+        ) {
+            throw new LogicException(
+                'Tenant currency code is invalid.'
+            );
+        }
+
+        $checkout =
+            new OrderCheckoutSnapshot(
+                customerName:
+                    $checkoutData['customer_name']
+                    ?? null,
+                customerPhone:
+                    $checkoutData['customer_phone']
+                    ?? null,
+                customerEmail:
+                    $checkoutData['customer_email']
+                    ?? null,
+                shippingAddressSnapshot:
+                    $checkoutData['shipping_address']
+                    ?? null,
+            );
+
+        $order =
+            $this->orders->convert(
+                $freshCart,
+                $instant,
+                $requestedQuoteExpiry,
+                $this->zeroShipping(
+                    $currency
+                ),
+                $checkout,
+            );
+
+        return $this->presentOrder(
+            $order
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentOrder(
+        Order $order,
+    ): array {
+        $order->loadMissing(
+            'items'
+        );
+
+        return [
+            'order' => [
+                'id' => $order->public_id,
+                'status' => $order->status,
+                'currency_code' =>
+                    $order->currency_code,
+                'subtotal_minor' =>
+                    (int) $order->subtotal_minor,
+                'discount_minor' =>
+                    (int) $order->discount_minor,
+                'tax_minor' =>
+                    (int) $order->tax_minor,
+                'shipping_minor' =>
+                    (int) $order->shipping_minor,
+                'total_minor' =>
+                    (int) $order->total_minor,
+                'customer_name' =>
+                    $order->customer_name,
+                'customer_phone' =>
+                    $order->customer_phone,
+                'customer_email' =>
+                    $order->customer_email,
+                'shipping_address' =>
+                    $order
+                        ->shipping_address_snapshot,
+                'items' => $order->items
+                    ->map(
+                        static fn ($item): array => [
+                            'id' =>
+                                $item->public_id,
+                            'sku_id' =>
+                                (string) $item->sku_id,
+                            'location_id' =>
+                                (string) $item
+                                    ->location_id,
+                            'sku_code' =>
+                                $item
+                                    ->sku_code_snapshot,
+                            'product_name_ar' =>
+                                $item
+                                    ->product_name_ar_snapshot,
+                            'product_name_en' =>
+                                $item
+                                    ->product_name_en_snapshot,
+                            'quantity' =>
+                                (int) $item->quantity,
+                            'unit_net_minor' =>
+                                (int) $item
+                                    ->unit_net_minor,
+                            'tax_minor' =>
+                                (int) $item->tax_minor,
+                            'line_total_minor' =>
+                                (int) $item
+                                    ->line_total_minor,
+                        ]
+                    )
+                    ->values()
+                    ->all(),
+            ],
+        ];
     }
 
     private function zeroShipping(
