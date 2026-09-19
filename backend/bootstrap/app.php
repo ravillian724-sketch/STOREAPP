@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuthenticateTenantCustomer;
 use App\Http\Middleware\AuthenticateTenantStaff;
 use App\Http\Middleware\RequestIdMiddleware;
 use App\Http\Middleware\RequirePermission;
@@ -43,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'app.instance' => ResolveAppInstanceMiddleware::class,
             'tenant.boundary' => TenantBoundaryMiddleware::class,
             'tenant.staff' => AuthenticateTenantStaff::class,
+            'tenant.customer' => AuthenticateTenantCustomer::class,
             'permission' => RequirePermission::class,
         ]);
     })

@@ -8,6 +8,7 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PostgresTenantRlsTest extends TestCase
@@ -82,6 +83,7 @@ class PostgresTenantRlsTest extends TestCase
                     'cart_items',
                     'cart_mutation_receipts',
                     'carts',
+                    'customers',
                     'users',
                     'roles',
                     'role_user',
@@ -110,6 +112,7 @@ class PostgresTenantRlsTest extends TestCase
                 'cart_items',
                 'cart_mutation_receipts',
                 'carts',
+                'customers',
                 'inventory_locations',
                 'inventory_positions',
                 'inventory_reservations',
@@ -182,6 +185,70 @@ class PostgresTenantRlsTest extends TestCase
         $this->assertSame(
             0,
             DB::table('branches')->count(),
+        );
+    }
+
+    public function test_customer_rows_are_isolated_by_database_rls(): void
+    {
+        $this->requirePostgres();
+
+        $tenantA = $this->tenant(
+            'Tenant A'
+        );
+
+        $tenantB = $this->tenant(
+            'Tenant B'
+        );
+
+        $context = app(
+            TenantContext::class
+        );
+
+        foreach (
+            [
+                [$tenantA, 'buyer-a@example.com'],
+                [$tenantB, 'buyer-b@example.com'],
+            ] as [$tenant, $email]
+        ) {
+            $context->set(
+                $tenant->id
+            );
+
+            try {
+                DB::table('customers')->insert([
+                    'tenant_id' => $tenant->id,
+                    'public_id' => (string) Str::uuid(),
+                    'name' => 'Buyer',
+                    'email' => $email,
+                    'password' => 'not-used-by-this-test',
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } finally {
+                $context->clear();
+            }
+        }
+
+        $context->set(
+            $tenantA->id
+        );
+
+        try {
+            $this->assertSame(
+                ['buyer-a@example.com'],
+                DB::table('customers')
+                    ->orderBy('email')
+                    ->pluck('email')
+                    ->all(),
+            );
+        } finally {
+            $context->clear();
+        }
+
+        $this->assertSame(
+            0,
+            DB::table('customers')->count(),
         );
     }
 

@@ -374,6 +374,9 @@ final class OrderConversionService
                             'app_instance_id' => $lockedCart
                                 ->app_instance_id,
 
+                            'customer_id' => $checkout
+                                ->customerId,
+
                             'cart_id' => $lockedCart->id,
 
                             'public_id' => (string)

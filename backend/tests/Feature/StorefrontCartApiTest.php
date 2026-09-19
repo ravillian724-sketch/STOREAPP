@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AppInstance;
 use App\Models\Branch;
 use App\Models\Cart;
+use App\Models\Customer;
 use App\Models\InventoryLocation;
 use App\Models\Order;
 use App\Models\Payment;
@@ -106,6 +107,39 @@ final class StorefrontCartApiTest extends TestCase
                 );
             }
         }
+    }
+
+    /**
+     * @return array{Customer, string}
+     */
+    private function customer(
+        Tenant $tenant,
+        string $email = 'buyer@example.com',
+    ): array {
+        return $this->inTenant(
+            $tenant,
+            function () use ($email): array {
+                $customer = Customer::query()->create([
+                    'name' => 'Registered Buyer',
+                    'email' => $email,
+                    'phone' => '+966511111111',
+                    'password' => 'Buyer1234',
+                    'is_active' => true,
+                ]);
+
+                $token = $customer
+                    ->createToken(
+                        'phpunit-customer',
+                        ['customer'],
+                    )
+                    ->plainTextToken;
+
+                return [
+                    $customer,
+                    $token,
+                ];
+            },
+        );
     }
 
     /**
@@ -1257,14 +1291,15 @@ final class StorefrontCartApiTest extends TestCase
                 $cartId,
                 $orderId,
             ): void {
-                $this->assertSame(
-                    1,
-                    Order::query()
-                        ->where(
-                            'public_id',
-                            $orderId,
-                        )
-                        ->count(),
+                $order = Order::query()
+                    ->where(
+                        'public_id',
+                        $orderId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertNull(
+                    $order->customer_id
                 );
 
                 $cart = Cart::query()
@@ -1298,6 +1333,199 @@ final class StorefrontCartApiTest extends TestCase
             ->assertJsonPath(
                 'error.code',
                 'CART_NOT_MUTABLE',
+            );
+    }
+
+    public function test_authenticated_checkout_binds_customer_and_ignores_spoofed_identity(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Customer Checkout'
+        );
+
+        [
+            $customer,
+            $customerToken,
+        ] = $this->customer(
+            $tenant,
+        );
+
+        [
+            $branch,
+            ,
+            ,
+            $sku,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-CUSTOMER-ORDER',
+            stock: 10,
+            priceMinor: 2575,
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+            'create-customer-cart',
+        );
+
+        $headers = [
+            ...$this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            ),
+            'Authorization' => 'Bearer '.$customerToken,
+        ];
+
+        $this
+            ->withHeaders([
+                ...$headers,
+                'Idempotency-Key' => 'customer-order-add-1',
+            ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/items',
+                [
+                    'sku_id' => $sku->id,
+                    'quantity' => 1,
+                ],
+            )
+            ->assertOk();
+
+        $this
+            ->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote'
+            )
+            ->assertOk();
+
+        $orderResponse = $this
+            ->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order',
+                [
+                    'customer_name' => 'Spoofed Buyer',
+                    'customer_phone' => '+966599999999',
+                    'customer_email' => 'attacker@example.com',
+                    'shipping_address' => [
+                        'city' => 'Jeddah',
+                        'line1' => 'Customer Street',
+                    ],
+                ],
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'data.order.customer_name',
+                'Registered Buyer',
+            )
+            ->assertJsonPath(
+                'data.order.customer_phone',
+                '+966511111111',
+            )
+            ->assertJsonPath(
+                'data.order.customer_email',
+                'buyer@example.com',
+            )
+            ->assertJsonPath(
+                'data.order.total_minor',
+                2575,
+            );
+
+        $orderId = (string)
+            $orderResponse->json(
+                'data.order.id'
+            );
+
+        $this->inTenant(
+            $tenant,
+            function () use (
+                $customer,
+                $orderId,
+            ): void {
+                $order = Order::query()
+                    ->where(
+                        'public_id',
+                        $orderId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    $customer->id,
+                    $order->customer_id,
+                );
+
+                $this->assertSame(
+                    'Registered Buyer',
+                    $order->customer_name,
+                );
+
+                $this->assertSame(
+                    'buyer@example.com',
+                    $order->customer_email,
+                );
+            },
+        );
+
+        $this
+            ->withHeaders([
+                'X-App-Instance-Key' => $appToken,
+                'Authorization' => 'Bearer '.$customerToken,
+            ])
+            ->getJson(
+                '/api/v1/storefront/customer/orders'
+            )
+            ->assertOk()
+            ->assertHeader(
+                'Cache-Control',
+                'no-store, private',
+            )
+            ->assertJsonPath(
+                'data.pagination.total',
+                1,
+            )
+            ->assertJsonPath(
+                'data.orders.0.order.id',
+                $orderId,
+            )
+            ->assertJsonPath(
+                'data.orders.0.order.customer_email',
+                'buyer@example.com',
+            );
+
+        [, $otherCustomerToken] =
+            $this->customer(
+                $tenant,
+                'other@example.com',
+            );
+
+        $this
+            ->withHeaders([
+                'X-App-Instance-Key' => $appToken,
+                'Authorization' => 'Bearer '.$otherCustomerToken,
+            ])
+            ->getJson(
+                '/api/v1/storefront/customer/orders'
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.pagination.total',
+                0,
+            )
+            ->assertJsonPath(
+                'data.orders',
+                [],
             );
     }
 

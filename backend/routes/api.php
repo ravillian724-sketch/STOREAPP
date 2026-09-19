@@ -7,9 +7,12 @@ use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\BranchController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Staff\AuthController;
+use App\Http\Controllers\Api\V1\Storefront\CustomerAuthController;
+use App\Http\Controllers\Api\V1\Storefront\CustomerOrderController;
 use App\Http\Controllers\Api\V1\StorefrontCartController;
 use App\Http\Controllers\Api\V1\StorefrontCatalogController;
 use App\Http\Controllers\Api\V1\StorefrontOrderController;
+use App\Support\Authorization\CustomerLoginRateLimit;
 use App\Support\Authorization\PermissionCatalog;
 use App\Support\Authorization\StaffLoginRateLimit;
 use Illuminate\Support\Facades\Route;
@@ -49,6 +52,41 @@ Route::prefix('v1')->group(function () {
             [StorefrontOrderController::class, 'show'],
         );
 
+        Route::prefix('storefront/customer')
+            ->group(function () {
+                Route::post(
+                    '/auth/register',
+                    [CustomerAuthController::class, 'register'],
+                );
+
+                Route::post(
+                    '/auth/login',
+                    [CustomerAuthController::class, 'login'],
+                )->middleware(
+                    'throttle:'.
+                    CustomerLoginRateLimit::NAME
+                );
+
+                Route::middleware(
+                    'tenant.customer'
+                )->group(function () {
+                    Route::get(
+                        '/me',
+                        [CustomerAuthController::class, 'me'],
+                    );
+
+                    Route::post(
+                        '/auth/logout',
+                        [CustomerAuthController::class, 'logout'],
+                    );
+
+                    Route::get(
+                        '/orders',
+                        [CustomerOrderController::class, 'index'],
+                    );
+                });
+            });
+
         Route::post(
             '/storefront/carts',
             [StorefrontCartController::class, 'store'],
@@ -67,6 +105,8 @@ Route::prefix('v1')->group(function () {
         Route::post(
             '/storefront/carts/{cartPublicId}/checkout/order',
             [StorefrontCartController::class, 'createCheckoutOrder'],
+        )->middleware(
+            'tenant.customer:optional'
         );
 
         Route::post(

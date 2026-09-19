@@ -3,6 +3,7 @@
 namespace App\Services\Storefront;
 
 use App\Models\Cart;
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
@@ -178,6 +179,7 @@ final class StorefrontCheckoutService
         Cart $cart,
         array $checkoutData,
         string $guestOrderToken,
+        ?Customer $customer = null,
     ): array {
         $tenantId =
             $this->tenantContext->requireId();
@@ -188,6 +190,19 @@ final class StorefrontCheckoutService
         ) {
             throw new LogicException(
                 'Cart must belong to the active tenant.'
+            );
+        }
+
+        if (
+            $customer !== null &&
+            (
+                ! $customer->is_active ||
+                (int) $customer->tenant_id !==
+                    $tenantId
+            )
+        ) {
+            throw new LogicException(
+                'Customer must belong to the active tenant.'
             );
         }
 
@@ -255,14 +270,18 @@ final class StorefrontCheckoutService
 
         $checkout =
             new OrderCheckoutSnapshot(
-                customerName: $checkoutData['customer_name']
+                customerName: $customer?->name
+                    ?? $checkoutData['customer_name']
                     ?? null,
-                customerPhone: $checkoutData['customer_phone']
+                customerPhone: $customer?->phone
+                    ?? $checkoutData['customer_phone']
                     ?? null,
-                customerEmail: $checkoutData['customer_email']
+                customerEmail: $customer?->email
+                    ?? $checkoutData['customer_email']
                     ?? null,
                 shippingAddressSnapshot: $checkoutData['shipping_address']
                     ?? null,
+                customerId: $customer?->id,
             );
 
         $order =

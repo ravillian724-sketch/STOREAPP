@@ -14,11 +14,14 @@ final readonly class OrderCheckoutSnapshot
 
     public ?array $shippingAddressSnapshot;
 
+    public ?int $customerId;
+
     public function __construct(
         ?string $customerName = null,
         ?string $customerPhone = null,
         ?string $customerEmail = null,
         ?array $shippingAddressSnapshot = null,
+        ?int $customerId = null,
     ) {
         $this->customerName =
             $this->normalize(
@@ -63,6 +66,18 @@ final readonly class OrderCheckoutSnapshot
 
         $this->shippingAddressSnapshot =
             $shippingAddressSnapshot;
+
+        if (
+            $customerId !== null &&
+            $customerId <= 0
+        ) {
+            throw new InvalidArgumentException(
+                'Customer id must be positive when provided.'
+            );
+        }
+
+        $this->customerId =
+            $customerId;
     }
 
     private function normalize(

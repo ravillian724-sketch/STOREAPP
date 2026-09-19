@@ -15,6 +15,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AppInstance;
 use App\Models\Branch;
 use App\Models\Cart;
+use App\Models\Customer;
 use App\Services\Storefront\StorefrontBranchResolver;
 use App\Services\Storefront\StorefrontCartService;
 use App\Services\Storefront\StorefrontCheckoutService;
@@ -466,6 +467,9 @@ class StorefrontCartController extends Controller
                     $cart,
                     $validated,
                     $orderToken,
+                    $this->customer(
+                        $request
+                    ),
                 ),
                 201,
             );
@@ -734,6 +738,27 @@ class StorefrontCartController extends Controller
         }
 
         return $instance;
+    }
+
+    private function customer(
+        Request $request,
+    ): ?Customer {
+        $customer =
+            $request->attributes->get(
+                'storefront_customer'
+            );
+
+        if ($customer === null) {
+            return null;
+        }
+
+        if (! $customer instanceof Customer) {
+            throw new LogicException(
+                'Customer middleware context is invalid.'
+            );
+        }
+
+        return $customer;
     }
 
     private function idempotencyKey(

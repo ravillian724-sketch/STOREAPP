@@ -18,6 +18,7 @@ class Order extends Model
 
     protected $fillable = [
         'app_instance_id',
+        'customer_id',
         'cart_id',
         'public_id',
         'guest_access_token_hash',
@@ -71,6 +72,13 @@ class Order extends Model
     {
         return $this->belongsTo(
             Cart::class
+        );
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(
+            Customer::class
         );
     }
 
