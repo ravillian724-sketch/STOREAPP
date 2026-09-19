@@ -1,6 +1,7 @@
 import 'package:ecommerce_app/core/cart/cart_session.dart';
 import 'package:ecommerce_app/core/cart/cart_session_store.dart';
 import 'package:ecommerce_app/core/network/api_client.dart';
+import 'package:ecommerce_app/core/order/order_access_store.dart';
 import 'package:ecommerce_app/core/platform/platform_service.dart';
 import 'package:ecommerce_app/core/platform/tenant_context.dart';
 import 'package:ecommerce_app/data/model/storefront_checkout_model.dart';
@@ -10,13 +11,16 @@ class StorefrontCheckoutData {
     ApiClient? apiClient,
     TenantContext? tenantContext,
     CartSessionStore? sessionStore,
+    OrderAccessStore? orderAccessStore,
   })  : _apiClient = apiClient,
         _tenantContext = tenantContext,
-        _sessions = sessionStore ?? CartSessionStore();
+        _sessions = sessionStore ?? CartSessionStore(),
+        _orders = orderAccessStore ?? OrderAccessStore();
 
   final ApiClient? _apiClient;
   final TenantContext? _tenantContext;
   final CartSessionStore _sessions;
+  final OrderAccessStore _orders;
 
   ApiClient get _client {
     final client = _apiClient ?? PlatformService.instance.apiClient;
@@ -58,6 +62,11 @@ class StorefrontCheckoutData {
     Map<String, dynamic>? shippingAddress,
   }) async {
     final session = await _requiredSession();
+    final context = _context;
+    final orderToken = await _orders.checkoutToken(
+      context,
+      cartId: session.cartId,
+    );
     final body = <String, dynamic>{};
 
     if (customerName?.trim().isNotEmpty == true) {
@@ -77,12 +86,24 @@ class StorefrontCheckoutData {
       '/api/v1/storefront/carts/'
       '${session.cartId}/checkout/order',
       body: body,
-      extraHeaders: {'X-Cart-Token': session.token},
+      extraHeaders: {
+        'X-Cart-Token': session.token,
+        'X-Order-Token': orderToken,
+      },
     );
 
-    return StorefrontCheckoutOrder.fromJson(
+    final order = StorefrontCheckoutOrder.fromJson(
       _data(response.data),
     );
+
+    await _orders.saveOrder(
+      context,
+      cartId: session.cartId,
+      orderId: order.id,
+      token: orderToken,
+    );
+
+    return order;
   }
 
   Future<StorefrontPaymentAttemptResult> createPaymentAttempt({
@@ -171,13 +192,21 @@ class StorefrontCheckoutData {
 
     if (result.succeeded) {
       try {
+        await _orders.clearCheckoutToken(
+          _context,
+          cartId: session.cartId,
+        );
+      } catch (_) {
+        // The remote payment result is authoritative. Local credential
+        // cleanup is best-effort after a confirmed purchase.
+      }
+
+      try {
         await _sessions.clearSession(
           _context,
         );
       } catch (_) {
-        // The remote payment result is authoritative. A local secure-storage
-        // cleanup failure must not turn a confirmed purchase into a failure.
-        // StorefrontCartData can recover the stale converted cart later.
+        // StorefrontCartData can recover a stale converted cart later.
       }
     }
 

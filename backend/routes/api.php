@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Staff\AuthController;
 use App\Http\Controllers\Api\V1\StorefrontCartController;
 use App\Http\Controllers\Api\V1\StorefrontCatalogController;
+use App\Http\Controllers\Api\V1\StorefrontOrderController;
 use App\Support\Authorization\PermissionCatalog;
 use App\Support\Authorization\StaffLoginRateLimit;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,11 @@ Route::prefix('v1')->group(function () {
         Route::get(
             '/storefront/products',
             [StorefrontCatalogController::class, 'index'],
+        );
+
+        Route::get(
+            '/storefront/orders/{orderPublicId}',
+            [StorefrontOrderController::class, 'show'],
         );
 
         Route::post(

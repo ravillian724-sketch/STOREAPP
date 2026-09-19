@@ -2,6 +2,7 @@ import 'package:ecommerce_app/controller/platform_checkout_controller.dart';
 import 'package:ecommerce_app/core/class/statusrequest.dart';
 import 'package:ecommerce_app/core/constant/color.dart';
 import 'package:ecommerce_app/core/functions/storefront_display.dart';
+import 'package:ecommerce_app/data/model/storefront_order_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -267,6 +268,12 @@ class PlatformCheckout extends StatelessWidget {
                   ),
                 ),
               ],
+              if (controller.orderDetails != null) ...[
+                const SizedBox(height: 16),
+                _VerifiedOrderCard(
+                  order: controller.orderDetails!,
+                ),
+              ],
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: controller.isBusy ||
@@ -403,6 +410,99 @@ class _MoneyRow extends StatelessWidget {
         children: [
           Text(label, style: style),
           Text(value, style: style),
+        ],
+      ),
+    );
+  }
+}
+
+class _VerifiedOrderCard extends StatelessWidget {
+  const _VerifiedOrderCard({
+    required this.order,
+  });
+
+  final StorefrontOrderDetails order;
+
+  @override
+  Widget build(BuildContext context) {
+    final isArabic = Get.locale?.languageCode == 'ar';
+
+    return _Card(
+      title: PlatformCheckout._label(
+        ar: 'طلب موثّق من الخادم',
+        en: 'Server-Verified Order',
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            order.id,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _MoneyRow(
+            label: PlatformCheckout._label(
+              ar: 'حالة الطلب',
+              en: 'Order Status',
+            ),
+            value: order.status,
+            emphasize: true,
+          ),
+          if (order.payment != null)
+            _MoneyRow(
+              label: PlatformCheckout._label(
+                ar: 'حالة الدفع',
+                en: 'Payment Status',
+              ),
+              value: order.payment!.status,
+            ),
+          const Divider(height: 24),
+          ...order.items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(
+                bottom: 12,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      isArabic ? item.productNameAr : item.productNameEn,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '×${item.quantity} · '
+                    '${formatStoreMinorMoney(
+                      item.lineTotalMinor,
+                      order.currencyCode,
+                      isArabic: isArabic,
+                    )}',
+                    textAlign: TextAlign.end,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Divider(height: 24),
+          _MoneyRow(
+            label: PlatformCheckout._label(
+              ar: 'الإجمالي المؤكد',
+              en: 'Confirmed Total',
+            ),
+            value: formatStoreMinorMoney(
+              order.totalMinor,
+              order.currencyCode,
+              isArabic: isArabic,
+            ),
+            emphasize: true,
+          ),
         ],
       ),
     );

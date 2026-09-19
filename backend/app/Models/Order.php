@@ -6,15 +6,21 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
     use BelongsToTenant;
 
+    protected $hidden = [
+        'guest_access_token_hash',
+    ];
+
     protected $fillable = [
         'app_instance_id',
         'cart_id',
         'public_id',
+        'guest_access_token_hash',
         'status',
         'currency_code',
         'customer_name',
@@ -72,6 +78,13 @@ class Order extends Model
     {
         return $this->hasMany(
             OrderItem::class
+        );
+    }
+
+    public function payment(): HasOne
+    {
+        return $this->hasOne(
+            Payment::class
         );
     }
 }

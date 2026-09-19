@@ -4,15 +4,20 @@ import 'package:ecommerce_app/core/network/status_request_mapper.dart';
 import 'package:ecommerce_app/core/platform/environment_config.dart';
 import 'package:ecommerce_app/core/services/notification_service.dart';
 import 'package:ecommerce_app/data/datasource/remote/storefront_checkout_data.dart';
+import 'package:ecommerce_app/data/datasource/remote/storefront_order_data.dart';
 import 'package:ecommerce_app/data/model/storefront_checkout_model.dart';
+import 'package:ecommerce_app/data/model/storefront_order_model.dart';
 import 'package:get/get.dart';
 
 class PlatformCheckoutController extends GetxController {
   PlatformCheckoutController({
     StorefrontCheckoutData? checkoutData,
-  }) : checkoutData = checkoutData ?? StorefrontCheckoutData();
+    StorefrontOrderData? orderData,
+  })  : checkoutData = checkoutData ?? StorefrontCheckoutData(),
+        orderData = orderData ?? StorefrontOrderData();
 
   final StorefrontCheckoutData checkoutData;
+  final StorefrontOrderData orderData;
 
   NotificationService get notificationService =>
       Get.find<NotificationService>();
@@ -21,6 +26,7 @@ class PlatformCheckoutController extends GetxController {
 
   StorefrontCheckoutQuote? quote;
   StorefrontCheckoutOrder? order;
+  StorefrontOrderDetails? orderDetails;
   StorefrontPaymentAttemptResult? paymentAttempt;
   StorefrontSandboxSettlement? settlement;
 
@@ -94,6 +100,18 @@ class PlatformCheckoutController extends GetxController {
 
       order = settlement!.order;
       paymentAttempt = settlement!.paymentAttempt;
+
+      if (settlement!.succeeded) {
+        try {
+          orderDetails = await orderData.getOrder(
+            order!.id,
+          );
+        } catch (_) {
+          // Payment success is authoritative. A post-payment order refresh
+          // failure must not downgrade a confirmed purchase.
+        }
+      }
+
       statusRequest = StatusRequest.success;
 
       notificationService.showSuccessNotification(

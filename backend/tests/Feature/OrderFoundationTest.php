@@ -15,6 +15,7 @@ use App\Support\Order\OrderStatus;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\TestCase;
@@ -184,6 +185,52 @@ class OrderFoundationTest extends TestCase
                     $location,
                 ];
             },
+        );
+    }
+
+    public function test_postgres_rejects_invalid_guest_order_access_hash(): void
+    {
+        if (
+            DB::connection()->getDriverName()
+            !== 'pgsql'
+        ) {
+            $this->markTestSkipped(
+                'PostgreSQL-specific order token constraint test.'
+            );
+        }
+
+        $tenant =
+            $this->tenant('Tenant Token Guard');
+
+        $instance =
+            $this->appInstance(
+                $tenant
+            );
+
+        $cart =
+            $this->cart(
+                $tenant,
+                $instance,
+            );
+
+        $order =
+            $this->order(
+                $tenant,
+                $instance,
+                $cart,
+            );
+
+        $this->expectException(
+            QueryException::class
+        );
+
+        $this->inTenant(
+            $tenant,
+            fn (): int => Order::query()
+                ->whereKey($order->id)
+                ->update([
+                    'guest_access_token_hash' => 'not-a-valid-sha256-hash',
+                ]),
         );
     }
 

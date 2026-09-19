@@ -9,6 +9,7 @@ use App\Exceptions\Cart\CartNotAccessibleException;
 use App\Exceptions\Cart\CartNotMutableException;
 use App\Exceptions\Cart\CartSkuUnavailableException;
 use App\Exceptions\Inventory\InsufficientAvailableStockException;
+use App\Exceptions\Order\OrderAccessTokenConflictException;
 use App\Exceptions\Payment\PaymentIdempotencyConflictException;
 use App\Http\Controllers\Controller;
 use App\Models\AppInstance;
@@ -429,6 +430,23 @@ class StorefrontCartController extends Controller
                 ],
             ]);
 
+        $orderToken = trim(
+            (string)
+            $request->header(
+                'X-Order-Token',
+                '',
+            )
+        );
+
+        if ($orderToken === '') {
+            return ApiResponse::error(
+                $request,
+                'ORDER_TOKEN_REQUIRED',
+                'Order token is required.',
+                400,
+            );
+        }
+
         $resolved =
             $this->resolveCart(
                 $request,
@@ -447,8 +465,18 @@ class StorefrontCartController extends Controller
                 $this->checkout->createOrder(
                     $cart,
                     $validated,
+                    $orderToken,
                 ),
                 201,
+            );
+        } catch (
+            OrderAccessTokenConflictException
+        ) {
+            return ApiResponse::error(
+                $request,
+                'ORDER_ACCESS_CONFLICT',
+                'Order access could not be established.',
+                409,
             );
         } catch (
             InvalidArgumentException

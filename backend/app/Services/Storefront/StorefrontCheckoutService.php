@@ -35,6 +35,7 @@ final class StorefrontCheckoutService
         private readonly CartCheckoutReservationService $reservations,
         private readonly CartQuoteService $quotes,
         private readonly OrderConversionService $orders,
+        private readonly StorefrontOrderService $storefrontOrders,
         private readonly PaymentService $payments,
         private readonly PaymentProviderReferenceService $providerReferences,
         private readonly PaymentSuccessService $paymentSuccess,
@@ -176,6 +177,7 @@ final class StorefrontCheckoutService
     public function createOrder(
         Cart $cart,
         array $checkoutData,
+        string $guestOrderToken,
     ): array {
         $tenantId =
             $this->tenantContext->requireId();
@@ -274,9 +276,17 @@ final class StorefrontCheckoutService
                 $checkout,
             );
 
-        return $this->presentOrder(
-            $order
-        );
+        $order =
+            $this->storefrontOrders
+                ->bindGuestAccess(
+                    $order,
+                    $guestOrderToken,
+                );
+
+        return $this->storefrontOrders
+            ->present(
+                $order
+            );
     }
 
     /**

@@ -264,6 +264,11 @@ final class StorefrontCartApiTest extends TestCase
             'X-Branch-Id' => (string) $branch->id,
 
             'X-Cart-Token' => $cartToken,
+
+            'X-Order-Token' => hash(
+                'sha256',
+                'order|'.$cartToken,
+            ),
         ];
     }
 
@@ -1294,6 +1299,238 @@ final class StorefrontCartApiTest extends TestCase
                 'error.code',
                 'CART_NOT_MUTABLE',
             );
+    }
+
+    public function test_guest_order_access_requires_bound_token_and_app_instance(): void
+    {
+        [
+            $tenant,
+            ,
+            $appToken,
+        ] = $this->storefront(
+            'Store Guest Order Access'
+        );
+
+        [
+            $branch,
+            ,
+            ,
+            $sku,
+        ] = $this->inventory(
+            $tenant,
+            'MAIN',
+            'SKU-GUEST-ORDER-1',
+            stock: 10,
+        );
+
+        [
+            $cartId,
+            $cartToken,
+        ] = $this->createCart(
+            $appToken,
+            $branch,
+        );
+
+        $headers =
+            $this->cartHeaders(
+                $appToken,
+                $branch,
+                $cartToken,
+            );
+
+        $orderToken =
+            $headers['X-Order-Token'];
+
+        $this->withHeaders([
+            ...$headers,
+            'Idempotency-Key' => 'guest-order-add',
+        ])
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/items',
+                [
+                    'sku_id' => $sku->id,
+                    'quantity' => 1,
+                ],
+            )
+            ->assertOk();
+
+        $this->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/quote'
+            )
+            ->assertOk();
+
+        $created = $this
+            ->withHeaders($headers)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order',
+                [
+                    'customer_name' => 'Guest Buyer',
+                ],
+            )
+            ->assertCreated();
+
+        $orderId =
+            (string) $created->json(
+                'data.order.id'
+            );
+
+        $this->inTenant(
+            $tenant,
+            function () use (
+                $orderId,
+                $orderToken,
+            ): void {
+                $order = Order::query()
+                    ->where(
+                        'public_id',
+                        $orderId,
+                    )
+                    ->firstOrFail();
+
+                $this->assertSame(
+                    hash(
+                        'sha256',
+                        $orderToken,
+                    ),
+                    $order->guest_access_token_hash,
+                );
+
+                $this->assertNotSame(
+                    $orderToken,
+                    $order->guest_access_token_hash,
+                );
+            },
+        );
+
+        $orderHeaders = [
+            'X-App-Instance-Key' => $appToken,
+            'X-Order-Token' => $orderToken,
+        ];
+
+        $this->withHeaders($orderHeaders)
+            ->getJson(
+                '/api/v1/storefront/orders/'.
+                $orderId
+            )
+            ->assertOk()
+            ->assertHeader(
+                'Cache-Control',
+                'no-store, private',
+            )
+            ->assertJsonPath(
+                'data.order.id',
+                $orderId,
+            )
+            ->assertJsonPath(
+                'data.order.items.0.quantity',
+                1,
+            )
+            ->assertJsonPath(
+                'data.payment',
+                null,
+            );
+
+        $this->withHeaders([
+            'X-App-Instance-Key' => $appToken,
+            'X-Order-Token' => str_repeat('f', 64),
+        ])
+            ->getJson(
+                '/api/v1/storefront/orders/'.
+                $orderId
+            )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'ORDER_NOT_FOUND',
+            );
+
+        $this->withHeaders([
+            'X-App-Instance-Key' => $appToken,
+            'X-Order-Token' => '',
+        ])
+            ->getJson(
+                '/api/v1/storefront/orders/'.
+                $orderId
+            )
+            ->assertBadRequest()
+            ->assertJsonPath(
+                'error.code',
+                'ORDER_TOKEN_REQUIRED',
+            );
+
+        [
+            ,
+            $otherAppToken,
+        ] = $this->additionalInstance(
+            $tenant
+        );
+
+        $this->withHeaders([
+            'X-App-Instance-Key' => $otherAppToken,
+            'X-Order-Token' => $orderToken,
+        ])
+            ->getJson(
+                '/api/v1/storefront/orders/'.
+                $orderId
+            )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'ORDER_NOT_FOUND',
+            );
+
+        [
+            ,
+            ,
+            $foreignAppToken,
+        ] = $this->storefront(
+            'Foreign Guest Order Store'
+        );
+
+        $this->withHeaders([
+            'X-App-Instance-Key' => $foreignAppToken,
+            'X-Order-Token' => $orderToken,
+        ])
+            ->getJson(
+                '/api/v1/storefront/orders/'.
+                $orderId
+            )
+            ->assertNotFound()
+            ->assertJsonPath(
+                'error.code',
+                'ORDER_NOT_FOUND',
+            );
+
+        $changedHeaders = [
+            ...$headers,
+            'X-Order-Token' => str_repeat('e', 64),
+        ];
+
+        $this->withHeaders($changedHeaders)
+            ->postJson(
+                '/api/v1/storefront/carts/'.
+                $cartId.
+                '/checkout/order'
+            )
+            ->assertConflict()
+            ->assertJsonPath(
+                'error.code',
+                'ORDER_ACCESS_CONFLICT',
+            );
+
+        $this->withHeaders($orderHeaders)
+            ->getJson(
+                '/api/v1/storefront/orders/'.
+                $orderId
+            )
+            ->assertOk();
     }
 
     public function test_checkout_order_requires_active_checkout_reservation(): void

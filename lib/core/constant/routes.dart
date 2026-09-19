@@ -34,6 +34,7 @@ class AppRoute {
   static const String checkout = "/checkout";
   static const String platformCheckout = "/platform-checkout";
 //orders
+  static const String platformOrders = "/platform-orders";
   static const String orederspending = "/orederspending";
   static const String ordersdetails = "/ordersdetails";
   static const String ordersarchive = "/ordersarchive";

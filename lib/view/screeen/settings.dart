@@ -103,7 +103,11 @@ class Settings extends StatelessWidget {
                   ),
                   _buildSettingItem(
                     onTap: () {
-                      Get.toNamed(AppRoute.orederspending);
+                      Get.toNamed(
+                        PlatformService.instance.isInitialized
+                            ? AppRoute.platformOrders
+                            : AppRoute.orederspending,
+                      );
                     },
                     title: '109'.tr, // Orders
                     trailing: const Icon(Icons.delivery_dining_outlined,

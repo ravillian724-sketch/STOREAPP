@@ -5,13 +5,14 @@ import 'package:ecommerce_app/core/cart/cart_session.dart';
 import 'package:ecommerce_app/core/cart/cart_session_store.dart';
 import 'package:ecommerce_app/core/network/api_client.dart';
 import 'package:ecommerce_app/core/network/api_exception.dart';
+import 'package:ecommerce_app/core/order/order_access_store.dart';
 import 'package:ecommerce_app/core/platform/tenant_context.dart';
 import 'package:ecommerce_app/data/datasource/remote/storefront_checkout_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-class _MemoryStorage implements CartSecureStorage {
+class _MemoryStorage implements CartSecureStorage, OrderSecureStorage {
   _MemoryStorage({
     this.throwOnDelete = false,
   });
@@ -163,6 +164,10 @@ Future<StorefrontCheckoutData> _data(
     apiClient: _api(client),
     tenantContext: _context,
     sessionStore: sessions,
+    orderAccessStore: OrderAccessStore(
+      storage: storage,
+      random: Random(seed + 1000),
+    ),
   );
 }
 
@@ -217,6 +222,89 @@ void main() {
         '10',
       );
     }
+
+    expect(
+      requests.first.headers.containsKey('X-Order-Token'),
+      isFalse,
+    );
+
+    final orderToken = requests.last.headers['X-Order-Token'];
+    expect(orderToken, isNotNull);
+    expect(
+      RegExp(r'^[0-9a-f]{64}$').hasMatch(orderToken!),
+      isTrue,
+    );
+
+    final storedOrderToken = await OrderAccessStore(
+      storage: storage,
+    ).readOrderToken(
+      _context,
+      'order-1',
+    );
+
+    expect(storedOrderToken, orderToken);
+  });
+
+  test('order retry reuses secure order token after network loss', () async {
+    final orderTokens = <String?>[];
+    var attempts = 0;
+
+    final mock = MockClient((request) async {
+      if (!request.url.path.endsWith('/checkout/order')) {
+        return http.Response('not found', 404);
+      }
+
+      attempts += 1;
+      orderTokens.add(
+        request.headers['X-Order-Token'],
+      );
+
+      if (attempts == 1) {
+        throw http.ClientException(
+          'simulated network loss',
+        );
+      }
+
+      return http.Response(
+        jsonEncode(_order()),
+        201,
+        headers: {
+          'content-type': 'application/json',
+        },
+      );
+    });
+
+    final storage = _MemoryStorage();
+    final data = await _data(
+      mock,
+      storage: storage,
+      seed: 11,
+    );
+
+    await expectLater(
+      data.createOrder(),
+      throwsA(isA<ApiNetworkException>()),
+    );
+
+    final order = await data.createOrder();
+
+    expect(order.id, 'order-1');
+    expect(orderTokens, hasLength(2));
+    expect(orderTokens.first, isNotNull);
+    expect(
+      orderTokens.last,
+      orderTokens.first,
+    );
+
+    expect(
+      await OrderAccessStore(
+        storage: storage,
+      ).readOrderToken(
+        _context,
+        'order-1',
+      ),
+      orderTokens.first,
+    );
   });
 
   test('payment retry reuses idempotency key after network loss', () async {
@@ -287,6 +375,14 @@ void main() {
     });
 
     final storage = _MemoryStorage();
+    final orderAccess = OrderAccessStore(
+      storage: storage,
+      random: Random(400),
+    );
+    final pendingOrderToken = await orderAccess.checkoutToken(
+      _context,
+      cartId: 'cart-1',
+    );
     final data = await _data(
       mock,
       storage: storage,
@@ -324,6 +420,13 @@ void main() {
     ).readSession(_context);
 
     expect(session, isNull);
+
+    final nextOrderToken = await orderAccess.checkoutToken(
+      _context,
+      cartId: 'cart-1',
+    );
+
+    expect(nextOrderToken, isNot(pendingOrderToken));
   });
 
   test('successful settlement remains successful if session cleanup fails',
@@ -374,6 +477,14 @@ void main() {
     });
 
     final storage = _MemoryStorage();
+    final orderAccess = OrderAccessStore(
+      storage: storage,
+      random: Random(410),
+    );
+    final pendingOrderToken = await orderAccess.checkoutToken(
+      _context,
+      cartId: 'cart-1',
+    );
     final data = await _data(
       mock,
       storage: storage,
@@ -394,6 +505,13 @@ void main() {
 
     expect(session?.cartId, 'cart-1');
     expect(session?.token, 'cart-token-1');
+    expect(
+      await orderAccess.checkoutToken(
+        _context,
+        cartId: 'cart-1',
+      ),
+      pendingOrderToken,
+    );
   });
 
   test('sandbox settlement rejects unsupported scenario before network',
