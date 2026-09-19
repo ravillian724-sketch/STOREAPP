@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\Admin\CatalogAdminController;
 use App\Http\Controllers\Api\V1\Admin\StaffAdminController;
 use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\BranchController;
+use App\Http\Controllers\Api\V1\ControlPlane\BuildProfileController;
 use App\Http\Controllers\Api\V1\ControlPlane\StoreProvisioningController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Staff\AuthController;
@@ -36,6 +37,22 @@ Route::prefix('v1')->group(function () {
                 [
                     StoreProvisioningController::class,
                     'store',
+                ],
+            );
+
+            Route::put(
+                '/provisioning/{provisioningPublicId}/build-profile',
+                [
+                    BuildProfileController::class,
+                    'update',
+                ],
+            );
+
+            Route::get(
+                '/provisioning/{provisioningPublicId}/build-manifest',
+                [
+                    BuildProfileController::class,
+                    'manifest',
                 ],
             );
         });
