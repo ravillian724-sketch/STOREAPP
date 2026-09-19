@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controller/auth/login_controller.dart';
 import '../../../core/class/handlingdataview.dart';
-import '../../../core/functions/alertexitapp.dart';
 import '../../widget/auth/custombuttomauth.dart';
 import '../../widget/auth/customtextsignup.dart';
 
@@ -35,12 +34,7 @@ class Login extends StatelessWidget {
       ),
       body: GetBuilder<LoginControllerImp>(
         builder: (controller) => PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (bool didPop, bool? result) async {
-            if (!didPop) {
-              alertExitApp();
-            }
-          },
+          canPop: true,
           child: GetBuilder<LoginControllerImp>(
             builder: (controller) => HandlingDataRequest(
               statusRequest: controller.statusRequest,

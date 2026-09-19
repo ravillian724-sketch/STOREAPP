@@ -1,6 +1,7 @@
 import 'package:ecommerce_app/controller/auth/signup_contrller.dart';
 import 'package:ecommerce_app/core/constant/color.dart';
 import 'package:ecommerce_app/core/functions/validinput.dart';
+import 'package:ecommerce_app/core/platform/platform_service.dart';
 import 'package:ecommerce_app/view/widget/auth/coustomtextformauth.dart';
 import 'package:ecommerce_app/view/widget/auth/customtextbodyauth.dart';
 import 'package:ecommerce_app/view/widget/auth/customtexttitelauth.dart';
@@ -8,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/class/handlingdataview.dart';
-import '../../../core/functions/alertexitapp.dart';
 import '../../widget/auth/custombuttomauth.dart';
 import '../../widget/auth/customtextsignup.dart';
 
@@ -35,12 +35,7 @@ class SignUp extends StatelessWidget {
       ),
       body: GetBuilder<SignUpControllerImp>(
         builder: (controller) => PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (bool didPop, bool? result) async {
-            if (!didPop) {
-              alertExitApp();
-            }
-          },
+          canPop: true,
           child: GetBuilder<SignUpControllerImp>(
             builder:
                 (controller) => //wee add this builder for adding loading animation
@@ -85,10 +80,32 @@ class SignUp extends StatelessWidget {
                       CustomTextFormAuth(
                         isNumber: false,
                         valid: (val) {
+                          if (PlatformService.instance.isInitialized) {
+                            final value = val?.trim() ?? '';
+
+                            if (value.length < 2) {
+                              return Get.locale?.languageCode == 'ar'
+                                  ? 'الاسم يجب أن يكون حرفين على الأقل.'
+                                  : 'Name must be at least 2 characters.';
+                            }
+
+                            if (value.length > 100) {
+                              return Get.locale?.languageCode == 'ar'
+                                  ? 'الاسم طويل جدًا.'
+                                  : 'Name is too long.';
+                            }
+
+                            return null;
+                          }
+
                           return validInput(val!, 3, 8, "username");
                         },
                         hintText: "16".tr, //"Enter Your Username"
-                        labelText: "UserName",
+                        labelText: PlatformService.instance.isInitialized
+                            ? (Get.locale?.languageCode == 'ar'
+                                ? 'الاسم'
+                                : 'Name')
+                            : "UserName",
                         iconDate: Icons.person_outline,
                         mycontroller: controller.username,
                       ),
@@ -105,10 +122,17 @@ class SignUp extends StatelessWidget {
                       CustomTextFormAuth(
                         isNumber: true,
                         valid: (val) {
-                          return validInput(val!, 10, 14, "phone");
+                          if (PlatformService.instance.isInitialized &&
+                              (val?.trim().isEmpty ?? true)) {
+                            return null;
+                          }
+
+                          return validInput(val!, 8, 20, "phone");
                         },
                         hintText: "17".tr, // "Enter Your Phone"
-                        labelText: "Phone",
+                        labelText: Get.locale?.languageCode == 'ar'
+                            ? 'الجوال'
+                            : 'Phone',
                         iconDate: Icons.phone_outlined,
                         mycontroller: controller.phone,
                       ),
@@ -120,10 +144,26 @@ class SignUp extends StatelessWidget {
                           },
                           isNumber: false,
                           valid: (val) {
+                            if (PlatformService.instance.isInitialized) {
+                              final value = val ?? '';
+
+                              if (value.length < 8 ||
+                                  !RegExp(r'[A-Za-z]').hasMatch(value) ||
+                                  !RegExp(r'[0-9]').hasMatch(value)) {
+                                return Get.locale?.languageCode == 'ar'
+                                    ? '8 أحرف على الأقل وتتضمن حرفًا ورقمًا.'
+                                    : 'Use 8+ characters with a letter and a number.';
+                              }
+
+                              return null;
+                            }
+
                             return validInput(val!, 5, 30, "password");
                           },
                           hintText: "5".tr, //"Enter Your Password"
-                          labelText: "Password",
+                          labelText: Get.locale?.languageCode == 'ar'
+                              ? 'كلمة المرور'
+                              : 'Password',
                           iconDate: controller.isShowPassword == true
                               ? Icons.remove_red_eye_outlined
                               : Icons.lock_outlined,

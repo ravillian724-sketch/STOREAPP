@@ -149,33 +149,44 @@ class Settings extends StatelessWidget {
                         color: AppColor.primaryColor, size: 30),
                   ),
                   _buildDivider(),
-                  _buildSettingItem(
-                    onTap: () {
-                      Get.toNamed(AppRoute.ordersarchive);
-                    },
-                    title: '110'.tr, // Archived Orders
-                    trailing: const Icon(Icons.archive_outlined,
-                        color: AppColor.primaryColor, size: 30),
-                  ),
-                  _buildDivider(),
-                  _buildSettingItem(
-                    onTap: () {
-                      Get.toNamed(AppRoute.rejectedorders);
-                    },
-                    title: "158".tr,
-                    trailing: const Icon(Icons.report_problem_outlined,
-                        color: AppColor.primaryColor, size: 30),
-                  ),
-                  _buildDivider(),
-                  _buildSettingItem(
-                    onTap: () {
-                      Get.toNamed(AppRoute.addressview);
-                    },
-                    title: '111'.tr, // Address
-                    trailing: const Icon(Icons.location_on_outlined,
-                        color: AppColor.primaryColor, size: 30),
-                  ),
-                  _buildDivider(),
+                  if (!PlatformService.instance.isInitialized) ...[
+                    _buildSettingItem(
+                      onTap: () {
+                        Get.toNamed(AppRoute.ordersarchive);
+                      },
+                      title: '110'.tr, // Archived Orders
+                      trailing: const Icon(
+                        Icons.archive_outlined,
+                        color: AppColor.primaryColor,
+                        size: 30,
+                      ),
+                    ),
+                    _buildDivider(),
+                    _buildSettingItem(
+                      onTap: () {
+                        Get.toNamed(AppRoute.rejectedorders);
+                      },
+                      title: "158".tr,
+                      trailing: const Icon(
+                        Icons.report_problem_outlined,
+                        color: AppColor.primaryColor,
+                        size: 30,
+                      ),
+                    ),
+                    _buildDivider(),
+                    _buildSettingItem(
+                      onTap: () {
+                        Get.toNamed(AppRoute.addressview);
+                      },
+                      title: '111'.tr, // Address
+                      trailing: const Icon(
+                        Icons.location_on_outlined,
+                        color: AppColor.primaryColor,
+                        size: 30,
+                      ),
+                    ),
+                    _buildDivider(),
+                  ],
                   _buildSettingItem(
                     title: '112'.tr,
                     trailing: const Icon(

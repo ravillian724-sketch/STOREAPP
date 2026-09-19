@@ -151,6 +151,18 @@ class LoginControllerImp extends LoginController {
 
   @override
   goToForgetPassword() {
+    if (PlatformService.instance.isInitialized) {
+      Get.defaultDialog(
+        title: Get.locale?.languageCode == 'ar'
+            ? 'استعادة كلمة المرور'
+            : 'Password recovery',
+        middleText: Get.locale?.languageCode == 'ar'
+            ? 'استعادة كلمة المرور لحسابات المنصة ستُفعّل بعد ربط خدمة البريد الخاصة بالمتجر.'
+            : 'Password recovery for platform accounts will be enabled after the store email service is connected.',
+      );
+      return;
+    }
+
     Get.offNamed(AppRoute.forgetPassword);
   }
 }

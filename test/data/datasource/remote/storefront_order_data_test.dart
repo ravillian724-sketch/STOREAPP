@@ -395,11 +395,12 @@ void main() {
     );
   });
 
-  test('unauthorized account history clears expired server session', () async {
+  test('unauthorized account history falls back to guest receipts', () async {
     final storage = _MemoryStorage();
     final customers = CustomerSessionStore(
       storage: storage,
     );
+    final access = await _access(storage);
 
     await customers.saveSession(
       _context,
@@ -416,18 +417,32 @@ void main() {
     );
 
     final mock = MockClient((request) async {
-      return http.Response(
-        jsonEncode({
-          'error': {
-            'code': 'UNAUTHENTICATED',
-            'message': 'Authentication is required.',
+      if (request.url.path == '/api/v1/storefront/customer/orders') {
+        return http.Response(
+          jsonEncode({
+            'error': {
+              'code': 'UNAUTHENTICATED',
+              'message': 'Authentication is required.',
+            },
+          }),
+          401,
+          headers: {
+            'content-type': 'application/json',
           },
-        }),
-        401,
-        headers: {
-          'content-type': 'application/json',
-        },
-      );
+        );
+      }
+
+      if (request.url.path.endsWith('/order-1')) {
+        return http.Response(
+          jsonEncode(_payload()),
+          200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        );
+      }
+
+      return http.Response('not found', 404);
     });
 
     final api = _api(mock);
@@ -436,17 +451,16 @@ void main() {
     final data = StorefrontOrderData(
       apiClient: api,
       tenantContext: _context,
-      orderAccessStore: OrderAccessStore(
-        storage: storage,
-      ),
+      orderAccessStore: access,
       customerSessionStore: customers,
     );
 
-    await expectLater(
-      data.getRememberedOrders(),
-      throwsA(isA<Exception>()),
-    );
+    final orders = await data.getRememberedOrders();
 
+    expect(
+      orders.map((order) => order.id).toList(),
+      ['order-1'],
+    );
     expect(
       await customers.readSession(_context),
       isNull,

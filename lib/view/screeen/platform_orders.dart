@@ -56,21 +56,118 @@ class PlatformOrders extends StatelessWidget {
             );
           }
 
+          final visibleOrders = controller.visibleOrders;
+
           return RefreshIndicator(
             onRefresh: controller.refreshOrders,
-            child: ListView.separated(
+            child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              itemCount: controller.orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _OrderCard(
-                  order: controller.orders[index],
-                );
-              },
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
+                _OrderFilters(
+                  controller: controller,
+                ),
+                const SizedBox(height: 16),
+                if (visibleOrders.isEmpty)
+                  const _FilteredEmptyOrders()
+                else
+                  ...visibleOrders.expand(
+                    (order) => [
+                      _OrderCard(order: order),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+              ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _OrderFilters extends StatelessWidget {
+  const _OrderFilters({
+    required this.controller,
+  });
+
+  final PlatformOrdersController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: PlatformOrderFilter.values.map(
+          (filter) {
+            final selected = controller.selectedFilter == filter;
+            final count = controller.countFor(filter);
+
+            return Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8),
+              child: ChoiceChip(
+                selected: selected,
+                onSelected: (_) => controller.selectFilter(filter),
+                label: Text(
+                  '${_filterLabel(filter)} ($count)',
+                ),
+              ),
+            );
+          },
+        ).toList(growable: false),
+      ),
+    );
+  }
+
+  static String _filterLabel(PlatformOrderFilter filter) {
+    return switch (filter) {
+      PlatformOrderFilter.all => PlatformOrders._label(
+          ar: 'الكل',
+          en: 'All',
+        ),
+      PlatformOrderFilter.pending => PlatformOrders._label(
+          ar: 'قيد الانتظار',
+          en: 'Pending',
+        ),
+      PlatformOrderFilter.confirmed => PlatformOrders._label(
+          ar: 'مؤكد',
+          en: 'Confirmed',
+        ),
+      PlatformOrderFilter.cancelled => PlatformOrders._label(
+          ar: 'ملغي',
+          en: 'Cancelled',
+        ),
+    };
+  }
+}
+
+class _FilteredEmptyOrders extends StatelessWidget {
+  const _FilteredEmptyOrders();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 80),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.filter_alt_off_outlined,
+            size: 56,
+            color: Colors.black38,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            PlatformOrders._label(
+              ar: 'لا توجد طلبات ضمن هذا التصنيف.',
+              en: 'No orders match this filter.',
+            ),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

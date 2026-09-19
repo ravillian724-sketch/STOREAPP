@@ -212,6 +212,7 @@ class StorefrontOrderData {
     } on ApiException catch (error) {
       if (error.statusCode == 401) {
         await _customers.clearSession(context);
+        return const [];
       }
 
       rethrow;
