@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\Admin\CatalogAdminController;
 use App\Http\Controllers\Api\V1\Admin\StaffAdminController;
 use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\BranchController;
+use App\Http\Controllers\Api\V1\ControlPlane\StoreProvisioningController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Staff\AuthController;
 use App\Http\Controllers\Api\V1\Storefront\CustomerAuthController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Api\V1\Storefront\CustomerOrderController;
 use App\Http\Controllers\Api\V1\StorefrontCartController;
 use App\Http\Controllers\Api\V1\StorefrontCatalogController;
 use App\Http\Controllers\Api\V1\StorefrontOrderController;
+use App\Support\Authorization\ControlPlaneRateLimit;
 use App\Support\Authorization\CustomerLoginRateLimit;
 use App\Support\Authorization\PermissionCatalog;
 use App\Support\Authorization\StaffLoginRateLimit;
@@ -22,6 +24,21 @@ Route::prefix('v1')->group(function () {
         '/health',
         HealthController::class,
     );
+
+    Route::prefix('control-plane')
+        ->middleware([
+            'throttle:'.ControlPlaneRateLimit::NAME,
+            'control.plane',
+        ])
+        ->group(function () {
+            Route::post(
+                '/stores',
+                [
+                    StoreProvisioningController::class,
+                    'store',
+                ],
+            );
+        });
 
     Route::middleware([
         'app.instance',

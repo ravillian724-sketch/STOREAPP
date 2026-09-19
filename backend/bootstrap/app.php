@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuthenticateControlPlane;
 use App\Http\Middleware\AuthenticateTenantCustomer;
 use App\Http\Middleware\AuthenticateTenantStaff;
 use App\Http\Middleware\RequestIdMiddleware;
@@ -42,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'app.instance' => ResolveAppInstanceMiddleware::class,
+            'control.plane' => AuthenticateControlPlane::class,
             'tenant.boundary' => TenantBoundaryMiddleware::class,
             'tenant.staff' => AuthenticateTenantStaff::class,
             'tenant.customer' => AuthenticateTenantCustomer::class,

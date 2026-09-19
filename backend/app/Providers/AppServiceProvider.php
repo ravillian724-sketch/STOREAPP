@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Support\AppInstance\AppInstanceToken;
+use App\Support\Authorization\ControlPlaneRateLimit;
 use App\Support\Authorization\CustomerLoginRateLimit;
 use App\Support\Authorization\StaffLoginRateLimit;
 use App\Support\Tenancy\TenantContext;
@@ -54,6 +55,13 @@ class AppServiceProvider extends ServiceProvider
             fn (Request $request): array => CustomerLoginRateLimit::limits(
                 $request,
                 app(TenantContext::class),
+            ),
+        );
+
+        RateLimiter::for(
+            ControlPlaneRateLimit::NAME,
+            fn (Request $request): array => ControlPlaneRateLimit::limits(
+                $request,
             ),
         );
     }
