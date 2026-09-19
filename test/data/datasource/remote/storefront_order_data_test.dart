@@ -1,15 +1,17 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:ecommerce_app/core/customer/customer_session_store.dart';
 import 'package:ecommerce_app/core/network/api_client.dart';
 import 'package:ecommerce_app/core/order/order_access_store.dart';
 import 'package:ecommerce_app/core/platform/tenant_context.dart';
 import 'package:ecommerce_app/data/datasource/remote/storefront_order_data.dart';
+import 'package:ecommerce_app/data/model/storefront_customer_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-class _MemoryStorage implements OrderSecureStorage {
+class _MemoryStorage implements OrderSecureStorage, CustomerSecureStorage {
   final Map<String, String> values = {};
 
   @override
@@ -87,6 +89,25 @@ Map<String, dynamic> _payload() {
   };
 }
 
+Map<String, dynamic> _orderData({
+  required String id,
+  required String createdAt,
+}) {
+  final payload = _payload();
+  final data = Map<String, dynamic>.from(
+    payload['data'] as Map,
+  );
+  final order = Map<String, dynamic>.from(
+    data['order'] as Map,
+  );
+
+  order['id'] = id;
+  order['created_at'] = createdAt;
+  data['order'] = order;
+
+  return data;
+}
+
 Future<OrderAccessStore> _access(
   _MemoryStorage storage,
 ) async {
@@ -130,6 +151,9 @@ void main() {
       apiClient: _api(mock),
       tenantContext: _context,
       orderAccessStore: access,
+      customerSessionStore: CustomerSessionStore(
+        storage: storage,
+      ),
     );
 
     final order = await data.getOrder(
@@ -173,6 +197,9 @@ void main() {
       orderAccessStore: OrderAccessStore(
         storage: storage,
         random: Random(10),
+      ),
+      customerSessionStore: CustomerSessionStore(
+        storage: storage,
       ),
     );
 
@@ -232,6 +259,9 @@ void main() {
       apiClient: _api(mock),
       tenantContext: _context,
       orderAccessStore: access,
+      customerSessionStore: CustomerSessionStore(
+        storage: storage,
+      ),
     );
 
     final orders = await data.getRememberedOrders();
@@ -254,6 +284,172 @@ void main() {
     expect(
       await access.listOrderIds(_context),
       ['order-1'],
+    );
+  });
+
+  test('account history paginates and merges guest receipts without duplicates',
+      () async {
+    final storage = _MemoryStorage();
+    final access = await _access(storage);
+    final customers = CustomerSessionStore(
+      storage: storage,
+    );
+
+    await customers.saveSession(
+      _context,
+      StorefrontCustomerSession(
+        accessToken: 'customer-token-1',
+        expiresAt: DateTime.now().toUtc().add(const Duration(days: 1)),
+        customer: const StorefrontCustomer(
+          id: 'customer-1',
+          name: 'Buyer',
+          email: 'buyer@example.com',
+          emailVerified: false,
+        ),
+      ),
+    );
+
+    final requests = <http.Request>[];
+
+    final mock = MockClient((request) async {
+      requests.add(request);
+
+      if (request.url.path == '/api/v1/storefront/customer/orders') {
+        final page = request.url.queryParameters['page'];
+        final data = page == '1'
+            ? _orderData(
+                id: 'order-2',
+                createdAt: '2026-09-20T00:00:00+00:00',
+              )
+            : _orderData(
+                id: 'order-1',
+                createdAt: '2026-09-19T00:00:00+00:00',
+              );
+
+        return http.Response(
+          jsonEncode({
+            'data': {
+              'orders': [data],
+              'pagination': {
+                'page': int.parse(page!),
+                'per_page': 50,
+                'total': 2,
+                'last_page': 2,
+              },
+            },
+          }),
+          200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        );
+      }
+
+      if (request.url.path.endsWith('/order-1')) {
+        return http.Response(
+          jsonEncode(_payload()),
+          200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        );
+      }
+
+      return http.Response('not found', 404);
+    });
+
+    final data = StorefrontOrderData(
+      apiClient: _api(mock),
+      tenantContext: _context,
+      orderAccessStore: access,
+      customerSessionStore: customers,
+    );
+
+    final orders = await data.getRememberedOrders();
+
+    expect(
+      orders.map((order) => order.id).toList(),
+      ['order-2', 'order-1'],
+    );
+
+    final accountRequests = requests.where(
+      (request) => request.url.path == '/api/v1/storefront/customer/orders',
+    );
+
+    expect(accountRequests, hasLength(2));
+
+    for (final request in accountRequests) {
+      expect(
+        request.headers['Authorization'],
+        'Bearer customer-token-1',
+      );
+      expect(
+        request.url.queryParameters['per_page'],
+        '50',
+      );
+    }
+
+    expect(
+      requests.where((request) => request.url.path.endsWith('/order-1')),
+      hasLength(1),
+    );
+  });
+
+  test('unauthorized account history clears expired server session', () async {
+    final storage = _MemoryStorage();
+    final customers = CustomerSessionStore(
+      storage: storage,
+    );
+
+    await customers.saveSession(
+      _context,
+      StorefrontCustomerSession(
+        accessToken: 'revoked-token',
+        expiresAt: DateTime.now().toUtc().add(const Duration(days: 1)),
+        customer: const StorefrontCustomer(
+          id: 'customer-1',
+          name: 'Buyer',
+          email: 'buyer@example.com',
+          emailVerified: false,
+        ),
+      ),
+    );
+
+    final mock = MockClient((request) async {
+      return http.Response(
+        jsonEncode({
+          'error': {
+            'code': 'UNAUTHENTICATED',
+            'message': 'Authentication is required.',
+          },
+        }),
+        401,
+        headers: {
+          'content-type': 'application/json',
+        },
+      );
+    });
+
+    final api = _api(mock);
+    addTearDown(api.close);
+
+    final data = StorefrontOrderData(
+      apiClient: api,
+      tenantContext: _context,
+      orderAccessStore: OrderAccessStore(
+        storage: storage,
+      ),
+      customerSessionStore: customers,
+    );
+
+    await expectLater(
+      data.getRememberedOrders(),
+      throwsA(isA<Exception>()),
+    );
+
+    expect(
+      await customers.readSession(_context),
+      isNull,
     );
   });
 }

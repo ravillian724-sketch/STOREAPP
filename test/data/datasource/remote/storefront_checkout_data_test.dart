@@ -3,16 +3,19 @@ import 'dart:math';
 
 import 'package:ecommerce_app/core/cart/cart_session.dart';
 import 'package:ecommerce_app/core/cart/cart_session_store.dart';
+import 'package:ecommerce_app/core/customer/customer_session_store.dart';
 import 'package:ecommerce_app/core/network/api_client.dart';
 import 'package:ecommerce_app/core/network/api_exception.dart';
 import 'package:ecommerce_app/core/order/order_access_store.dart';
 import 'package:ecommerce_app/core/platform/tenant_context.dart';
 import 'package:ecommerce_app/data/datasource/remote/storefront_checkout_data.dart';
+import 'package:ecommerce_app/data/model/storefront_customer_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-class _MemoryStorage implements CartSecureStorage, OrderSecureStorage {
+class _MemoryStorage
+    implements CartSecureStorage, OrderSecureStorage, CustomerSecureStorage {
   _MemoryStorage({
     this.throwOnDelete = false,
   });
@@ -146,6 +149,7 @@ Future<StorefrontCheckoutData> _data(
   http.Client client, {
   required _MemoryStorage storage,
   int seed = 1,
+  bool authenticated = false,
 }) async {
   final sessions = CartSessionStore(
     storage: storage,
@@ -160,6 +164,27 @@ Future<StorefrontCheckoutData> _data(
     ),
   );
 
+  final customers = CustomerSessionStore(
+    storage: storage,
+  );
+
+  if (authenticated) {
+    await customers.saveSession(
+      _context,
+      StorefrontCustomerSession(
+        accessToken: 'customer-token-1',
+        expiresAt: DateTime.now().toUtc().add(const Duration(days: 1)),
+        customer: const StorefrontCustomer(
+          id: 'customer-1',
+          name: 'Registered Buyer',
+          email: 'buyer@example.com',
+          phone: '+966500000001',
+          emailVerified: false,
+        ),
+      ),
+    );
+  }
+
   return StorefrontCheckoutData(
     apiClient: _api(client),
     tenantContext: _context,
@@ -168,6 +193,7 @@ Future<StorefrontCheckoutData> _data(
       storage: storage,
       random: Random(seed + 1000),
     ),
+    customerSessionStore: customers,
   );
 }
 
@@ -227,6 +253,10 @@ void main() {
       requests.first.headers.containsKey('X-Order-Token'),
       isFalse,
     );
+    expect(
+      requests.last.headers.containsKey('Authorization'),
+      isFalse,
+    );
 
     final orderToken = requests.last.headers['X-Order-Token'];
     expect(orderToken, isNotNull);
@@ -243,6 +273,45 @@ void main() {
     );
 
     expect(storedOrderToken, orderToken);
+  });
+
+  test('authenticated checkout attaches customer bearer token', () async {
+    late http.Request captured;
+
+    final mock = MockClient((request) async {
+      captured = request;
+
+      return http.Response(
+        jsonEncode(_order()),
+        201,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+
+    final storage = _MemoryStorage();
+    final data = await _data(
+      mock,
+      storage: storage,
+      authenticated: true,
+    );
+
+    await data.createOrder(
+      customerName: 'Spoofed Buyer',
+      customerEmail: 'spoofed@example.com',
+    );
+
+    expect(
+      captured.headers['Authorization'],
+      'Bearer customer-token-1',
+    );
+    expect(
+      captured.headers['X-Cart-Token'],
+      'cart-token-1',
+    );
+    expect(
+      captured.headers['X-Order-Token'],
+      isNotNull,
+    );
   });
 
   test('order retry reuses secure order token after network loss', () async {

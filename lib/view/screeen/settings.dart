@@ -11,7 +11,7 @@ class Settings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    SettingsController controller = Get.put(SettingsController());
+    Get.put(SettingsController());
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -73,6 +73,41 @@ class Settings extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 80),
+          GetBuilder<SettingsController>(
+            builder: (controller) {
+              if (!controller.isSignedIn) {
+                return const SizedBox.shrink();
+              }
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                child: Column(
+                  children: [
+                    if (controller.displayName.isNotEmpty)
+                      Text(
+                        controller.displayName,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    if (controller.displayEmail.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        controller.displayEmail,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Card(
@@ -180,11 +215,24 @@ class Settings extends StatelessWidget {
                     },
                   ),
                   _buildDivider(),
-                  _buildSettingItem(
-                    title: "114".tr, // Logout
-                    trailing: const Icon(Icons.exit_to_app,
-                        color: Colors.red, size: 30),
-                    onTap: () => controller.logout(),
+                  GetBuilder<SettingsController>(
+                    builder: (controller) => _buildSettingItem(
+                      title: controller.isSignedIn
+                          ? "114".tr
+                          : (Get.locale?.languageCode == 'ar'
+                              ? 'تسجيل الدخول'
+                              : 'Sign In'),
+                      trailing: Icon(
+                        controller.isSignedIn ? Icons.exit_to_app : Icons.login,
+                        color: controller.isSignedIn
+                            ? Colors.red
+                            : AppColor.primaryColor,
+                        size: 30,
+                      ),
+                      onTap: controller.isSignedIn
+                          ? controller.logout
+                          : controller.goToLogin,
+                    ),
                   ),
                 ],
               ),

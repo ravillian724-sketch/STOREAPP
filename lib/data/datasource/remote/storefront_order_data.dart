@@ -1,3 +1,4 @@
+import 'package:ecommerce_app/core/customer/customer_session_store.dart';
 import 'package:ecommerce_app/core/network/api_client.dart';
 import 'package:ecommerce_app/core/network/api_exception.dart';
 import 'package:ecommerce_app/core/order/order_access_store.dart';
@@ -10,13 +11,16 @@ class StorefrontOrderData {
     ApiClient? apiClient,
     TenantContext? tenantContext,
     OrderAccessStore? orderAccessStore,
+    CustomerSessionStore? customerSessionStore,
   })  : _apiClient = apiClient,
         _tenantContext = tenantContext,
-        _orders = orderAccessStore ?? OrderAccessStore();
+        _orders = orderAccessStore ?? OrderAccessStore(),
+        _customers = customerSessionStore ?? CustomerSessionStore();
 
   final ApiClient? _apiClient;
   final TenantContext? _tenantContext;
   final OrderAccessStore _orders;
+  final CustomerSessionStore _customers;
 
   ApiClient get _client {
     final client = _apiClient ?? PlatformService.instance.apiClient;
@@ -72,12 +76,13 @@ class StorefrontOrderData {
   }
 
   Future<List<StorefrontOrderDetails>> getRememberedOrders() async {
-    final ids = await _orders.listOrderIds(
-      _context,
-    );
-
-    final results = <StorefrontOrderDetails>[];
     final context = _context;
+    final results = <StorefrontOrderDetails>[
+      ...await _customerOrders(context),
+    ];
+    final ids = await _orders.listOrderIds(
+      context,
+    );
 
     for (final id in ids) {
       final token = await _orders.readOrderToken(
@@ -110,6 +115,106 @@ class StorefrontOrderData {
           id,
         );
       }
+    }
+
+    final unique = <String, StorefrontOrderDetails>{};
+
+    for (final order in results) {
+      unique.putIfAbsent(
+        order.id,
+        () => order,
+      );
+    }
+
+    final merged = unique.values.toList(growable: false);
+
+    merged.sort((a, b) {
+      final aDate = a.createdAt;
+      final bDate = b.createdAt;
+
+      if (aDate == null && bDate == null) {
+        return b.id.compareTo(a.id);
+      }
+      if (aDate == null) {
+        return 1;
+      }
+      if (bDate == null) {
+        return -1;
+      }
+
+      return bDate.compareTo(aDate);
+    });
+
+    return merged;
+  }
+
+  Future<List<StorefrontOrderDetails>> _customerOrders(
+    TenantContext context,
+  ) async {
+    final session = await _customers.readSession(context);
+
+    if (session == null) {
+      return const [];
+    }
+
+    final results = <StorefrontOrderDetails>[];
+    var page = 1;
+    var lastPage = 1;
+
+    try {
+      do {
+        final response = await _client.get(
+          '/api/v1/storefront/customer/orders',
+          accessToken: session.accessToken,
+          queryParameters: {
+            'page': '$page',
+            'per_page': '50',
+          },
+        );
+
+        final data = _data(response.data);
+        final rawOrders = data['orders'];
+
+        if (rawOrders is! List) {
+          throw const FormatException(
+            'Customer order history is missing orders.',
+          );
+        }
+
+        for (final raw in rawOrders) {
+          if (raw is! Map) {
+            throw const FormatException(
+              'Customer order history contains an invalid order.',
+            );
+          }
+
+          results.add(
+            StorefrontOrderDetails.fromJson(
+              Map<String, dynamic>.from(raw),
+            ),
+          );
+        }
+
+        final pagination = data['pagination'];
+
+        if (pagination is Map) {
+          final normalized = Map<String, dynamic>.from(pagination);
+          lastPage = int.tryParse(
+                normalized['last_page']?.toString() ?? '',
+              ) ??
+              page;
+        } else {
+          lastPage = page;
+        }
+
+        page += 1;
+      } while (page <= lastPage);
+    } on ApiException catch (error) {
+      if (error.statusCode == 401) {
+        await _customers.clearSession(context);
+      }
+
+      rethrow;
     }
 
     return results;

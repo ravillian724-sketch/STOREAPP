@@ -1,5 +1,6 @@
 import 'package:ecommerce_app/core/cart/cart_session.dart';
 import 'package:ecommerce_app/core/cart/cart_session_store.dart';
+import 'package:ecommerce_app/core/customer/customer_session_store.dart';
 import 'package:ecommerce_app/core/network/api_client.dart';
 import 'package:ecommerce_app/core/order/order_access_store.dart';
 import 'package:ecommerce_app/core/platform/platform_service.dart';
@@ -12,15 +13,18 @@ class StorefrontCheckoutData {
     TenantContext? tenantContext,
     CartSessionStore? sessionStore,
     OrderAccessStore? orderAccessStore,
+    CustomerSessionStore? customerSessionStore,
   })  : _apiClient = apiClient,
         _tenantContext = tenantContext,
         _sessions = sessionStore ?? CartSessionStore(),
-        _orders = orderAccessStore ?? OrderAccessStore();
+        _orders = orderAccessStore ?? OrderAccessStore(),
+        _customers = customerSessionStore ?? CustomerSessionStore();
 
   final ApiClient? _apiClient;
   final TenantContext? _tenantContext;
   final CartSessionStore _sessions;
   final OrderAccessStore _orders;
+  final CustomerSessionStore _customers;
 
   ApiClient get _client {
     final client = _apiClient ?? PlatformService.instance.apiClient;
@@ -82,10 +86,15 @@ class StorefrontCheckoutData {
       body['shipping_address'] = shippingAddress;
     }
 
+    final customerSession = await _customers.readSession(
+      context,
+    );
+
     final response = await _client.post(
       '/api/v1/storefront/carts/'
       '${session.cartId}/checkout/order',
       body: body,
+      accessToken: customerSession?.accessToken,
       extraHeaders: {
         'X-Cart-Token': session.token,
         'X-Order-Token': orderToken,

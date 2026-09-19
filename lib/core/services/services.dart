@@ -26,6 +26,32 @@ class MyServices extends GetxService {
     return sharedPreferences.getString("step") == "2" && userId != null;
   }
 
+  bool get isPlatformCustomerSession {
+    return hasValidSession &&
+        sharedPreferences.getString("auth_provider") == "platform";
+  }
+
+  Future<void> savePlatformCustomerProfile({
+    required String id,
+    required String name,
+    required String email,
+    String? phone,
+  }) async {
+    await sharedPreferences.setString("id", id.trim());
+    await sharedPreferences.setString("username", name.trim());
+    await sharedPreferences.setString("email", email.trim());
+
+    final normalizedPhone = phone?.trim();
+    if (normalizedPhone == null || normalizedPhone.isEmpty) {
+      await sharedPreferences.remove("phone");
+    } else {
+      await sharedPreferences.setString("phone", normalizedPhone);
+    }
+
+    await sharedPreferences.setString("auth_provider", "platform");
+    await sharedPreferences.setString("step", "2");
+  }
+
   Future<void> clearUserSession() async {
     const sessionKeys = <String>[
       "id",
