@@ -79,7 +79,12 @@ class CustomerAuthenticationTest extends TestCase
                 ],
             );
 
-        $response->assertCreated();
+        $response
+            ->assertCreated()
+            ->assertHeader(
+                'Cache-Control',
+                'no-store, private',
+            );
 
         return [
             'token' => (string) $response->json(
@@ -121,6 +126,10 @@ class CustomerAuthenticationTest extends TestCase
                 '/api/v1/storefront/customer/me'
             )
             ->assertOk()
+            ->assertHeader(
+                'Cache-Control',
+                'no-store, private',
+            )
             ->assertJsonPath(
                 'data.customer.id',
                 $registered['customer_id'],
@@ -238,6 +247,10 @@ class CustomerAuthenticationTest extends TestCase
                 ],
             )
             ->assertOk()
+            ->assertHeader(
+                'Cache-Control',
+                'no-store, private',
+            )
             ->assertJsonPath(
                 'data.customer.email',
                 'buyer@example.com',
@@ -260,6 +273,10 @@ class CustomerAuthenticationTest extends TestCase
                 '/api/v1/storefront/customer/auth/logout'
             )
             ->assertOk()
+            ->assertHeader(
+                'Cache-Control',
+                'no-store, private',
+            )
             ->assertJsonPath(
                 'data.logged_out',
                 true,

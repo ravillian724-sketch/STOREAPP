@@ -109,13 +109,15 @@ class CustomerAuthController extends Controller
             throw $error;
         }
 
-        return ApiResponse::success(
-            $request,
-            $this->authenticatedPayload(
-                $customer,
-                $token,
-            ),
-            201,
+        return $this->noStore(
+            ApiResponse::success(
+                $request,
+                $this->authenticatedPayload(
+                    $customer,
+                    $token,
+                ),
+                201,
+            )
         );
     }
 
@@ -182,27 +184,31 @@ class CustomerAuthController extends Controller
                 ?? 'customer-device',
         );
 
-        return ApiResponse::success(
-            $request,
-            $this->authenticatedPayload(
-                $customer,
-                $token,
-            ),
+        return $this->noStore(
+            ApiResponse::success(
+                $request,
+                $this->authenticatedPayload(
+                    $customer,
+                    $token,
+                ),
+            )
         );
     }
 
     public function me(
         Request $request,
     ): JsonResponse {
-        return ApiResponse::success(
-            $request,
-            [
-                'customer' => $this->presentCustomer(
-                    $this->customer(
-                        $request
-                    )
-                ),
-            ],
+        return $this->noStore(
+            ApiResponse::success(
+                $request,
+                [
+                    'customer' => $this->presentCustomer(
+                        $this->customer(
+                            $request
+                        )
+                    ),
+                ],
+            )
         );
     }
 
@@ -215,12 +221,25 @@ class CustomerAuthController extends Controller
             ->currentAccessToken()
             ?->delete();
 
-        return ApiResponse::success(
-            $request,
-            [
-                'logged_out' => true,
-            ],
+        return $this->noStore(
+            ApiResponse::success(
+                $request,
+                [
+                    'logged_out' => true,
+                ],
+            )
         );
+    }
+
+    private function noStore(
+        JsonResponse $response,
+    ): JsonResponse {
+        $response->headers->set(
+            'Cache-Control',
+            'private, no-store',
+        );
+
+        return $response;
     }
 
     private function customer(
