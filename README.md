@@ -279,6 +279,23 @@ flutter build web --release \
   --dart-define=APP_INSTANCE_KEY="$APP_INSTANCE_KEY"
 ```
 
+For a Windows Android Emulator build, prefer the PowerShell helper. It defaults to
+`http://10.0.2.2:8000`, the emulator alias for the development host loopback,
+and uses a temporary dart-defines file so the app-instance credential is not
+printed in the Flutter command line:
+
+```powershell
+$env:APP_INSTANCE_KEY = "<development-app-instance-key>"
+.\tools\build_android_emulator.ps1
+```
+
+`10.0.2.2` is emulator-specific. For a physical Android device, pass a backend
+URL that the device can actually reach, for example:
+
+```powershell
+.\tools\build_android_emulator.ps1 -ApiBaseUrl "http://192.168.1.20:8000"
+```
+
 ---
 
 ## 📱 **App Screenshots**
